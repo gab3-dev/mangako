@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">MangaKō</string>
+    <string name="title_activity_manga_card">MangaCard</string>
+</resources>

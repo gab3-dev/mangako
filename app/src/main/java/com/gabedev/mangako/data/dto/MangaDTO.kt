@@ -1,0 +1,59 @@
+package com.gabedev.mangako.data.dto
+
+data class MangaDto(
+    val id: String,
+    val type: String,
+    val attributes: AttributesDto,
+    val relationships: List<RelationshipDto>
+)
+
+data class AttributesDto(
+    val title: Map<String, String>,
+    val altTitles: List<Map<String, String>>,
+    val description: Map<String, String>,
+    val isLocked: Boolean,
+    val links: LinksDto,
+    val originalLanguage: String,
+    val lastVolume: String,
+    val lastChapter: String,
+    val publicationDemographic: String,
+    val status: String,
+    val year: Int,
+    val contentRating: String,
+    val tags: List<TagDto>,
+    val state: String,
+    val chapterNumbersResetOnNewVolume: Boolean,
+    val createdAt: String,
+    val updatedAt: String,
+    val version: Int,
+    val availableTranslatedLanguages: List<String>,
+    val latestUploadedChapter: String
+)
+
+data class LinksDto(
+    val al: String?,
+    val ap: String?,
+    val bw: String?,
+    val kt: String?,
+    val mu: String?,
+    val mal: String?,
+    val raw: String?
+)
+
+data class TagDto(
+    val id: String,
+    val type: String,
+    val attributes: TagAttributesDto
+)
+
+data class TagAttributesDto(
+    val name: Map<String, String>,
+    val description: Map<String, String> = emptyMap(),
+    val group: String,
+    val version: Int
+)
+
+data class RelationshipDto(
+    val id: String,
+    val type: String
+)
