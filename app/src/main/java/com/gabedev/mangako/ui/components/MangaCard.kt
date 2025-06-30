@@ -11,6 +11,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
@@ -21,12 +22,13 @@ fun MangaCard(
     modifier: Modifier = Modifier,
     title: String,
     coverUrl: String,
-    owned: Boolean,
+    owned: Boolean = false,
     isVolumeCard: Boolean = false,
     volume: Int? = null,
 ) {
     Card(
         modifier = modifier
+            .alpha(if (owned) 0.5f else 1f)
             .fillMaxWidth()
             .heightIn(min = 200.dp),
         shape = RoundedCornerShape(8.dp),

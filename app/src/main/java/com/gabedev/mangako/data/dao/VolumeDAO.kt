@@ -3,13 +3,13 @@ package com.gabedev.mangako.data.dao
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.gabedev.mangako.data.model.Volume
 
 @Dao
 interface VolumeDAO {
-    // Methods for managing manga volumes
     @Query("SELECT * FROM Volume WHERE id = :id")
     suspend fun getVolumeById(id: String): Volume?
 
@@ -18,8 +18,13 @@ interface VolumeDAO {
         volume: Volume
     ): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertVolumeList(
+        volumes: List<Volume>
+    )
+
     @Update
-    suspend fun updateVolumeOwnership(
+    suspend fun updateVolume(
         volume: Volume
     ): Int
 

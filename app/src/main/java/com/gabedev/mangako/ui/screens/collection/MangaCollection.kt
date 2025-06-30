@@ -74,7 +74,6 @@ fun MangaCollection(
                                 ),
                             title = manga.title,
                             coverUrl = manga.coverUrl,
-                            owned = manga.owned,
                             volume = manga.volumeCount,
                         )
                     }

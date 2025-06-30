@@ -58,7 +58,6 @@ fun MangaCoverImage(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
                 onSuccess = {
-                    // A imagem foi carregada com sucesso
                     isLoading = false
                 },
                 error = painterResource(R.drawable.ic_broken_image)

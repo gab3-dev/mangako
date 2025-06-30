@@ -3,12 +3,21 @@ package com.gabedev.mangako.data.repository
 import com.gabedev.mangako.data.local.LocalDatabase
 import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.model.MangaWithVolume
+import com.gabedev.mangako.data.model.Volume
 
 class LibraryRepositoryImpl (
     private val db: LocalDatabase
 ) : LibraryRepository {
+    override suspend fun getManga(mangaId: String): Manga? {
+        return db.mangaDao().getMangaById(mangaId)
+    }
+
     override suspend fun getAllManga(): List<Manga> {
         return db.mangaDao().getAllManga()
+    }
+
+    override suspend fun getMangaOnLibrary(): List<Manga> {
+       return db.mangaDao().getAllManga().filter { it.isOnUserLibrary }
     }
 
     override suspend fun getMangaWithVolume(mangaId: String): MangaWithVolume? {
@@ -19,19 +28,37 @@ class LibraryRepositoryImpl (
         return db.mangaDao().searchMangaByTitle(title)
     }
 
-    override suspend fun addMangaToLibrary(manga: Manga) {
+    override suspend fun insertManga(manga: Manga) {
         db.mangaDao().insertManga(manga)
     }
 
+    override suspend fun addMangaToLibrary(manga: Manga) {
+        val updatedManga = manga.copy(isOnUserLibrary = true)
+        db.mangaDao().updateMangaLibraryStatus(updatedManga)
+    }
+
     override suspend fun removeMangaFromLibrary(mangaId: String) {
-        db.mangaDao().deleteMangaById(mangaId)
+        val manga = db.mangaDao().getMangaById(mangaId)
+        manga?.let {
+            val updatedManga = it.copy(isOnUserLibrary = false)
+            db.mangaDao().updateMangaLibraryStatus(updatedManga)
+        }
     }
 
     override suspend fun removeMangaFromLibrary(manga: Manga) {
-        db.mangaDao().deleteManga(manga)
+        val updatedManga = manga.copy(isOnUserLibrary = false)
+        db.mangaDao().updateMangaLibraryStatus(updatedManga)
     }
 
     override suspend fun isMangaInLibrary(mangaId: String): Boolean {
-        return db.mangaDao().getMangaById(mangaId) != null
+        return db.mangaDao().getMangaById(mangaId)?.isOnUserLibrary ?: false
+    }
+
+    override suspend fun insertVolumeList(volumeList: List<Volume>) {
+        db.volumeDao().insertVolumeList(volumeList)
+    }
+
+    override suspend fun updateVolume(volume: Volume) {
+        db.volumeDao().updateVolume(volume)
     }
 }

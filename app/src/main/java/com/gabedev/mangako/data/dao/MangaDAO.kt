@@ -12,7 +12,6 @@ import com.gabedev.mangako.data.model.MangaWithVolume
 
 @Dao
 interface MangaDAO {
-    // Library methods for user library management
     @Query("SELECT * FROM Manga")
     suspend fun getAllManga(): List<Manga>
 
@@ -26,7 +25,7 @@ interface MangaDAO {
     @Query("SELECT * FROM Manga WHERE title LIKE '%' || :title || '%'")
     suspend fun searchMangaByTitle(title: String): List<Manga>
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertManga(
         manga: Manga
     ): Long

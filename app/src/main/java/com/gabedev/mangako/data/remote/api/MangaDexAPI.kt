@@ -16,7 +16,7 @@ interface MangaDexAPI {
 
     @GET("manga")
     suspend fun searchMangas(
-        @Query("limit") limit: Int = 10,
+        @Query("limit") limit: Int = 5,
         @Query("title") title: String
     ): MangaListResponse
 
@@ -25,6 +25,7 @@ interface MangaDexAPI {
         @Query("limit") limit: Int = 50,
         @Query("manga[]") manga: List<String>,
         @Query("locales[]") locales: List<String> = listOf("ja"),
+        @Query("offset") offset: Int = 0,
         @Query("order[createdAt]") orderCreatedAt: String? = null,
         @Query("order[updatedAt]") orderUpdatedAt: String? = null,
         @Query("order[volume]") orderVolume: String = "asc",

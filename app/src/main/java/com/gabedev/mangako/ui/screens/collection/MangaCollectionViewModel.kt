@@ -23,7 +23,7 @@ class MangaCollectionViewModel (
         viewModelScope.launch {
             _isLoading.value = true
             val result = withContext(Dispatchers.IO) {
-                repository.getAllManga()
+                repository.getMangaOnLibrary()
             }
             _mangaCollection.value = result
             _isLoading.value = false

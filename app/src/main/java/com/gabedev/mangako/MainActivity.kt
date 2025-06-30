@@ -75,8 +75,8 @@ sealed class Screen(
     val title: String,
     val icon: ImageVector,
 ) {
-    data object MyCollection :Screen(
-        "my_collection",
+    data object UserCollection :Screen(
+        "collection",
         "Minha Coleção",
         Icons.Outlined.Book
     )
@@ -113,7 +113,7 @@ fun MainAppNavHost(
     var topBarVisibility by remember { mutableStateOf(true) }
     val searchMode = remember { mutableStateOf(false) }
 
-    val items = listOf(Screen.MyCollection, Screen.Explore, Screen.MangaDetail)
+    val items = listOf(Screen.UserCollection, Screen.Explore, Screen.MangaDetail)
     val itemsNavBar = items.filter { it != Screen.MangaDetail }
 
     val api: MangaDexAPI by lazy {
@@ -167,7 +167,7 @@ fun MainAppNavHost(
                 return@Scaffold
             }
             DynamicTopBar(
-                currentScreen = items.find { it.route == currentRoute } ?: Screen.MyCollection,
+                currentScreen = items.find { it.route == currentRoute } ?: Screen.UserCollection,
                 searchQuery = searchQuery,
                 searchMode = searchMode.value,
                 topBarVisible = topBarVisibility,
@@ -211,7 +211,7 @@ fun MainAppNavHost(
                         selected = currentRoute == screen.route,
                         onClick = {
                             navController.navigate(screen.route) {
-                                if (screen == Screen.MyCollection) {
+                                if (screen == Screen.UserCollection) {
                                     searchMode.value = false
                                 }
                                 popUpTo(navController.graph.startDestinationId) { saveState = false }
@@ -220,7 +220,7 @@ fun MainAppNavHost(
                             }
                         },
                         icon = {
-                            if (screen == Screen.MyCollection) {
+                            if (screen == Screen.UserCollection) {
                                 Icon(screen.icon, contentDescription = screen.title)
                             } else {
                                 AnimatedIcon(
@@ -237,11 +237,11 @@ fun MainAppNavHost(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.MyCollection.route,
+            startDestination = Screen.UserCollection.route,
             modifier = Modifier.padding(innerPadding)
         ) {
             // 2.0 HomeScreen
-            composable(Screen.MyCollection.route) {
+            composable(Screen.UserCollection.route) {
                 MangaCollection(
                     repository = localRepository,
                     onMangaClick = { manga ->
@@ -292,8 +292,8 @@ fun MainAppNavHost(
 
                 MangaDetail(
                     manga = Json.decodeFromString<Manga>(mangaJson),
-                    api = api,
-                    repository = localRepository,
+                    apiRepository = mangaRepository,
+                    localRepository = localRepository,
                 )
             }
         }
