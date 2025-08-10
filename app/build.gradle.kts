@@ -1,9 +1,14 @@
+import java.io.FileInputStream
 import java.util.Properties
 
-val keystoreProperties = Properties().apply {
+// Carrega as propriedades de assinatura se elas existirem no ambiente
+val keystoreProperties = Properties()
+if (System.getenv("KEYSTORE_PATH") != null) {
+    keystoreProperties.load(FileInputStream(System.getenv("KEYSTORE_PATH")))
+} else {
     val file = rootProject.file("keystore.properties")
     if (file.exists()) {
-        file.inputStream().use { load(it) }
+        file.inputStream().use { keystoreProperties.load(it) }
     } else {
         println("⚠️ Arquivo keystore.properties não encontrado.")
     }
@@ -20,6 +25,7 @@ plugins {
 android {
     signingConfigs {
         create("release") {
+
             storeFile = file(keystoreProperties["storeFile"] as String)
             storePassword = keystoreProperties["storePassword"] as String
             keyAlias = keystoreProperties["keyAlias"] as String
@@ -28,7 +34,7 @@ android {
     }
 
     namespace = "com.gabedev.mangako"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.gabedev.mangako"
@@ -117,15 +123,15 @@ dependencies {
     implementation(libs.androidx.material.icons.extended)
 
     // Animation graphics
-    implementation("androidx.compose.animation:animation-graphics:1.5.0")
+    implementation(libs.androidx.animation.graphics)
 
     // Material 3
     implementation("com.google.android.material:material:1.12.0")
 
     // ROOM database
-    implementation("androidx.room:room-runtime:2.7.2")
-    kapt("androidx.room:room-compiler:2.7.2")
+    implementation(libs.androidx.room.runtime)
+    kapt(libs.androidx.room.compiler)
 
     // DataStore for preferences
-    implementation("androidx.datastore:datastore-preferences:1.1.7")
+    implementation(libs.androidx.datastore.preferences)
 }
