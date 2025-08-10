@@ -1,18 +1,18 @@
 import java.io.FileInputStream
 import java.util.Properties
 
-// Carrega as propriedades de assinatura se elas existirem no ambiente
 val keystoreProperties = Properties()
-if (System.getenv("KEYSTORE_PATH") != null) {
-    keystoreProperties.load(FileInputStream(System.getenv("KEYSTORE_PATH")))
-} else {
-    val file = rootProject.file("keystore.properties")
-    if (file.exists()) {
-        file.inputStream().use { keystoreProperties.load(it) }
-    } else {
-        println("⚠️ Arquivo keystore.properties não encontrado.")
-    }
-}
+
+// Tenta carregar as propriedades das variáveis de ambiente primeiro
+val storeFileEnv = System.getenv("KEYSTORE_PATH")
+val storePasswordEnv = System.getenv("STORE_PASSWORD")
+val keyAliasEnv = System.getenv("KEY_ALIAS")
+val keyPasswordEnv = System.getenv("KEY_PASSWORD")
+
+val isEnvConfigured = !storeFileEnv.isNullOrBlank() &&
+        !storePasswordEnv.isNullOrBlank() &&
+        !keyAliasEnv.isNullOrBlank() &&
+        !keyPasswordEnv.isNullOrBlank()
 
 plugins {
     alias(libs.plugins.android.application)
@@ -22,14 +22,26 @@ plugins {
     id("kotlin-kapt")
 }
 
+// Se as variáveis de ambiente não estiverem completas, tenta o arquivo local
+if (!isEnvConfigured) {
+    val file = rootProject.file("keystore.properties")
+    if (file.exists()) {
+        file.inputStream().use { keystoreProperties.load(it) }
+    } else {
+        println("⚠️ Arquivo keystore.properties não encontrado e variáveis de ambiente ausentes. A build de release pode falhar.")
+    }
+}
+
 android {
     signingConfigs {
         create("release") {
+            // Usa as variáveis de ambiente, se existirem. Caso contrário, usa as propriedades do arquivo.
+            val storeFileProperty = storeFileEnv ?: keystoreProperties.getProperty("storeFile")
+            storeFile = storeFileProperty?.let { file(it) }
 
-            storeFile = file(keystoreProperties["storeFile"] as String)
-            storePassword = keystoreProperties["storePassword"] as String
-            keyAlias = keystoreProperties["keyAlias"] as String
-            keyPassword = keystoreProperties["keyPassword"] as String
+            storePassword = storePasswordEnv ?: keystoreProperties.getProperty("storePassword")
+            keyAlias = keyAliasEnv ?: keystoreProperties.getProperty("keyAlias")
+            keyPassword = keyPasswordEnv ?: keystoreProperties.getProperty("keyPassword")
         }
     }
 
@@ -56,9 +68,9 @@ android {
         }
 
         getByName("release") {
-            isMinifyEnabled = false // ou true, se for usar ProGuard
             signingConfig = signingConfigs.getByName("release")
-            // proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            isMinifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
     compileOptions {
@@ -126,7 +138,7 @@ dependencies {
     implementation(libs.androidx.animation.graphics)
 
     // Material 3
-    implementation("com.google.android.material:material:1.12.0")
+    implementation(libs.material)
 
     // ROOM database
     implementation(libs.androidx.room.runtime)
