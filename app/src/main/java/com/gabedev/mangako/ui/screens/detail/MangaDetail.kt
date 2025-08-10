@@ -13,13 +13,19 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FormatListBulleted
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -36,16 +42,24 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.gabedev.mangako.data.local.getConfigText
+import com.gabedev.mangako.data.local.saveConfigText
 import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.repository.LibraryRepository
 import com.gabedev.mangako.data.repository.MangaDexRepository
 import com.gabedev.mangako.ui.components.ConfirmDialog
 import com.gabedev.mangako.ui.components.MangaCard
 import com.gabedev.mangako.ui.components.MangaCoverImage
+import com.gabedev.mangako.ui.components.MangaListItem
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @Composable
 fun MangaDetail(
@@ -54,6 +68,9 @@ fun MangaDetail(
     localRepository: LibraryRepository,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val viewModeFlow = remember { context.getConfigText() }
+    val viewMode by viewModeFlow.collectAsState(initial = "grid")
     val viewModel: MangaDetailViewModel = viewModel(
         factory = MangaDetailViewModelFactory(apiRepository, localRepository, manga)
     )
@@ -64,11 +81,30 @@ fun MangaDetail(
     val isMangaInLibrary by viewModel.isMangaInLibrary.collectAsState()
     val listState = rememberLazyGridState()
     val snackbarHostState = remember { SnackbarHostState() }
+    var callBackFunction by remember { mutableStateOf<() -> Unit>({}) }
+    var showDialogMangaInLibrary by remember { mutableStateOf(false) }
+    if (showDialogMangaInLibrary) {
+        ConfirmDialog(
+            title = "Manga não foi adicionado a biblioteca",
+            text = "Deseja adicionar este manga à sua biblioteca?",
+            onConfirm = {
+                viewModel.addMangaToLibrary(manga)
+                callBackFunction()
+                showDialogMangaInLibrary = false
+            },
+            onDismiss = {
+                callBackFunction = {}
+                showDialogMangaInLibrary = false
+            },
+        )
+    }
     var showDialog by remember { mutableStateOf(false) }
     if (showDialog) {
         ConfirmDialog(
             onConfirm = {
                 viewModel.removeMangaFromLibrary()
+                // Atualiza lista de volumes após remoção
+                viewModel.refreshCoverList()
                 showDialog = false
             },
             onDismiss = {
@@ -141,7 +177,7 @@ fun MangaDetail(
                 .padding(contentPadding)
                 .padding(horizontal = 16.dp),
             state = listState,
-            columns = GridCells.Fixed(3),
+            columns = GridCells.Fixed(if (viewMode == "grid") 3 else 1),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -158,21 +194,26 @@ fun MangaDetail(
             }
             item(span = { GridItemSpan(maxLineSpan) }) {
                 if (isMangaInLibrary) {
-                    Button(
+                    OutlinedButton(
+                        shape = RoundedCornerShape(16.dp),
                         onClick = {
                             showDialog = true
                         }
                     ) {
                         Icon(
+                            modifier = Modifier.padding(8.dp),
                             imageVector = Icons.Default.Close,
                             contentDescription = "Remover manga da coleção",
                         )
                         Text(
+                            modifier = Modifier.padding(8.dp),
                             text = "Remover manga da coleção",
+                            fontSize = 18.sp,
                         )
                     }
                 } else {
                     Button(
+                        shape = RoundedCornerShape(16.dp),
                         onClick = {
                             viewModel.addMangaToLibrary(
                                 manga
@@ -180,11 +221,55 @@ fun MangaDetail(
                         }
                     ) {
                         Icon(
+                            modifier = Modifier.padding(8.dp),
                             imageVector = Icons.Default.Add,
                             contentDescription = "Adicionar à coleção"
                         )
                         Text(
+                            modifier = Modifier.padding(8.dp),
                             text = "Adicionar à coleção",
+                            fontSize = 18.sp,
+                        )
+                    }
+                }
+            }
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Volumes"
+                    )
+                    Row {
+                        IconButton(
+                            onClick = {
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    context.saveConfigText("list")
+                                }
+                            },
+                            content = {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Default.FormatListBulleted,
+                                    contentDescription = "Visualização em lista",
+                                )
+                            },
+                        )
+                        IconButton(
+                            onClick = {
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    context.saveConfigText("grid")
+                                }
+                            },
+                            content = {
+                                Icon(
+                                    imageVector = Icons.Default.GridView,
+                                    contentDescription = "Visualização em grade",
+                                )
+                            }
                         )
                     }
                 }
@@ -224,19 +309,47 @@ fun MangaDetail(
                 return@LazyVerticalGrid
             } else {
                 items(volumeList) { volume ->
-                    MangaCard(
-                        modifier = Modifier
-                            .clickable(
-                                onClick = {
-                                    viewModel.markVolumeAsOwned(volume)
-                                }
-                            ),
-                        title = manga.title,
-                        coverUrl = volume.coverUrl,
-                        owned = volume.owned,
-                        isVolumeCard = true,
-                        volume = volume.volume,
-                    )
+                    if (viewMode == "grid") {
+                        MangaCard(
+                            modifier = Modifier
+                                .clickable(
+                                    onClick = {
+                                        if (!isMangaInLibrary) {
+                                            callBackFunction = {
+                                                viewModel.toggleVolumeOwned(volume)
+                                            }
+                                            showDialogMangaInLibrary = true
+                                            return@clickable
+                                        }
+                                        viewModel.toggleVolumeOwned(volume)
+                                    }
+                                ),
+                            title = manga.title,
+                            coverUrl = volume.coverUrl,
+                            owned = volume.owned,
+                            isVolumeCard = true,
+                            volume = volume.volume,
+                        )
+                    } else {
+                        MangaListItem(
+                            modifier = Modifier
+                                .clickable(
+                                    onClick = {
+                                        if (!isMangaInLibrary) {
+                                            callBackFunction = {
+                                                viewModel.toggleVolumeOwned(volume)
+                                            }
+                                            showDialogMangaInLibrary = true
+                                            return@clickable
+                                        }
+                                        viewModel.toggleVolumeOwned(volume)
+                                    }
+                                ),
+                            coverUrl = volume.coverUrl,
+                            title = "Volume " + volume.volume,
+                            owned = volume.owned,
+                        )
+                    }
                 }
             }
         }

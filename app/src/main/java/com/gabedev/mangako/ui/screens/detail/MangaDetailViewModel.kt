@@ -54,10 +54,10 @@ class MangaDetailViewModel(
         }
     }
 
-    fun markVolumeAsOwned(volume: Volume) {
+    fun toggleVolumeOwned(volume: Volume) {
         viewModelScope.launch {
             try {
-                val updatedVolume = volume.copy(owned = true)
+                val updatedVolume = volume.copy(owned = volume.owned.not())
                 localRepository.updateVolume(updatedVolume)
                 // Update the volume list in the current state
                 val updatedList = volumeList.value.toMutableList()
@@ -102,6 +102,25 @@ class MangaDetailViewModel(
         }
     }
 
+    fun refreshCoverList() {
+        isVolumeLoading.value = true
+        viewModelScope.launch {
+            try {
+                // Fetch cover list from the API
+                val coverList: List<Volume> = apiRepository.getCoverListByManga(
+                    manga = manga
+                )
+                // Insert the cover list into the local database
+                localRepository.insertVolumeList(coverList)
+                volumeList.value = coverList
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                isVolumeLoading.value = false
+            }
+        }
+    }
+
     fun removeMangaFromLibrary() {
         viewModelScope.launch {
             try {
@@ -136,12 +155,26 @@ class MangaDetailViewModel(
     fun loadMoreVolumes() {
         if (isVolumeLoading.value) return
         viewModelScope.launch {
-            isVolumeLoading.value = true
             currentOffset += limit
+            isVolumeLoading.value = true
+
+            var tmpMangaWithVolumes = localRepository.getMangaWithVolume(manga.id)
+            if (tmpMangaWithVolumes != null && tmpMangaWithVolumes.volumes.isNotEmpty()) {
+                // If local volumes are greater than the current offset, return
+                if (tmpMangaWithVolumes.volumes.size > currentOffset) {
+                    isVolumeLoading.value = false
+                    volumeList.value = tmpMangaWithVolumes.volumes
+                    currentOffset = tmpMangaWithVolumes.volumes.size
+                    return@launch
+                }
+            }
+
             val moreVolumes = apiRepository.getCoverListByManga(
                 manga = manga,
                 offset = currentOffset,
             )
+            // Insert the new volumes into the local database
+            localRepository.insertVolumeList(moreVolumes)
             volumeList.value += moreVolumes
             isVolumeLoading.value = false
         }

@@ -13,6 +13,9 @@ interface VolumeDAO {
     @Query("SELECT * FROM Volume WHERE id = :id")
     suspend fun getVolumeById(id: String): Volume?
 
+    @Query("SELECT * FROM Volume WHERE manga_id = :mangaId")
+    suspend fun getVolumesByMangaId(mangaId: String): List<Volume>
+
     @Insert
     suspend fun insertVolume(
         volume: Volume
