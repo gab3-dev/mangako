@@ -1,4 +1,3 @@
-import java.io.FileInputStream
 import java.util.Properties
 
 val keystoreProperties = Properties()
@@ -19,7 +18,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     kotlin("plugin.serialization") version "1.9.0"
-    id("kotlin-kapt")
+    id("com.google.devtools.ksp")
 }
 
 // Se as variáveis de ambiente não estiverem completas, tenta o arquivo local
@@ -142,7 +141,7 @@ dependencies {
 
     // ROOM database
     implementation(libs.androidx.room.runtime)
-    kapt(libs.androidx.room.compiler)
+    ksp(libs.androidx.room.compiler)
 
     // DataStore for preferences
     implementation(libs.androidx.datastore.preferences)

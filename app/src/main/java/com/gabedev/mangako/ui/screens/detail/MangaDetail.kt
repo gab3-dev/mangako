@@ -47,6 +47,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gabedev.mangako.data.local.getConfigText
 import com.gabedev.mangako.data.local.saveConfigText
@@ -72,6 +73,7 @@ fun MangaDetail(
     val viewModeFlow = remember { context.getConfigText() }
     val viewMode by viewModeFlow.collectAsState(initial = "grid")
     val viewModel: MangaDetailViewModel = viewModel(
+        viewModelStoreOwner = LocalViewModelStoreOwner.current ?: error("No ViewModelStoreOwner found"),
         factory = MangaDetailViewModelFactory(apiRepository, localRepository, manga)
     )
     val volumeList by viewModel.volumeList.collectAsState()
