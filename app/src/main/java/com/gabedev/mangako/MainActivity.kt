@@ -294,6 +294,7 @@ fun MainAppNavHost(
                     manga = Json.decodeFromString<Manga>(mangaJson),
                     apiRepository = mangaRepository,
                     localRepository = localRepository,
+                    backStackEntry = backStackEntry
                 )
             }
         }

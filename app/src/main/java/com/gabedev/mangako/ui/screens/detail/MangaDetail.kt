@@ -18,7 +18,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -47,8 +46,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavBackStackEntry
 import com.gabedev.mangako.data.local.getConfigText
 import com.gabedev.mangako.data.local.saveConfigText
 import com.gabedev.mangako.data.model.Manga
@@ -67,13 +66,14 @@ fun MangaDetail(
     manga: Manga,
     apiRepository: MangaDexRepository,
     localRepository: LibraryRepository,
+    backStackEntry: NavBackStackEntry,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val viewModeFlow = remember { context.getConfigText() }
     val viewMode by viewModeFlow.collectAsState(initial = "grid")
     val viewModel: MangaDetailViewModel = viewModel(
-        viewModelStoreOwner = LocalViewModelStoreOwner.current ?: error("No ViewModelStoreOwner found"),
+        viewModelStoreOwner = backStackEntry,
         factory = MangaDetailViewModelFactory(apiRepository, localRepository, manga)
     )
     val volumeList by viewModel.volumeList.collectAsState()
