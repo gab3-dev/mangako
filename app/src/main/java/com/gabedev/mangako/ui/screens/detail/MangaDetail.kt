@@ -121,8 +121,13 @@ fun MangaDetail(
             if (totalItems == manga.volumeCount) {
                 return@derivedStateOf false // já carregou todos os volumes
             }
-            val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            lastVisible >= totalItems - 3 // quando estiver perto do fim
+            try {
+                val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+                lastVisible >= totalItems - 3 // quando estiver perto do fim
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false // caso ocorra algum erro, não carregar mais
+            }
         }
     }
 

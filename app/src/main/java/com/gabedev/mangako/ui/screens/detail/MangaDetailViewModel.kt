@@ -91,7 +91,7 @@ class MangaDetailViewModel(
                 if (tmpData == null || tmpData.volumes.isEmpty()) {
                     loadCoverList()
                 } else {
-                    volumeList.value = tmpData.volumes
+                    volumeList.value = tmpData.volumes.toList()
                     isVolumeLoading.value = false
                 }
             } catch (e: Exception) {
@@ -112,7 +112,7 @@ class MangaDetailViewModel(
                 )
                 // Insert the cover list into the local database
                 localRepository.insertVolumeList(coverList)
-                volumeList.value = coverList
+                volumeList.value = coverList.toList()
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
@@ -143,7 +143,7 @@ class MangaDetailViewModel(
                 )
                 // Insert the cover list into the local database
                 localRepository.insertVolumeList(coverList)
-                volumeList.value = coverList
+                volumeList.value = coverList.toList()
                 isVolumeLoading.value = false
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -163,7 +163,7 @@ class MangaDetailViewModel(
                 // If local volumes are greater than the current offset, return
                 if (tmpMangaWithVolumes.volumes.size > currentOffset) {
                     isVolumeLoading.value = false
-                    volumeList.value = tmpMangaWithVolumes.volumes
+                    volumeList.value = tmpMangaWithVolumes.volumes.map { it.copy() }
                     currentOffset = tmpMangaWithVolumes.volumes.size
                     return@launch
                 }
@@ -175,7 +175,7 @@ class MangaDetailViewModel(
             )
             // Insert the new volumes into the local database
             localRepository.insertVolumeList(moreVolumes)
-            volumeList.value += moreVolumes
+            volumeList.value += moreVolumes.toList()
             isVolumeLoading.value = false
         }
     }
