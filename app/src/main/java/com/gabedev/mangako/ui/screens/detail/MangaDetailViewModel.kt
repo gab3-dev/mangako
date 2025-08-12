@@ -91,7 +91,7 @@ class MangaDetailViewModel(
                 if (tmpData == null || tmpData.volumes.isEmpty()) {
                     loadCoverList()
                 } else {
-                    volumeList.value = tmpData.volumes.toList()
+                    volumeList.value = tmpData.volumes.map { it.copy() }
                     isVolumeLoading.value = false
                 }
             } catch (e: Exception) {
@@ -112,7 +112,7 @@ class MangaDetailViewModel(
                 )
                 // Insert the cover list into the local database
                 localRepository.insertVolumeList(coverList)
-                volumeList.value = coverList.toList()
+                volumeList.value = coverList.map { it.copy() }
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
@@ -143,7 +143,7 @@ class MangaDetailViewModel(
                 )
                 // Insert the cover list into the local database
                 localRepository.insertVolumeList(coverList)
-                volumeList.value = coverList.toList()
+                volumeList.value = coverList.map { it.copy() }
                 isVolumeLoading.value = false
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -175,7 +175,7 @@ class MangaDetailViewModel(
             )
             // Insert the new volumes into the local database
             localRepository.insertVolumeList(moreVolumes)
-            volumeList.value += moreVolumes.toList()
+            volumeList.value += moreVolumes.map { it.copy() }
             isVolumeLoading.value = false
         }
     }
