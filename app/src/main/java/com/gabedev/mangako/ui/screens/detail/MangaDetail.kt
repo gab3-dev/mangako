@@ -78,6 +78,7 @@ fun MangaDetail(
     )
     val volumeList by viewModel.volumeList.collectAsState()
     val isCoverLoading by viewModel.isVolumeLoading.collectAsState()
+    val canLoadMore by viewModel.noMoreVolume.collectAsState()
     val addResult by viewModel.addResult.collectAsState()
     val removeResult by viewModel.removeResult.collectAsState()
     val isMangaInLibrary by viewModel.isMangaInLibrary.collectAsState()
@@ -118,7 +119,7 @@ fun MangaDetail(
     val shouldLoadMore = remember {
         derivedStateOf {
             val totalItems = listState.layoutInfo.totalItemsCount
-            if (totalItems == manga.volumeCount) {
+            if (totalItems == manga.volumeCount || canLoadMore) {
                 return@derivedStateOf false // já carregou todos os volumes
             }
             try {

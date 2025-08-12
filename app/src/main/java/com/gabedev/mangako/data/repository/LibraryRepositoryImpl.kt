@@ -1,31 +1,62 @@
 package com.gabedev.mangako.data.repository
 
+import com.gabedev.mangako.core.FileLogger
 import com.gabedev.mangako.data.local.LocalDatabase
 import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.model.MangaWithVolume
 import com.gabedev.mangako.data.model.Volume
 
-class LibraryRepositoryImpl (
-    private val db: LocalDatabase
+class LibraryRepositoryImpl(
+    private val db: LocalDatabase,
+    private val logger: FileLogger
 ) : LibraryRepository {
     override suspend fun getManga(mangaId: String): Manga? {
-        return db.mangaDao().getMangaById(mangaId)
+        try {
+            if (mangaId.isBlank()) {
+                return null
+            }
+            return db.mangaDao().getMangaById(mangaId)
+        } catch (e: Exception) {
+            logger.logError(e)
+            return null
+        }
     }
 
     override suspend fun getAllManga(): List<Manga> {
-        return db.mangaDao().getAllManga()
+        try {
+            return db.mangaDao().getAllManga()
+        } catch (e: Exception) {
+            logger.logError(e)
+            return emptyList()
+        }
     }
 
     override suspend fun getMangaOnLibrary(): List<Manga> {
-       return db.mangaDao().getAllManga().filter { it.isOnUserLibrary }
+        return db.mangaDao().getAllManga().filter { it.isOnUserLibrary }
     }
 
     override suspend fun getMangaWithVolume(mangaId: String): MangaWithVolume? {
-        return db.mangaDao().getMangaWithVolumeById(mangaId)
+        try {
+            if (mangaId.isBlank()) {
+                return null
+            }
+            return db.mangaDao().getMangaWithVolumeById(mangaId)
+        } catch (e: Exception) {
+            logger.logError(e)
+            return null
+        }
     }
 
     override suspend fun searchManga(title: String): List<Manga> {
-        return db.mangaDao().searchMangaByTitle(title)
+        try {
+            if (title.isBlank()) {
+                return emptyList()
+            }
+            return db.mangaDao().searchMangaByTitle(title)
+        } catch (e: Exception) {
+            logger.logError(e)
+            return emptyList()
+        }
     }
 
     override suspend fun insertManga(manga: Manga) {
@@ -59,10 +90,20 @@ class LibraryRepositoryImpl (
     }
 
     override suspend fun insertVolumeList(volumeList: List<Volume>) {
-        db.volumeDao().insertVolumeList(volumeList)
+        if (volumeList.isEmpty()) return
+        try {
+            db.volumeDao().insertVolumeList(volumeList)
+        } catch (e: Exception) {
+            logger.logError(e)
+        }
     }
 
     override suspend fun updateVolume(volume: Volume) {
         db.volumeDao().updateVolume(volume)
+    }
+
+    override fun log(message: Exception) {
+        message.printStackTrace()
+        logger.log(message.toString())
     }
 }

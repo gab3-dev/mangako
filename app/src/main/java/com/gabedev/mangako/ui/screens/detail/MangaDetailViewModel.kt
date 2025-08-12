@@ -22,6 +22,7 @@ class MangaDetailViewModel(
     val removeResult: StateFlow<Result<Unit>?> = _removeResult
     val isMangaInLibrary = MutableStateFlow(false)
     val volumeList = MutableStateFlow<List<Volume>>(emptyList())
+    val noMoreVolume = MutableStateFlow(false)
     private var currentOffset = 0
     private val limit = 50
 
@@ -50,6 +51,7 @@ class MangaDetailViewModel(
                 isMangaInLibrary.value = true
             } catch (e: Exception) {
                 _addResult.value = Result.failure(e)
+                localRepository.log(e)
             }
         }
     }
@@ -67,7 +69,7 @@ class MangaDetailViewModel(
                     volumeList.value = updatedList
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                localRepository.log(e)
             }
         }
     }
@@ -78,6 +80,7 @@ class MangaDetailViewModel(
                 isMangaInLibrary.value = localRepository.isMangaInLibrary(manga.id)
             } catch (e: Exception) {
                 isMangaInLibrary.value = false
+                localRepository.log(e)
             }
         }
     }
@@ -146,7 +149,7 @@ class MangaDetailViewModel(
                 volumeList.value = coverList.map { it.copy() }
                 isVolumeLoading.value = false
             } catch (e: Exception) {
-                e.printStackTrace()
+                localRepository.log(e)
                 isVolumeLoading.value = false
             }
         }
@@ -158,12 +161,18 @@ class MangaDetailViewModel(
             currentOffset += limit
             isVolumeLoading.value = true
 
-            var tmpMangaWithVolumes = localRepository.getMangaWithVolume(manga.id)
+            val tmpMangaWithVolumes = localRepository.getMangaWithVolume(manga.id)
             if (tmpMangaWithVolumes != null && tmpMangaWithVolumes.volumes.isNotEmpty()) {
                 // If local volumes are greater than the current offset, return
                 if (tmpMangaWithVolumes.volumes.size > currentOffset) {
                     isVolumeLoading.value = false
-                    volumeList.value = tmpMangaWithVolumes.volumes.map { it.copy() }
+                    try {
+                        volumeList.value = tmpMangaWithVolumes.volumes.map {
+                            it.copy()
+                        }
+                    } catch (e: Exception) {
+                        localRepository.log(e)
+                    }
                     currentOffset = tmpMangaWithVolumes.volumes.size
                     return@launch
                 }
@@ -174,8 +183,17 @@ class MangaDetailViewModel(
                 offset = currentOffset,
             )
             // Insert the new volumes into the local database
+            if (moreVolumes.isEmpty()) {
+                isVolumeLoading.value = false
+                noMoreVolume.value = true
+                return@launch
+            }
             localRepository.insertVolumeList(moreVolumes)
-            volumeList.value += moreVolumes.map { it.copy() }
+            try {
+                volumeList.value += moreVolumes.map { it.copy() }
+            } catch (e: Exception) {
+                localRepository.log(e)
+            }
             isVolumeLoading.value = false
         }
     }

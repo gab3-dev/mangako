@@ -32,6 +32,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.gabedev.mangako.core.FileLogger
 import com.gabedev.mangako.data.local.MangaKoDatabase
 import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.remote.api.MangaDexAPI
@@ -57,12 +58,16 @@ class MainActivity : ComponentActivity() {
         // Cria uma instância do banco de dados local
         val database = MangaKoDatabase(applicationContext)
 
+        // Instancia do FileLogger
+        val fileLogger = FileLogger(applicationContext)
+
         enableEdgeToEdge()
         setContent {
             MangaKōTheme {
                 MainAppNavHost(
                     navController = rememberNavController(),
                     database = database,
+                    logger = fileLogger,
                     modifier = Modifier
                 )
             }
@@ -102,6 +107,7 @@ sealed class Screen(
 fun MainAppNavHost(
     navController: NavHostController,
     database: MangaKoDatabase,
+    logger: FileLogger,
     modifier: Modifier
 ) {
     // Variável para armazenar a consulta de busca
@@ -124,8 +130,8 @@ fun MainAppNavHost(
             .create(MangaDexAPI::class.java)
     }
 
-    val mangaRepository = MangaDexRepositoryImpl(api)
-    val localRepository = remember { LibraryRepositoryImpl(database.getDatabase()) }
+    val mangaRepository = MangaDexRepositoryImpl(api, logger)
+    val localRepository = LibraryRepositoryImpl(db = database.getDatabase(), logger)
 
     // Para armazenar o texto com debounce
     var debouncedQuery by remember { mutableStateOf("") }
@@ -143,7 +149,7 @@ fun MainAppNavHost(
             mangaList = try {
                 mangaRepository.searchManga(debouncedQuery)
             } catch (e: Exception) {
-                e.printStackTrace()
+                logger.logError(e)
                 emptyList()
             } finally {
                 isLoading = false
