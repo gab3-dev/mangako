@@ -17,23 +17,42 @@ class MangaDexRepositoryImpl(
     override suspend fun searchManga(title: String): List<Manga> {
         try {
             val mangaList = api.searchMangas(title = title).data.map { dto ->
-                val author = api.getAuthorById(dto.relationships.find {
-                    it.type == "author"
-                }?.id.orEmpty())
-                val cover = api.getCoverById(dto.relationships.find {
-                    it.type == "cover_art"
-                }?.id.orEmpty())
-                val coverTotal = api.getCover(manga = listOf(dto.id), limit = 1).total
+                val author = try {
+                    api.getAuthorById(dto.relationships.find {
+                        it.type == "author"
+                    }?.id.orEmpty())
+                } catch (e: Exception) {
+                    logger.logError(e)
+                    null
+                }
+                val cover = try {
+                    api.getCoverById(dto.relationships.find {
+                        it.type == "cover_art"
+                    }?.id.orEmpty())
+                } catch (e: Exception) {
+                    logger.logError(e)
+                    null
+                }
+                val coverTotal = try {
+                    api.getCover(manga = listOf(dto.id), limit = 1).total
+                } catch (e: Exception) {
+                    logger.logError(e)
+                    0 // If cover count fails, default to 0
+                }
                 Manga(
                     id = dto.id,
                     title = dto.attributes.title["en"].orEmpty(),
                     altTitle = dto.attributes.altTitles.find { it.containsKey("en") }?.get("en"),
                     type = dto.type,
-                    coverId = cover.data.id,
-                    coverFileName = cover.data.attributes.fileName,
-                    coverUrl = handleCoverUrl(dto.id, cover.data.attributes.fileName),
-                    authorId = author.data.id,
-                    author = author.data.attributes.name,
+                    coverId = cover?.data?.id,
+                    coverFileName = cover?.data?.attributes?.fileName,
+                    coverUrl = if (cover != null) {
+                        handleCoverUrl(dto.id, cover.data.attributes.fileName)
+                    } else {
+                        "https://uploads.mangadex.org/covers/${dto.id}/default-cover.png"
+                    },
+                    authorId = author?.data?.id,
+                    author = author?.data?.attributes?.name,
                     description = dto.attributes.description["pt"]
                         ?: dto.attributes.description["en"] ?: "Nenhuma descrição disponível",
                     status = dto.attributes.status,
@@ -63,7 +82,8 @@ class MangaDexRepositoryImpl(
             coverUrl = handleCoverUrl(dto.id, cover.data.attributes.fileName),
             authorId = author.data.id,
             author = author.data.attributes.name,
-            description = dto.attributes.description["pt"] ?: dto.attributes.description["en"] ?: "Nenhuma descrição disponível",
+            description = dto.attributes.description["pt"] ?: dto.attributes.description["en"]
+            ?: "Nenhuma descrição disponível",
             status = dto.attributes.status,
             volumeCount = coverTotal,
         )

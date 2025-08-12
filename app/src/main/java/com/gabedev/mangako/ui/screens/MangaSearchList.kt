@@ -20,11 +20,11 @@ import com.gabedev.mangako.ui.components.MangaSearchItem
 
 @Composable
 fun MangaSearchScreen(
+    modifier: Modifier = Modifier,
     mangas: List<Manga> = emptyList(),
     isLoading: Boolean = false,
     updateTopBarVisibility: (Boolean) -> Unit = {},
-    onResultClick: (manga: Manga) -> Unit,
-    modifier: Modifier = Modifier
+    onResultClick: (manga: Manga) -> Unit
 ) {
     Surface(
         modifier = modifier
