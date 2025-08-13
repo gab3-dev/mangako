@@ -44,8 +44,9 @@ import com.gabedev.mangako.ui.screens.MangaSearchScreen
 import com.gabedev.mangako.ui.screens.collection.MangaCollection
 import com.gabedev.mangako.ui.screens.detail.MangaDetail
 import com.gabedev.mangako.ui.theme.MangaKōTheme
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.serialization.encodeToString
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -80,16 +81,18 @@ sealed class Screen(
     val title: String,
     val icon: ImageVector,
 ) {
-    data object UserCollection :Screen(
+    data object UserCollection : Screen(
         "collection",
         "Minha Coleção",
         Icons.Outlined.Book
     )
+
     data object Explore : Screen(
         "explore",
         "Explorar",
         Icons.Outlined.Book
     )
+
     data object MangaDetail : Screen(
         "detail/{manga}",
         "Detalhes",
@@ -144,19 +147,26 @@ fun MainAppNavHost(
 
     // Faz a chamada à API apenas quando o texto com debounce muda
     LaunchedEffect(debouncedQuery) {
-        if (debouncedQuery.isNotBlank()) {
-            isLoading = true
-            mangaList = try {
-                mangaRepository.searchManga(debouncedQuery)
-            } catch (e: Exception) {
-                logger.logError(e)
-                emptyList()
-            } finally {
-                isLoading = false
-            }
-        } else {
+        if (debouncedQuery.isBlank()) {
             mangaList = emptyList()
+            return@LaunchedEffect
         }
+
+        isLoading = true
+        val result = try {
+            logger.log("Searching for manga with query: $debouncedQuery")
+            withContext(Dispatchers.IO) {
+                mangaRepository.searchManga(debouncedQuery)
+            }
+        } catch (e: Exception) {
+            logger.logError(e)
+            emptyList()
+        } finally {
+            isLoading = false
+        }
+
+        mangaList = result
+        logger.log("Search completed with ${mangaList.size} results")
     }
 
     Scaffold(
@@ -220,7 +230,9 @@ fun MainAppNavHost(
                                 if (screen == Screen.UserCollection) {
                                     searchMode.value = false
                                 }
-                                popUpTo(navController.graph.startDestinationId) { saveState = false }
+                                popUpTo(navController.graph.startDestinationId) {
+                                    saveState = false
+                                }
                                 launchSingleTop = true
                                 restoreState = false
                             }
@@ -277,9 +289,11 @@ fun MainAppNavHost(
                     onResultClick = { manga ->
                         searchMode.value = false // Desativa o modo de busca
 
-                        navController.navigate(Screen.MangaDetail.createRoute(
-                            manga = manga
-                        )) {
+                        navController.navigate(
+                            Screen.MangaDetail.createRoute(
+                                manga = manga
+                            )
+                        ) {
                             launchSingleTop = true
                         }
                     },
