@@ -1,5 +1,6 @@
 package com.gabedev.mangako.ui.components
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -24,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.gabedev.mangako.data.model.Manga
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun MangaSearchItem(
     manga: Manga,
@@ -44,7 +47,7 @@ fun MangaSearchItem(
             modifier = Modifier
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Card(
                 modifier = Modifier
@@ -59,7 +62,7 @@ fun MangaSearchItem(
                             .width(192.dp)
                             .padding(64.dp),
                         strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 } else {
                     MangaCoverImage(
@@ -75,7 +78,7 @@ fun MangaSearchItem(
                     .fillMaxWidth()
                     .heightIn(min = 20.dp)
                     .height(IntrinsicSize.Min),
-                verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+                verticalArrangement = Arrangement.Center,
             ) {
                 Text(
                     text = title,

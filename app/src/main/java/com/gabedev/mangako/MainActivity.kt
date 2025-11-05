@@ -17,7 +17,6 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,6 +32,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.gabedev.mangako.core.FileLogger
+import com.gabedev.mangako.data.local.LocalDatabase
 import com.gabedev.mangako.data.local.MangaKoDatabase
 import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.remote.api.MangaDexAPI
@@ -40,13 +40,10 @@ import com.gabedev.mangako.data.repository.LibraryRepositoryImpl
 import com.gabedev.mangako.data.repository.MangaDexRepositoryImpl
 import com.gabedev.mangako.ui.components.AnimatedIcon
 import com.gabedev.mangako.ui.components.DynamicTopBar
-import com.gabedev.mangako.ui.screens.MangaSearchScreen
 import com.gabedev.mangako.ui.screens.collection.MangaCollection
 import com.gabedev.mangako.ui.screens.detail.MangaDetail
+import com.gabedev.mangako.ui.screens.search_list.MangaSearchScreen
 import com.gabedev.mangako.ui.theme.MangaKōTheme
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -83,7 +80,7 @@ sealed class Screen(
 ) {
     data object UserCollection : Screen(
         "collection",
-        "Minha Coleção",
+        "Biblioteca",
         Icons.Outlined.Book
     )
 
@@ -115,16 +112,12 @@ fun MainAppNavHost(
 ) {
     // Variável para armazenar a consulta de busca
     var searchQuery by remember { mutableStateOf("") }
-    // Variável para armazenar a lista de mangas
-    var mangaList by remember { mutableStateOf<List<Manga>>(emptyList()) }
-
-    var isLoading by remember { mutableStateOf(false) }
-    var topBarVisibility by remember { mutableStateOf(true) }
     val searchMode = remember { mutableStateOf(false) }
 
     val items = listOf(Screen.UserCollection, Screen.Explore, Screen.MangaDetail)
     val itemsNavBar = items.filter { it != Screen.MangaDetail }
 
+    val db: LocalDatabase = database.getDatabase()
     val api: MangaDexAPI by lazy {
         Retrofit.Builder()
             .baseUrl("https://api.mangadex.org/")
@@ -134,40 +127,7 @@ fun MainAppNavHost(
     }
 
     val mangaRepository = MangaDexRepositoryImpl(api, logger)
-    val localRepository = LibraryRepositoryImpl(db = database.getDatabase(), logger)
-
-    // Para armazenar o texto com debounce
-    var debouncedQuery by remember { mutableStateOf("") }
-
-    // Aplica debounce quando o usuário digita
-    LaunchedEffect(searchQuery) {
-        delay(500) // Espera 500ms sem mudanças
-        debouncedQuery = searchQuery.trim()
-    }
-
-    // Faz a chamada à API apenas quando o texto com debounce muda
-    LaunchedEffect(debouncedQuery) {
-        if (debouncedQuery.isBlank()) {
-            mangaList = emptyList()
-            return@LaunchedEffect
-        }
-
-        isLoading = true
-        val result = try {
-            logger.log("Searching for manga with query: $debouncedQuery")
-            withContext(Dispatchers.IO) {
-                mangaRepository.searchManga(debouncedQuery)
-            }
-        } catch (e: Exception) {
-            logger.logError(e)
-            emptyList()
-        } finally {
-            isLoading = false
-        }
-
-        mangaList = result
-        logger.log("Search completed with ${mangaList.size} results")
-    }
+    val localRepository = LibraryRepositoryImpl(db, logger)
 
     Scaffold(
         contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0.dp),
@@ -178,7 +138,7 @@ fun MainAppNavHost(
                 ?.destination
                 ?.route
 
-            if (currentRoute == Screen.MangaDetail.route) {
+            if (currentRoute == Screen.MangaDetail.route || currentRoute == Screen.Explore.route) {
                 // Não exibe a barra de topo na tela de detalhes
                 return@Scaffold
             }
@@ -186,7 +146,6 @@ fun MainAppNavHost(
                 currentScreen = items.find { it.route == currentRoute } ?: Screen.UserCollection,
                 searchQuery = searchQuery,
                 searchMode = searchMode.value,
-                topBarVisible = topBarVisibility,
                 onSearchIconClick = {
                     // Alterna o modo de busca
                     searchMode.value = !searchMode.value
@@ -205,13 +164,10 @@ fun MainAppNavHost(
                 },
                 onQueryChange = { query ->
                     searchQuery = query
-                    if (query.isEmpty()) {
-                        mangaList = emptyList() // Limpa a lista se a busca estiver vazia
-                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 8.dp)
+                    .padding(horizontal = 20.dp, vertical = 10.dp)
             )
         },
         bottomBar = {
@@ -281,11 +237,7 @@ fun MainAppNavHost(
             // 2.1 MangaSearchScreen
             composable(Screen.Explore.route) {
                 MangaSearchScreen(
-                    mangas = mangaList,
-                    isLoading = isLoading,
-                    updateTopBarVisibility = { visible ->
-                        topBarVisibility = visible
-                    },
+                    apiRepository = mangaRepository,
                     onResultClick = { manga ->
                         searchMode.value = false // Desativa o modo de busca
 

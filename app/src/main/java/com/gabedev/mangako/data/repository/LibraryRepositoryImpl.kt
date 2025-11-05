@@ -104,6 +104,6 @@ class LibraryRepositoryImpl(
 
     override fun log(message: Exception) {
         message.printStackTrace()
-        logger.log(message.toString())
+        logger.log("Library LOG: $message")
     }
 }

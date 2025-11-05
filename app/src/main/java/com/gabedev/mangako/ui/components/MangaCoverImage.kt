@@ -4,9 +4,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.CircularWavyProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,6 +28,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.gabedev.mangako.R
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun MangaCoverImage(
     imageUrl: String?, // Pode ser nulo se não tiver cover
@@ -36,7 +39,7 @@ fun MangaCoverImage(
 
     Box(
         modifier = modifier
-            .aspectRatio(2f / 3f) // Capa geralmente é 2:3
+            .aspectRatio(2f / 3f) // Cover usually is 2:3
             .clip(RoundedCornerShape(8.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center
@@ -65,9 +68,11 @@ fun MangaCoverImage(
 
             // Adiciona um loading se quiser (opcional)
             if (isLoading) {
-                CircularProgressIndicator(
-                    strokeWidth = 2.dp,
-                    modifier = Modifier.size(24.dp)
+                CircularWavyProgressIndicator(
+                    Modifier
+                        .width(30.dp)
+                        .height(30.dp),
+                    gapSize = 8.dp,
                 )
             }
         }

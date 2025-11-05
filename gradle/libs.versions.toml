@@ -1,5 +1,5 @@
 [versions]
-agp = "8.11.1"
+agp = "8.13.0"
 animationGraphics = "1.8.3"
 coilCompose = "2.7.0"
 converterGson = "3.0.0"
@@ -12,7 +12,7 @@ espressoCore = "3.7.0"
 kotlinxSerializationJson = "1.9.0"
 lifecycleRuntimeKtx = "2.9.2"
 activityCompose = "1.10.1"
-composeBom = "2025.07.00"
+composeBom = "2025.10.01"
 loggingInterceptor = "5.1.0"
 material = "1.7.8"
 materialVersion = "1.12.0"
@@ -22,6 +22,7 @@ navigationFragment = "2.9.3"
 navigationUi = "2.9.3"
 roomRuntime = "2.7.2"
 uiTextGoogleFonts = "1.8.3"
+runtimeSaveable = "1.9.4"
 
 [libraries]
 androidx-animation-graphics = { module = "androidx.compose.animation:animation-graphics", version.ref = "animationGraphics" }
@@ -42,19 +43,20 @@ androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "j
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
-androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version = "2025.11.00" }
 androidx-ui = { group = "androidx.compose.ui", name = "ui" }
 androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
 androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
-androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-material3 = { group = "androidx.compose.material3", name = "material3", version = "1.5.0-alpha08" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 logging-interceptor = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "loggingInterceptor" }
 material = { module = "com.google.android.material:material", version.ref = "materialVersion" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "converterGson" }
 androidx-ui-text-google-fonts = { group = "androidx.compose.ui", name = "ui-text-google-fonts", version.ref = "uiTextGoogleFonts" }
+androidx-compose-runtime-saveable = { group = "androidx.compose.runtime", name = "runtime-saveable", version.ref = "runtimeSaveable" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

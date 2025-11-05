@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.gabedev.mangako.core.Utils
 
 const val MANGA_COVER_PLACEHOLDER = "https://uploads.mangadex.org/covers/d65c0332-3764-4c89-84bd-b1a4e7278ad7/8e8a3e18-948d-402a-a9ea-f62366486771.jpg"
 
@@ -24,7 +25,7 @@ fun MangaCard(
     coverUrl: String,
     owned: Boolean = false,
     isVolumeCard: Boolean = false,
-    volume: Int? = null,
+    volume: Float? = null,
 ) {
     Card(
         modifier = modifier
@@ -48,7 +49,7 @@ fun MangaCard(
         }
         if (isVolumeCard) {
             Text(
-                text = "Volume: ${volume ?: "N/A"}",
+                text = "Volume: ${Utils.handleFloatVolume(volume)}",
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.padding(8.dp),
             )

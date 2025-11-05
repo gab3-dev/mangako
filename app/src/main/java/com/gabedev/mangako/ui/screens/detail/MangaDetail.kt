@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -18,9 +20,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -48,12 +52,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
+import com.gabedev.mangako.core.Utils
 import com.gabedev.mangako.data.local.getConfigText
 import com.gabedev.mangako.data.local.saveConfigText
 import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.repository.LibraryRepository
 import com.gabedev.mangako.data.repository.MangaDexRepository
 import com.gabedev.mangako.ui.components.ConfirmDialog
+import com.gabedev.mangako.ui.components.CustomLoadingIndicator
 import com.gabedev.mangako.ui.components.MangaCard
 import com.gabedev.mangako.ui.components.MangaCoverImage
 import com.gabedev.mangako.ui.components.MangaListItem
@@ -69,6 +75,7 @@ fun MangaDetail(
     backStackEntry: NavBackStackEntry,
     modifier: Modifier = Modifier
 ) {
+    var specialCoverFilter by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val viewModeFlow = remember { context.getConfigText() }
     val viewMode by viewModeFlow.collectAsState(initial = "grid")
@@ -77,6 +84,15 @@ fun MangaDetail(
         factory = MangaDetailViewModelFactory(apiRepository, localRepository, manga)
     )
     val volumeList by viewModel.volumeList.collectAsState()
+    val filteredVolumeList by remember(specialCoverFilter, volumeList) {
+        mutableStateOf(
+            if (specialCoverFilter) {
+                volumeList
+            } else {
+                volumeList.filter { it.volume.toString().contains(".0") }
+            }
+        )
+    }
     val isCoverLoading by viewModel.isVolumeLoading.collectAsState()
     val canLoadMore by viewModel.noMoreVolume.collectAsState()
     val addResult by viewModel.addResult.collectAsState()
@@ -242,6 +258,26 @@ fun MangaDetail(
                 }
             }
             item(span = { GridItemSpan(maxLineSpan) }) {
+                FilterChip(
+                    onClick = { specialCoverFilter = !specialCoverFilter },
+                    label = {
+                        Text("Edições Especiais")
+                    },
+                    selected = specialCoverFilter,
+                    leadingIcon = if (specialCoverFilter) {
+                        {
+                            Icon(
+                                imageVector = Icons.Filled.Done,
+                                contentDescription = "Done icon",
+                                modifier = Modifier.size(FilterChipDefaults.IconSize)
+                            )
+                        }
+                    } else {
+                        null
+                    },
+                )
+            }
+            item(span = { GridItemSpan(maxLineSpan) }) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -282,24 +318,6 @@ fun MangaDetail(
                     }
                 }
             }
-            if (isCoverLoading) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .fillMaxHeight(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        CircularProgressIndicator()
-                        Text(
-                            text = "Carregando capas...",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
             if (volumeList.isEmpty() && !isCoverLoading) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Row(
@@ -316,7 +334,7 @@ fun MangaDetail(
                 }
                 return@LazyVerticalGrid
             } else {
-                items(volumeList) { volume ->
+                items(filteredVolumeList, key = { it.id }) { volume ->
                     if (viewMode == "grid") {
                         MangaCard(
                             modifier = Modifier
@@ -354,8 +372,30 @@ fun MangaDetail(
                                     }
                                 ),
                             coverUrl = volume.coverUrl,
-                            title = "Volume " + volume.volume,
+                            title = "Volume ${Utils.handleFloatVolume(volume.volume)}",
                             owned = volume.owned,
+                        )
+                    }
+                }
+            }
+            if (isCoverLoading) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .fillMaxHeight(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        CustomLoadingIndicator(
+                            Modifier
+                                .width(50.dp)
+                                .height(50.dp)
+                        )
+                        Text(
+                            text = "Carregando capas...",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }

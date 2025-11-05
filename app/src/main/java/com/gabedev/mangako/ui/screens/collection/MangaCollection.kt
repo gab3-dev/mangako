@@ -63,7 +63,7 @@ fun MangaCollection(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
+                        .padding(horizontal = 20.dp, vertical = 10.dp)
                 ) {
                     items(mangaCollection.size) { index ->
                         val manga = mangaCollection[index]
@@ -74,7 +74,7 @@ fun MangaCollection(
                                 ),
                             title = manga.title,
                             coverUrl = manga.coverUrl,
-                            volume = manga.volumeCount,
+                            volume = manga.volumeCount.toFloat(),
                         )
                     }
                 }

@@ -2,7 +2,7 @@ package com.gabedev.mangako.ui.components
 
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.IconButton
-import androidx.compose.material.OutlinedTextField
+import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -23,7 +23,7 @@ fun CustomSearchBar(
     onBackIconClick: () -> Unit,
     onQueryChange: (String) -> Unit,
 ) {
-    OutlinedTextField(
+    TextField(
         value = searchQuery,
         onValueChange = onQueryChange,
         modifier = modifier,

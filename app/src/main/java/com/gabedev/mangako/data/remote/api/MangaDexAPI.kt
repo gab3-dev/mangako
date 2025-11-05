@@ -16,8 +16,9 @@ interface MangaDexAPI {
 
     @GET("manga")
     suspend fun searchMangas(
-        @Query("limit") limit: Int = 5,
-        @Query("title") title: String
+        @Query("limit") limit: Int = 10,
+        @Query("title") title: String,
+        @Query("offset") offset: Int?
     ): MangaListResponse
 
     @GET("cover")
