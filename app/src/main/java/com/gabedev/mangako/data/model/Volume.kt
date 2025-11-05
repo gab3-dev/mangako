@@ -10,6 +10,6 @@ data class Volume(
     @ColumnInfo(name = "manga_id")          val mangaId: String, // chave estrangeira
     @ColumnInfo(name = "title")             val title: String,
     @ColumnInfo(name = "cover_url")         val coverUrl: String,
-    @ColumnInfo(name = "volume")            val volume: Int?,
+    @ColumnInfo(name = "volume")            val volume: Float?,
     @ColumnInfo(name = "owned")             val owned: Boolean = false
 )

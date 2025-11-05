@@ -1,6 +1,7 @@
 package com.gabedev.mangako.data.repository
 
 import com.gabedev.mangako.core.FileLogger
+import com.gabedev.mangako.core.Utils
 import com.gabedev.mangako.data.dto.AuthorResponseDTO
 import com.gabedev.mangako.data.dto.CoverArtResponseDTO
 import com.gabedev.mangako.data.dto.MangaDto
@@ -17,11 +18,11 @@ class MangaDexRepositoryImpl(
         return "https://uploads.mangadex.org/covers/$mangaId/$coverFileName.512.jpg"
     }
 
-    override suspend fun searchManga(title: String): List<Manga> {
+    override suspend fun searchManga(title: String, offset: Int?): List<Manga> {
         val mangaListWithAuthorAndCover = mutableListOf<Manga>()
         val mangaList: List<MangaDto>
         try {
-            val tmp = api.searchMangas(title = title)
+            val tmp = api.searchMangas(title = title, offset = offset)
             logger.log("Search Manga: API response received with $tmp mangas for title '$title'")
             mangaList = tmp.data
         } catch (e: Exception) {
@@ -37,13 +38,13 @@ class MangaDexRepositoryImpl(
             val cover = getCover(api, dto, logger)
             val coverTotal = getCoverTotal(api, dto, logger)
             try {
-                val mangaTitle = dto.attributes.title?.get("pt") ?: dto.attributes.title?.get("en")
+                val mangaTitle = Utils.handleMangaTitle(dto.attributes)
                 mangaListWithAuthorAndCover.add(
                     Manga(
                         id = dto.id,
-                        title = mangaTitle.orEmpty(),
-                        altTitle = dto.attributes.altTitles?.find { it.containsKey("en") }
-                            ?.get("en"),
+                        title = mangaTitle,
+                        altTitle = dto.attributes.altTitles?.find { it.containsKey("ja-ro") }
+                            ?.get("ja-ro"),
                         type = dto.type,
                         coverId = cover?.data?.id,
                         coverFileName = cover?.data?.attributes?.fileName,
@@ -54,9 +55,7 @@ class MangaDexRepositoryImpl(
                         },
                         authorId = author?.data?.id,
                         author = author?.data?.attributes?.name,
-                        description = dto.attributes.description?.get("pt")
-                            ?: dto.attributes.description?.get("en")
-                            ?: "Nenhuma descrição disponível",
+                        description = Utils.handleMangaDescription(dto.attributes),
                         status = dto.attributes.status,
                         volumeCount = coverTotal,
                     )
@@ -65,11 +64,9 @@ class MangaDexRepositoryImpl(
                 logger.logError(Throwable(message = "Error while try to add manga data, to the final list: $e"))
                 Manga(
                     id = dto.id,
-                    title = dto.attributes.title?.get("pt")
-                        ?: dto.attributes.title?.get("en")
-                        ?: "Título não encontrado",
+                    title = Utils.handleMangaTitle(dto.attributes),
                     coverUrl = "https://uploads.mangadex.org/covers/${dto.id}/default-cover.png",
-                    description = "Nenhuma descrição disponível"
+                    description = Utils.handleMangaDescription(dto.attributes)
                 )
             }
         }
@@ -89,18 +86,14 @@ class MangaDexRepositoryImpl(
         val coverTotal = api.getCover(manga = listOf(dto.id), limit = 1).total
         return Manga(
             id = dto.id,
-            title = dto.attributes.title?.get("pt")
-                ?: dto.attributes.title?.get("en")
-                ?: "",
-            altTitle = dto.attributes.altTitles?.find { it.containsKey("en") }?.get("en"),
+            title = Utils.handleMangaTitle(dto.attributes),
+            altTitle = dto.attributes.altTitles?.find { it.containsKey("ja-ro") }?.get("ja-ro"),
             coverId = cover.data.id,
             coverFileName = cover.data.attributes.fileName,
             coverUrl = handleCoverUrl(dto.id, cover.data.attributes.fileName),
             authorId = author.data.id,
             author = author.data.attributes.name,
-            description = dto.attributes.description?.get("pt")
-                ?: dto.attributes.description?.get("en")
-                ?: "Nenhuma descrição disponível",
+            description = Utils.handleMangaDescription(dto.attributes),
             status = dto.attributes.status,
             volumeCount = coverTotal,
         )
@@ -110,14 +103,12 @@ class MangaDexRepositoryImpl(
         try {
             val coverResponse =
                 api.getCover(manga = listOf(manga.id), offset = offset ?: 0, limit = limit)
-            val covers = coverResponse.data.filter {
-                it.attributes.volume.toIntOrNull() != null
-            }.map { cover ->
+            val covers = coverResponse.data.map { cover ->
                 Volume(
                     id = cover.id,
                     mangaId = manga.id,
                     title = manga.title,
-                    volume = cover.attributes.volume.toIntOrNull(),
+                    volume = cover.attributes.volume.toFloatOrNull(),
                     coverUrl = handleCoverUrl(manga.id, cover.attributes.fileName),
                     owned = false
                 )
@@ -190,5 +181,10 @@ class MangaDexRepositoryImpl(
         }
         logger.log("Cover total fetched successfully: $coverTotal for manga: ${dto.id}")
         return coverTotal
+    }
+
+    override fun log(message: Exception) {
+        message.printStackTrace()
+        logger.log("MangaDex LOG: $message")
     }
 }
