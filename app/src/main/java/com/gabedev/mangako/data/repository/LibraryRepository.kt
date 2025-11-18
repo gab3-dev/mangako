@@ -17,5 +17,6 @@ interface LibraryRepository {
     suspend fun isMangaInLibrary(mangaId: String): Boolean
     suspend fun insertVolumeList(volumeList: List<Volume>)
     suspend fun updateVolume(volume: Volume)
+    suspend fun updateVolumeList(volumeList: List<Volume>)
     fun log(message: Exception)
 }

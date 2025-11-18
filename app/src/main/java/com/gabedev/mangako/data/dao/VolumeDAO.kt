@@ -31,6 +31,11 @@ interface VolumeDAO {
         volume: Volume
     ): Int
 
+    @Update
+    suspend fun updateVolumeList(
+        volumes: List<Volume>
+    ): Int
+
     @Delete
     suspend fun deleteVolumeById(
         volume: Volume

@@ -1,12 +1,16 @@
 package com.gabedev.mangako.ui.components
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,6 +28,7 @@ fun MangaCard(
     title: String,
     coverUrl: String,
     owned: Boolean = false,
+    selected: Boolean = false,
     isVolumeCard: Boolean = false,
     volume: Float? = null,
 ) {
@@ -48,11 +53,21 @@ fun MangaCard(
             )
         }
         if (isVolumeCard) {
-            Text(
-                text = "Volume: ${Utils.handleFloatVolume(volume)}",
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.padding(8.dp),
-            )
+            Row {
+                Text(
+                    text = "Volume: ${Utils.handleFloatVolume(volume)}",
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(8.dp),
+                )
+                if (selected) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Selected",
+                        modifier = Modifier
+                            .padding(8.dp)
+                    )
+                }
+            }
         } else {
             Text(
                 text = title,

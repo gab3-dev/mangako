@@ -102,6 +102,15 @@ class LibraryRepositoryImpl(
         db.volumeDao().updateVolume(volume)
     }
 
+    override suspend fun updateVolumeList(volumeList: List<Volume>) {
+        if (volumeList.isEmpty()) return
+        try {
+            db.volumeDao().updateVolumeList(volumeList)
+        } catch (e: Exception) {
+            logger.logError(e)
+        }
+    }
+
     override fun log(message: Exception) {
         message.printStackTrace()
         logger.log("Library LOG: $message")

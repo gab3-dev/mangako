@@ -1,12 +1,15 @@
 package com.gabedev.mangako.ui.screens.detail
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -22,9 +25,14 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.FloatingToolbarDefaults
+import androidx.compose.material3.FloatingToolbarDefaults.ScreenOffset
+import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -50,6 +58,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
 import com.gabedev.mangako.core.Utils
@@ -67,6 +76,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun MangaDetail(
     manga: Manga,
@@ -102,6 +112,7 @@ fun MangaDetail(
     val snackbarHostState = remember { SnackbarHostState() }
     var callBackFunction by remember { mutableStateOf<() -> Unit>({}) }
     var showDialogMangaInLibrary by remember { mutableStateOf(false) }
+    var isMultiSelectActive by remember { mutableStateOf(false) }
     if (showDialogMangaInLibrary) {
         ConfirmDialog(
             title = "Manga não foi adicionado a biblioteca",
@@ -109,12 +120,8 @@ fun MangaDetail(
             onConfirm = {
                 viewModel.addMangaToLibrary(manga)
                 callBackFunction()
-                showDialogMangaInLibrary = false
             },
-            onDismiss = {
-                callBackFunction = {}
-                showDialogMangaInLibrary = false
-            },
+            onDismiss = {},
         )
     }
     var showDialog by remember { mutableStateOf(false) }
@@ -195,208 +202,270 @@ fun MangaDetail(
             )
         }
     ) { contentPadding ->
-        LazyVerticalGrid(
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(contentPadding)
-                .padding(horizontal = 16.dp),
-            state = listState,
-            columns = GridCells.Fixed(if (viewMode == "grid") 3 else 1),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                MangaHeader(
-                    title = manga.title,
-                    enTitle = manga.altTitle,
-                    author = manga.author,
-                    description = manga.description,
-                    situation = manga.status,
-                    coverUrl = manga.coverUrl,
-                    volume = manga.volumeCount
-                )
-            }
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                if (isMangaInLibrary) {
-                    OutlinedButton(
-                        shape = RoundedCornerShape(16.dp),
+
+        Box(Modifier.padding(contentPadding)) {
+            if (isMultiSelectActive) {
+                HorizontalFloatingToolbar(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .offset(y = -ScreenOffset)
+                        .zIndex(1f),
+                    colors = FloatingToolbarDefaults.vibrantFloatingToolbarColors(),
+                    expanded = true
+                ) {
+                    IconButton(
                         onClick = {
-                            showDialog = true
-                        }
+                            viewModel.markSelectedListAsOwned(true)
+                            isMultiSelectActive = false
+                            viewModel.clearSelection()
+                        },
+                        enabled = viewModel.selectedIds.value.isNotEmpty(),
                     ) {
                         Icon(
-                            modifier = Modifier.padding(8.dp),
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Remover manga da coleção",
-                        )
-                        Text(
-                            modifier = Modifier.padding(8.dp),
-                            text = "Remover manga da coleção",
-                            fontSize = 18.sp,
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Marcar volumes como possuídos",
                         )
                     }
-                } else {
-                    Button(
-                        shape = RoundedCornerShape(16.dp),
+                    IconButton(
                         onClick = {
-                            viewModel.addMangaToLibrary(
-                                manga
-                            )
-                        }
+                            viewModel.markSelectedListAsOwned(false)
+                            isMultiSelectActive = false
+                            viewModel.clearSelection()
+                        },
+                        enabled = viewModel.selectedIds.value.isNotEmpty(),
                     ) {
                         Icon(
-                            modifier = Modifier.padding(8.dp),
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Adicionar à coleção"
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Desmarcar volumes como possuídos",
                         )
-                        Text(
-                            modifier = Modifier.padding(8.dp),
-                            text = "Adicionar à coleção",
-                            fontSize = 18.sp,
+                    }
+                    IconButton(
+                        onClick = {
+                            viewModel.selectAllVolumes()
+                        },
+                        enabled = viewModel.selectedIds.value.size < volumeList.size && isMultiSelectActive,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.SelectAll,
+                            contentDescription = "Selecionar todos volumes",
                         )
                     }
                 }
             }
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                FilterChip(
-                    onClick = { specialCoverFilter = !specialCoverFilter },
-                    label = {
-                        Text("Edições Especiais")
-                    },
-                    selected = specialCoverFilter,
-                    leadingIcon = if (specialCoverFilter) {
-                        {
+
+            LazyVerticalGrid(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(contentPadding)
+                    .padding(horizontal = 16.dp),
+                state = listState,
+                columns = GridCells.Fixed(if (viewMode == "grid") 3 else 1),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    MangaHeader(
+                        title = manga.title,
+                        enTitle = manga.altTitle,
+                        author = manga.author,
+                        description = manga.description,
+                        situation = manga.status,
+                        coverUrl = manga.coverUrl,
+                        volume = manga.volumeCount
+                    )
+                }
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    if (isMangaInLibrary) {
+                        OutlinedButton(
+                            shape = RoundedCornerShape(16.dp),
+                            onClick = {
+                                showDialog = true
+                            }
+                        ) {
                             Icon(
-                                imageVector = Icons.Filled.Done,
-                                contentDescription = "Done icon",
-                                modifier = Modifier.size(FilterChipDefaults.IconSize)
+                                modifier = Modifier.padding(8.dp),
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Remover manga da coleção",
+                            )
+                            Text(
+                                modifier = Modifier.padding(8.dp),
+                                text = "Remover manga da coleção",
+                                fontSize = 18.sp,
                             )
                         }
                     } else {
-                        null
-                    },
-                )
-            }
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .fillMaxHeight(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "Volumes"
-                    )
-                    Row {
-                        IconButton(
+                        Button(
+                            shape = RoundedCornerShape(16.dp),
                             onClick = {
-                                CoroutineScope(Dispatchers.IO).launch {
-                                    context.saveConfigText("list")
-                                }
-                            },
-                            content = {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Default.FormatListBulleted,
-                                    contentDescription = "Visualização em lista",
-                                )
-                            },
-                        )
-                        IconButton(
-                            onClick = {
-                                CoroutineScope(Dispatchers.IO).launch {
-                                    context.saveConfigText("grid")
-                                }
-                            },
-                            content = {
-                                Icon(
-                                    imageVector = Icons.Default.GridView,
-                                    contentDescription = "Visualização em grade",
+                                viewModel.addMangaToLibrary(
+                                    manga
                                 )
                             }
-                        )
+                        ) {
+                            Icon(
+                                modifier = Modifier.padding(8.dp),
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Adicionar à coleção"
+                            )
+                            Text(
+                                modifier = Modifier.padding(8.dp),
+                                text = "Adicionar à coleção",
+                                fontSize = 18.sp,
+                            )
+                        }
                     }
                 }
-            }
-            if (volumeList.isEmpty() && !isCoverLoading) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = "Nenhum volume encontrado.",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    FilterChip(
+                        onClick = { specialCoverFilter = !specialCoverFilter },
+                        label = {
+                            Text("Edições Especiais")
+                        },
+                        selected = specialCoverFilter,
+                        leadingIcon = if (specialCoverFilter) {
+                            {
+                                Icon(
+                                    imageVector = Icons.Filled.Done,
+                                    contentDescription = "Done icon",
+                                    modifier = Modifier.size(FilterChipDefaults.IconSize)
+                                )
+                            }
+                        } else {
+                            null
+                        },
+                    )
                 }
-                return@LazyVerticalGrid
-            } else {
-                items(filteredVolumeList, key = { it.id }) { volume ->
-                    if (viewMode == "grid") {
-                        MangaCard(
-                            modifier = Modifier
-                                .clickable(
-                                    onClick = {
-                                        if (!isMangaInLibrary) {
-                                            callBackFunction = {
-                                                viewModel.toggleVolumeOwned(volume)
-                                            }
-                                            showDialogMangaInLibrary = true
-                                            return@clickable
-                                        }
-                                        viewModel.toggleVolumeOwned(volume)
-                                    }
-                                ),
-                            title = manga.title,
-                            coverUrl = volume.coverUrl,
-                            owned = volume.owned,
-                            isVolumeCard = true,
-                            volume = volume.volume,
-                        )
-                    } else {
-                        MangaListItem(
-                            modifier = Modifier
-                                .clickable(
-                                    onClick = {
-                                        if (!isMangaInLibrary) {
-                                            callBackFunction = {
-                                                viewModel.toggleVolumeOwned(volume)
-                                            }
-                                            showDialogMangaInLibrary = true
-                                            return@clickable
-                                        }
-                                        viewModel.toggleVolumeOwned(volume)
-                                    }
-                                ),
-                            coverUrl = volume.coverUrl,
-                            title = "Volume ${Utils.handleFloatVolume(volume.volume)}",
-                            owned = volume.owned,
-                        )
-                    }
-                }
-            }
-            if (isCoverLoading) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .fillMaxHeight(),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        CustomLoadingIndicator(
-                            Modifier
-                                .width(50.dp)
-                                .height(50.dp)
-                        )
                         Text(
-                            text = "Carregando capas...",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = "Volumes"
                         )
+                        Row {
+                            IconButton(
+                                onClick = {
+                                    CoroutineScope(Dispatchers.IO).launch {
+                                        context.saveConfigText("list")
+                                    }
+                                },
+                                content = {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Default.FormatListBulleted,
+                                        contentDescription = "Visualização em lista",
+                                    )
+                                },
+                            )
+                            IconButton(
+                                onClick = {
+                                    CoroutineScope(Dispatchers.IO).launch {
+                                        context.saveConfigText("grid")
+                                    }
+                                },
+                                content = {
+                                    Icon(
+                                        imageVector = Icons.Default.GridView,
+                                        contentDescription = "Visualização em grade",
+                                    )
+                                }
+                            )
+                        }
+                    }
+                }
+                if (volumeList.isEmpty() && !isCoverLoading) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = "Nenhum volume encontrado.",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    return@LazyVerticalGrid
+                } else {
+                    items(items = filteredVolumeList, key = { it.id }) { volume ->
+                        if (viewMode == "grid") {
+                            MangaCard(
+                                modifier = Modifier
+                                    .combinedClickable(
+                                        onClick = {
+                                            if (!isMultiSelectActive) {
+                                                if (!isMangaInLibrary) {
+                                                    callBackFunction = {
+                                                        viewModel.toggleVolumeOwned(volume)
+                                                    }
+                                                    showDialogMangaInLibrary = true
+                                                    return@combinedClickable
+                                                }
+                                                viewModel.toggleVolumeOwned(volume)
+                                            } else {
+                                                viewModel.toggleSelection(volume.id)
+                                            }
+                                        },
+                                        onLongClick = {
+                                            if (!isMultiSelectActive) {
+                                                isMultiSelectActive = true
+                                            }
+                                        }
+                                    ),
+                                title = manga.title,
+                                coverUrl = volume.coverUrl,
+                                owned = volume.owned,
+                                isVolumeCard = true,
+                                selected = viewModel.selectedIds.value.contains(volume.id),
+                                volume = volume.volume,
+                            )
+                        } else {
+                            MangaListItem(
+                                modifier = Modifier
+                                    .clickable(
+                                        onClick = {
+                                            if (!isMangaInLibrary) {
+                                                callBackFunction = {
+                                                    viewModel.toggleVolumeOwned(volume)
+                                                }
+                                                showDialogMangaInLibrary = true
+                                                return@clickable
+                                            }
+                                            viewModel.toggleVolumeOwned(volume)
+                                        }
+                                    ),
+                                coverUrl = volume.coverUrl,
+                                title = "Volume ${Utils.handleFloatVolume(volume.volume)}",
+                                owned = volume.owned,
+                            )
+                        }
+                    }
+                }
+                if (isCoverLoading) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .fillMaxHeight(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            CustomLoadingIndicator(
+                                Modifier
+                                    .width(50.dp)
+                                    .height(50.dp)
+                            )
+                            Text(
+                                text = "Carregando capas...",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }

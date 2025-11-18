@@ -1,5 +1,6 @@
 package com.gabedev.mangako.ui.screens.detail
 
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gabedev.mangako.data.model.Manga
@@ -17,6 +18,8 @@ class MangaDetailViewModel(
 ) : ViewModel() {
     private val _addResult = MutableStateFlow<Result<Unit>?>(null)
     private val _removeResult = MutableStateFlow<Result<Unit>?>(null)
+    var selectedIds = mutableStateOf(setOf<String>())
+        private set
     val isVolumeLoading = MutableStateFlow(false)
     val addResult: StateFlow<Result<Unit>?> = _addResult
     val removeResult: StateFlow<Result<Unit>?> = _removeResult
@@ -25,6 +28,44 @@ class MangaDetailViewModel(
     val noMoreVolume = MutableStateFlow(false)
     private var currentOffset = 0
     private val limit = 50
+
+    fun markSelectedListAsOwned(isOwned: Boolean) {
+        viewModelScope.launch {
+            val updatedVolumes = volumeList.value.map { volume ->
+                if (selectedIds.value.contains(volume.id)) {
+                    volume.copy(owned = isOwned)
+                } else {
+                    volume
+                }
+            }
+            // Update the local database
+            localRepository.updateVolumeList(
+                updatedVolumes.filter { selectedIds.value.contains(it.id) }
+            )
+            // Update the volume list in the current state
+            volumeList.value = updatedVolumes
+            // Clear selection
+            clearSelection()
+        }
+    }
+
+    fun toggleSelection(id: String) {
+        selectedIds.value =
+            if (selectedIds.value.contains(id)) {
+                selectedIds.value - id
+            } else {
+                selectedIds.value + id
+            }
+    }
+
+    fun clearSelection() {
+        selectedIds.value = emptySet()
+    }
+
+    fun selectAllVolumes() {
+        val allIds = volumeList.value.map { it.id }.toSet()
+        selectedIds.value = allIds
+    }
 
     private fun insertMangaOnLocalDatabase() {
         viewModelScope.launch {
@@ -97,7 +138,7 @@ class MangaDetailViewModel(
                     volumeList.value = tmpData.volumes.map { it.copy() }
                     isVolumeLoading.value = false
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 volumeList.value = emptyList()
                 isVolumeLoading.value = false
             }
