@@ -20,13 +20,11 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Deselect
 import androidx.compose.material.icons.filled.Done
-import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.CheckCircle
@@ -74,6 +72,7 @@ import com.gabedev.mangako.data.repository.LibraryRepository
 import com.gabedev.mangako.data.repository.MangaDexRepository
 import com.gabedev.mangako.ui.components.ConfirmDialog
 import com.gabedev.mangako.ui.components.CustomLoadingIndicator
+import com.gabedev.mangako.ui.components.ListGridSwitch
 import com.gabedev.mangako.ui.components.MangaCard
 import com.gabedev.mangako.ui.components.MangaCoverImage
 import com.gabedev.mangako.ui.components.MangaListItem
@@ -118,9 +117,6 @@ fun MangaDetail(
     var callBackFunction by remember { mutableStateOf<() -> Unit>({}) }
     var showDialogMangaInLibrary by remember { mutableStateOf(false) }
     var isMultiSelectActive by remember { mutableStateOf(false) }
-    var isAllSelected by remember { mutableStateOf(
-        viewModel.selectedIds.value.size >= filteredVolumeList.size
-    ) }
     if (showDialogMangaInLibrary) {
         ConfirmDialog(
             title = "Manga não foi adicionado a biblioteca",
@@ -376,31 +372,13 @@ fun MangaDetail(
                         Text(
                             text = "Volumes"
                         )
-                        Row {
-                            IconButton(
-                                onClick = {
+                        Box{
+                            ListGridSwitch(
+                                initialMode = viewMode,
+                                onChange = { selectedMode ->
                                     CoroutineScope(Dispatchers.IO).launch {
-                                        context.saveConfigText("list")
+                                        context.saveConfigText(selectedMode)
                                     }
-                                },
-                                content = {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Default.FormatListBulleted,
-                                        contentDescription = "Visualização em lista",
-                                    )
-                                },
-                            )
-                            IconButton(
-                                onClick = {
-                                    CoroutineScope(Dispatchers.IO).launch {
-                                        context.saveConfigText("grid")
-                                    }
-                                },
-                                content = {
-                                    Icon(
-                                        imageVector = Icons.Default.GridView,
-                                        contentDescription = "Visualização em grade",
-                                    )
                                 }
                             )
                         }
@@ -444,6 +422,7 @@ fun MangaDetail(
                                         onLongClick = {
                                             if (!isMultiSelectActive) {
                                                 isMultiSelectActive = true
+                                                viewModel.toggleSelection(volume.id)
                                             }
                                         }
                                     ),
