@@ -21,13 +21,18 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Deselect
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.SelectAll
+import androidx.compose.material.icons.outlined.Cancel
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingToolbarDefaults
@@ -113,6 +118,9 @@ fun MangaDetail(
     var callBackFunction by remember { mutableStateOf<() -> Unit>({}) }
     var showDialogMangaInLibrary by remember { mutableStateOf(false) }
     var isMultiSelectActive by remember { mutableStateOf(false) }
+    var isAllSelected by remember { mutableStateOf(
+        viewModel.selectedIds.value.size >= filteredVolumeList.size
+    ) }
     if (showDialogMangaInLibrary) {
         ConfirmDialog(
             title = "Manga não foi adicionado a biblioteca",
@@ -222,7 +230,7 @@ fun MangaDetail(
                         enabled = viewModel.selectedIds.value.isNotEmpty(),
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Add,
+                            imageVector = Icons.Outlined.CheckCircle,
                             contentDescription = "Marcar volumes como possuídos",
                         )
                     }
@@ -235,8 +243,19 @@ fun MangaDetail(
                         enabled = viewModel.selectedIds.value.isNotEmpty(),
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Close,
+                            imageVector = Icons.Outlined.Cancel,
                             contentDescription = "Desmarcar volumes como possuídos",
+                        )
+                    }
+                    FilledIconButton(
+                        onClick = {
+                            isMultiSelectActive = false
+                            viewModel.clearSelection()
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Undo,
+                            contentDescription = "Parar seleção múltipla",
                         )
                     }
                     IconButton(
@@ -248,6 +267,17 @@ fun MangaDetail(
                         Icon(
                             imageVector = Icons.Default.SelectAll,
                             contentDescription = "Selecionar todos volumes",
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            viewModel.clearSelection()
+                        },
+                        enabled = viewModel.selectedIds.value.isNotEmpty() && isMultiSelectActive,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Deselect,
+                            contentDescription = "Desfazer seleção",
                         )
                     }
                 }
