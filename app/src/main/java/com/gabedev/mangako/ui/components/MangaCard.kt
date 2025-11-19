@@ -7,10 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Card
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,6 +33,7 @@ fun MangaCard(
         modifier = modifier
             .alpha(if (owned) 0.5f else 1f)
             .fillMaxWidth()
+            .padding(if (selected) 4.dp else 0.dp)
             .heightIn(min = 200.dp),
         shape = RoundedCornerShape(8.dp),
     ) {
@@ -59,14 +57,6 @@ fun MangaCard(
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.padding(8.dp),
                 )
-                if (selected) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = "Selected",
-                        modifier = Modifier
-                            .padding(8.dp)
-                    )
-                }
             }
         } else {
             Text(
