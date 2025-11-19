@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Add
@@ -38,6 +39,7 @@ import androidx.compose.material3.FloatingToolbarDefaults.ScreenOffset
 import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LoadingIndicatorDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -45,6 +47,9 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -80,7 +85,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterialApi::class)
 @Composable
 fun MangaDetail(
     manga: Manga,
@@ -142,6 +147,7 @@ fun MangaDetail(
             }
         )
     }
+    val state = rememberPullToRefreshState()
 
     val shouldLoadMore = remember {
         derivedStateOf {
@@ -199,7 +205,7 @@ fun MangaDetail(
         }
     }
 
-    Scaffold (
+    Scaffold(
         snackbarHost = {
             SnackbarHost(
                 hostState = snackbarHostState,
@@ -207,7 +213,23 @@ fun MangaDetail(
         }
     ) { contentPadding ->
 
-        Box(Modifier.padding(contentPadding)) {
+        PullToRefreshBox(
+            isRefreshing = isCoverLoading,
+            onRefresh = {
+                viewModel.refreshCoverList()
+            },
+            state = state,
+            indicator = {
+                PullToRefreshDefaults.LoadingIndicator(
+                    isRefreshing = isCoverLoading,
+                    containerColor = LoadingIndicatorDefaults.containedContainerColor,
+                    state = state,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter),
+                )
+            },
+            modifier = Modifier.padding(contentPadding)
+        ) {
             if (isMultiSelectActive) {
                 HorizontalFloatingToolbar(
                     modifier = Modifier
@@ -372,7 +394,7 @@ fun MangaDetail(
                         Text(
                             text = "Volumes"
                         )
-                        Box{
+                        Box {
                             ListGridSwitch(
                                 initialMode = viewMode,
                                 onChange = { selectedMode ->
@@ -535,7 +557,7 @@ fun MangaHeader(
                     SimpleText(
                         text = "Situação: ${situation ?: "Desconhecida"}",
                     )
-                    SimpleText (
+                    SimpleText(
                         text = "Volumes: ${volume?.toString() ?: "N/A"}",
                     )
                 }
