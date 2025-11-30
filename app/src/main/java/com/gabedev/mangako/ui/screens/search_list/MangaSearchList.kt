@@ -26,12 +26,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.isTraversalGroup
@@ -62,28 +62,21 @@ fun MangaSearchScreen(
 
     val mangaList by viewModel.mangaList.collectAsState()
     val isLoading by viewModel.isMangaLoading.collectAsState()
+    val isLoadingMore by viewModel.isLoadingMoreManga.collectAsState()
 
     val noMoreManga by viewModel.noMoreManga.collectAsState()
 
-    val shouldLoadMore = remember {
-        derivedStateOf {
-            val totalItems = listState.layoutInfo.totalItemsCount
-            if (noMoreManga) {
-                return@derivedStateOf false // já carregou todos os manga
-            }
-            try {
-                val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-                lastVisible >= totalItems - 1 // quando estiver perto do fim
-            } catch (e: Exception) {
-                e.printStackTrace()
-                false // caso ocorra algum erro, não carregar mais
-            }
-        }
-    }
+    LaunchedEffect(listState, noMoreManga) {
+        snapshotFlow {
+            val info = listState.layoutInfo
+            val lastVisible = info.visibleItemsInfo.lastOrNull()?.index ?: -1
+            val totalItems = info.totalItemsCount
 
-    LaunchedEffect(shouldLoadMore.value) {
-        if (shouldLoadMore.value) {
-            viewModel.loadMangaList()
+            lastVisible to totalItems
+        }.collect { (lastVisible, totalItems) ->
+            if (!noMoreManga && lastVisible >= totalItems - 1) {
+                viewModel.loadMangaList()
+            }
         }
     }
 
@@ -164,6 +157,7 @@ fun MangaSearchScreen(
                         LazyColumn (
                             modifier = Modifier
                                 .fillMaxSize(),
+                            state = listState,
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                             contentPadding = PaddingValues(8.dp),
                         ) {
@@ -175,11 +169,10 @@ fun MangaSearchScreen(
                                     },
                                 )
                             }
-                            if (isLoading && !mangaList.isEmpty() && !noMoreManga) {
+                            if (isLoadingMore && !mangaList.isEmpty() && !noMoreManga) {
                                 item {
                                     Box(
                                         modifier = Modifier
-                                            .fillMaxWidth()
                                             .padding(vertical = 16.dp),
                                         contentAlignment = Alignment.Center
                                     ) {

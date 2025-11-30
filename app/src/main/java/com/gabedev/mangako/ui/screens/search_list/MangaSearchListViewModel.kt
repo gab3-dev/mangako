@@ -15,12 +15,13 @@ class MangaSearchListViewModel(
 ) : ViewModel() {
     val queryString = MutableStateFlow("")
     val isMangaLoading = MutableStateFlow(false)
+    val isLoadingMoreManga = MutableStateFlow(false)
     val mangaList = MutableStateFlow<List<Manga>>(emptyList())
     val noMoreManga = MutableStateFlow(false)
     private var loadMangaJob: Job? = null
     private var activeQuery: String? = null
     private var currentOffset = 0
-    private val limit = 10
+    private val limit = 6
 
     fun refreshMangaList() {
         isMangaLoading.value = true
@@ -49,10 +50,14 @@ class MangaSearchListViewModel(
 
         // Cancel last execution
         loadMangaJob?.cancel()
-        currentOffset = 0
         noMoreManga.value = false
-        isMangaLoading.value = true
-        mangaList.value = emptyList()
+        if (currentOffset != 0) {
+            print("Carregando mais mangas...\n")
+            isLoadingMoreManga.value = true
+        } else {
+            print("Carregando lista de mangas...\n")
+            isMangaLoading.value = true
+        }
 
         activeQuery = currentQuery
 
@@ -70,6 +75,7 @@ class MangaSearchListViewModel(
                 if (resultMangaList.isEmpty()) {
                     noMoreManga.value = true
                     isMangaLoading.value = false
+                    isLoadingMoreManga.value = false
                     return@launch
                 }
 
@@ -80,6 +86,7 @@ class MangaSearchListViewModel(
                 }
                 currentOffset += limit
                 isMangaLoading.value = false
+                isLoadingMoreManga.value = false
             } catch (_: CancellationException) {
                 // Cancellation is expected, don't treat as error
                 apiRepository.log(Exception("Carregamento cancelado."))
