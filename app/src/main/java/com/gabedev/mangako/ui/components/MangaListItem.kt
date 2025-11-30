@@ -1,6 +1,6 @@
 package com.gabedev.mangako.ui.components
 
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -10,8 +10,11 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +31,7 @@ fun MangaListItem(
     modifier: Modifier = Modifier,
     coverUrl: String,
     title: String,
+    selected: Boolean,
     owned: Boolean,
 ) {
     val isLoading by remember { mutableStateOf(false) }
@@ -68,18 +72,27 @@ fun MangaListItem(
                     )
                 }
             }
-            Column(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 20.dp)
-                    .height(IntrinsicSize.Min),
-                verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+                    .height(IntrinsicSize.Min)
+                    .padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
                     text = title,
                     modifier = Modifier.padding(vertical = 4.dp),
                     style = MaterialTheme.typography.bodyLarge
                 )
+                if (selected) {
+                    Icon(
+                        imageVector = Icons.Default.CheckBox,
+                        contentDescription = "Selected Icon",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         }
     }

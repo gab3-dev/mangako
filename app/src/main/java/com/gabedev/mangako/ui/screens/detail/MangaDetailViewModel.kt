@@ -24,6 +24,7 @@ class MangaDetailViewModel(
     val addResult: StateFlow<Result<Unit>?> = _addResult
     val removeResult: StateFlow<Result<Unit>?> = _removeResult
     val isMangaInLibrary = MutableStateFlow(false)
+    var isMultiSelectActive = mutableStateOf(false)
     val volumeList = MutableStateFlow<List<Volume>>(emptyList())
     val noMoreVolume = MutableStateFlow(false)
     private var currentOffset = 0
@@ -56,10 +57,17 @@ class MangaDetailViewModel(
             } else {
                 selectedIds.value + id
             }
+
+        isMultiSelectActive.value = selectedIds.value.isNotEmpty()
     }
 
     fun clearSelection() {
         selectedIds.value = emptySet()
+    }
+
+    fun finishMultiSelect() {
+        isMultiSelectActive.value = false
+        clearSelection()
     }
 
     fun selectAllVolumes() {

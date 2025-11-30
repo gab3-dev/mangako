@@ -1,6 +1,5 @@
 package com.gabedev.mangako.ui.screens.detail
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -119,9 +118,9 @@ fun MangaDetail(
     val isMangaInLibrary by viewModel.isMangaInLibrary.collectAsState()
     val listState = rememberLazyGridState()
     val snackbarHostState = remember { SnackbarHostState() }
-    var callBackFunction by remember { mutableStateOf<() -> Unit>({}) }
+    var callBackFunction by remember { mutableStateOf({}) }
     var showDialogMangaInLibrary by remember { mutableStateOf(false) }
-    var isMultiSelectActive by remember { mutableStateOf(false) }
+    val isMultiSelectActive by viewModel.isMultiSelectActive
     if (showDialogMangaInLibrary) {
         ConfirmDialog(
             title = "Manga não foi adicionado a biblioteca",
@@ -130,20 +129,22 @@ fun MangaDetail(
                 viewModel.addMangaToLibrary(manga)
                 callBackFunction()
             },
-            onDismiss = {},
+            onDismiss = {
+                showDialogMangaInLibrary = false
+            },
         )
     }
-    var showDialog by remember { mutableStateOf(false) }
-    if (showDialog) {
+    var showDialogMangaNotInLibrary by remember { mutableStateOf(false) }
+    if (showDialogMangaNotInLibrary) {
         ConfirmDialog(
             onConfirm = {
                 viewModel.removeMangaFromLibrary()
                 // Atualiza lista de volumes após remoção
                 viewModel.refreshCoverList()
-                showDialog = false
+                showDialogMangaNotInLibrary = false
             },
             onDismiss = {
-                showDialog = false
+                showDialogMangaNotInLibrary = false
             }
         )
     }
@@ -242,8 +243,7 @@ fun MangaDetail(
                     IconButton(
                         onClick = {
                             viewModel.markSelectedListAsOwned(true)
-                            isMultiSelectActive = false
-                            viewModel.clearSelection()
+                            viewModel.finishMultiSelect()
                         },
                         enabled = viewModel.selectedIds.value.isNotEmpty(),
                     ) {
@@ -255,8 +255,7 @@ fun MangaDetail(
                     IconButton(
                         onClick = {
                             viewModel.markSelectedListAsOwned(false)
-                            isMultiSelectActive = false
-                            viewModel.clearSelection()
+                            viewModel.finishMultiSelect()
                         },
                         enabled = viewModel.selectedIds.value.isNotEmpty(),
                     ) {
@@ -267,8 +266,7 @@ fun MangaDetail(
                     }
                     FilledIconButton(
                         onClick = {
-                            isMultiSelectActive = false
-                            viewModel.clearSelection()
+                            viewModel.finishMultiSelect()
                         },
                     ) {
                         Icon(
@@ -327,7 +325,7 @@ fun MangaDetail(
                         OutlinedButton(
                             shape = RoundedCornerShape(16.dp),
                             onClick = {
-                                showDialog = true
+                                showDialogMangaNotInLibrary = true
                             }
                         ) {
                             Icon(
@@ -432,6 +430,7 @@ fun MangaDetail(
                                                 if (!isMangaInLibrary) {
                                                     callBackFunction = {
                                                         viewModel.toggleVolumeOwned(volume)
+                                                        showDialogMangaInLibrary = false
                                                     }
                                                     showDialogMangaInLibrary = true
                                                     return@combinedClickable
@@ -443,7 +442,6 @@ fun MangaDetail(
                                         },
                                         onLongClick = {
                                             if (!isMultiSelectActive) {
-                                                isMultiSelectActive = true
                                                 viewModel.toggleSelection(volume.id)
                                             }
                                         }
@@ -458,20 +456,31 @@ fun MangaDetail(
                         } else {
                             MangaListItem(
                                 modifier = Modifier
-                                    .clickable(
+                                    .combinedClickable(
                                         onClick = {
-                                            if (!isMangaInLibrary) {
-                                                callBackFunction = {
-                                                    viewModel.toggleVolumeOwned(volume)
+                                            if (!isMultiSelectActive) {
+                                                if (!isMangaInLibrary) {
+                                                    callBackFunction = {
+                                                        viewModel.toggleVolumeOwned(volume)
+                                                        showDialogMangaInLibrary = false
+                                                    }
+                                                    showDialogMangaInLibrary = true
+                                                    return@combinedClickable
                                                 }
-                                                showDialogMangaInLibrary = true
-                                                return@clickable
+                                                viewModel.toggleVolumeOwned(volume)
+                                            } else {
+                                                viewModel.toggleSelection(volume.id)
                                             }
-                                            viewModel.toggleVolumeOwned(volume)
+                                        },
+                                        onLongClick = {
+                                            if (!isMultiSelectActive) {
+                                                viewModel.toggleSelection(volume.id)
+                                            }
                                         }
                                     ),
                                 coverUrl = volume.coverUrl,
                                 title = "Volume ${Utils.handleFloatVolume(volume.volume)}",
+                                selected = viewModel.selectedIds.value.contains(volume.id),
                                 owned = volume.owned,
                             )
                         }
