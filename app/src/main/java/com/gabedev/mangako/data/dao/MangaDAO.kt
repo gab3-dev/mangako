@@ -30,6 +30,11 @@ interface MangaDAO {
         manga: Manga
     ): Long
 
+    @Update
+    suspend fun updateManga(
+        manga: Manga
+    ): Int
+
     @Update(onConflict = OnConflictStrategy.REPLACE)
     suspend fun updateMangaLibraryStatus(
         manga: Manga

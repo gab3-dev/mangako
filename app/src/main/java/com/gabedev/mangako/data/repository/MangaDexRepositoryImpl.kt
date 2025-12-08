@@ -78,11 +78,13 @@ class MangaDexRepositoryImpl(
     }
 
     override suspend fun getManga(id: String): Manga {
-        val dto = api.getManga(id)
+        val dto = api.getManga(id).data
         val author = api.getAuthorById(dto.relationships.find {
             it.type == "author"
         }?.id.orEmpty())
-        val cover = api.getCoverById(dto.id)
+        val cover = api.getCoverById(dto.relationships.find {
+            it.type == "cover_art"
+        }?.id.orEmpty())
         val coverTotal = api.getCover(manga = listOf(dto.id), limit = 1).total
         return Manga(
             id = dto.id,

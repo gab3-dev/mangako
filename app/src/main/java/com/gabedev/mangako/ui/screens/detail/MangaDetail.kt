@@ -140,7 +140,7 @@ fun MangaDetail(
             onConfirm = {
                 viewModel.removeMangaFromLibrary()
                 // Atualiza lista de volumes após remoção
-                viewModel.refreshCoverList()
+                viewModel.refreshManga()
                 showDialogMangaNotInLibrary = false
             },
             onDismiss = {
@@ -217,7 +217,7 @@ fun MangaDetail(
         PullToRefreshBox(
             isRefreshing = isCoverLoading,
             onRefresh = {
-                viewModel.refreshCoverList()
+                viewModel.refreshManga()
             },
             state = state,
             indicator = {

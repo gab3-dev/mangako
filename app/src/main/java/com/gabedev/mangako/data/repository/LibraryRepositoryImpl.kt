@@ -63,6 +63,21 @@ class LibraryRepositoryImpl(
         db.mangaDao().insertManga(manga)
     }
 
+    override suspend fun updateManga(manga: Manga) : Manga? {
+        // Fetch existing manga to preserve isOnUserLibrary status
+        val existingManga = db.mangaDao().getMangaById(manga.id)
+        val updatedManga: Manga? = existingManga?.copy(
+            title = manga.title,
+            author = manga.author,
+            coverUrl = manga.coverUrl,
+            description = manga.description,
+            status = manga.status,
+        )
+        if (updatedManga != null)
+            db.mangaDao().updateManga(updatedManga)
+        return updatedManga
+    }
+
     override suspend fun addMangaToLibrary(manga: Manga) {
         val updatedManga = manga.copy(isOnUserLibrary = true)
         db.mangaDao().updateMangaLibraryStatus(updatedManga)
@@ -108,6 +123,39 @@ class LibraryRepositoryImpl(
             db.volumeDao().updateVolumeList(volumeList)
         } catch (e: Exception) {
             logger.logError(e)
+        }
+    }
+
+    override suspend fun updateOrInsertVolumeList(volumeList: List<Volume>) {
+        if (volumeList.isEmpty()) return
+        val volumesToUpdate = mutableListOf<Volume>()
+        val volumesToInsert = mutableListOf<Volume>()
+        for (volume in volumeList) {
+            val existingVolume = db.volumeDao().getVolumeById(volume.id)
+            if (existingVolume != null) {
+                val mergeVolume: Volume = existingVolume.copy(
+                    title = volume.title,
+                    volume = volume.volume,
+                    coverUrl = volume.coverUrl,
+                )
+                volumesToUpdate.add(mergeVolume)
+            } else {
+                volumesToInsert.add(volume)
+            }
+        }
+        if (volumesToUpdate.isNotEmpty()) {
+            try {
+                db.volumeDao().updateVolumeList(volumesToUpdate)
+            } catch (e: Exception) {
+                logger.logError(e)
+            }
+        }
+        if (volumesToInsert.isNotEmpty()) {
+            try {
+                db.volumeDao().insertVolumeList(volumesToInsert)
+            } catch (e: Exception) {
+                logger.logError(e)
+            }
         }
     }
 

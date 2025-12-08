@@ -11,6 +11,7 @@ interface LibraryRepository {
     suspend fun getMangaWithVolume(mangaId: String): MangaWithVolume?
     suspend fun searchManga(title: String): List<Manga>
     suspend fun insertManga(manga: Manga)
+    suspend fun updateManga(manga: Manga): Manga?
     suspend fun addMangaToLibrary(manga: Manga)
     suspend fun removeMangaFromLibrary(mangaId: String)
     suspend fun removeMangaFromLibrary(manga: Manga)
@@ -18,5 +19,6 @@ interface LibraryRepository {
     suspend fun insertVolumeList(volumeList: List<Volume>)
     suspend fun updateVolume(volume: Volume)
     suspend fun updateVolumeList(volumeList: List<Volume>)
+    suspend fun updateOrInsertVolumeList(volumeList: List<Volume>)
     fun log(message: Exception)
 }

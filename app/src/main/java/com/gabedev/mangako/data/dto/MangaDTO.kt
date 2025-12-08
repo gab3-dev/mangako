@@ -3,6 +3,13 @@ package com.gabedev.mangako.data.dto
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class MangaResponseDto(
+    val result: String,
+    val response: String,
+    val data: MangaDto
+)
+
+@Serializable
 data class MangaDto(
     val id: String,
     val type: String?,

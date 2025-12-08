@@ -3,8 +3,8 @@ package com.gabedev.mangako.data.remote.api
 import com.gabedev.mangako.data.dto.AuthorResponseDTO
 import com.gabedev.mangako.data.dto.CoverArtListResponseDTO
 import com.gabedev.mangako.data.dto.CoverArtResponseDTO
-import com.gabedev.mangako.data.dto.MangaDto
 import com.gabedev.mangako.data.dto.MangaListResponse
+import com.gabedev.mangako.data.dto.MangaResponseDto
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -12,7 +12,7 @@ import retrofit2.http.Query
 interface MangaDexAPI {
 
     @GET("manga/{id}")
-    suspend fun getManga(@Path("id") id: String): MangaDto
+    suspend fun getManga(@Path("id") id: String): MangaResponseDto
 
     @GET("manga")
     suspend fun searchMangas(

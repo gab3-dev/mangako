@@ -16,6 +16,7 @@ class MangaDetailViewModel(
     private val localRepository: LibraryRepository,
     private var manga: Manga,
 ) : ViewModel() {
+    private val idManga = manga.id
     private val _addResult = MutableStateFlow<Result<Unit>?>(null)
     private val _removeResult = MutableStateFlow<Result<Unit>?>(null)
     var selectedIds = mutableStateOf(setOf<String>())
@@ -78,7 +79,7 @@ class MangaDetailViewModel(
     private fun insertMangaOnLocalDatabase() {
         viewModelScope.launch {
             try {
-                localRepository.getManga(manga.id) ?: run {
+                localRepository.getManga(idManga) ?: run {
                     // If manga is not found in the local database, insert it
                     localRepository.insertManga(manga)
                 }
@@ -126,7 +127,7 @@ class MangaDetailViewModel(
     private fun checkMangaInLibrary() {
         viewModelScope.launch {
             try {
-                isMangaInLibrary.value = localRepository.isMangaInLibrary(manga.id)
+                isMangaInLibrary.value = localRepository.isMangaInLibrary(idManga)
             } catch (e: Exception) {
                 isMangaInLibrary.value = false
                 localRepository.log(e)
@@ -139,7 +140,7 @@ class MangaDetailViewModel(
             isVolumeLoading.value = true
             try {
                 // Check if the manga and volumes is already in the local database
-                val tmpData = localRepository.getMangaWithVolume(manga.id)
+                val tmpData = localRepository.getMangaWithVolume(idManga)
                 if (tmpData == null || tmpData.volumes.isEmpty()) {
                     loadCoverList()
                 } else {
@@ -154,17 +155,28 @@ class MangaDetailViewModel(
         }
     }
 
-    fun refreshCoverList() {
+    fun refreshManga() {
         isVolumeLoading.value = true
         viewModelScope.launch {
             try {
+                // Fetch updated manga info from the API
+                val updatedManga: Manga = apiRepository.getManga(idManga)
+                val tmpManga = localRepository.updateManga(updatedManga)
+                if (tmpManga != null) {
+                    manga = updatedManga
+                }
+
                 // Fetch cover list from the API
                 val coverList: List<Volume> = apiRepository.getCoverListByManga(
                     manga = manga
                 )
-                // Insert the cover list into the local database
-                localRepository.insertVolumeList(coverList)
-                volumeList.value = coverList.map { it.copy() }
+                localRepository.updateOrInsertVolumeList(coverList)
+
+                // Get updated cover list from local database
+                volumeList.value = localRepository
+                    .getMangaWithVolume(idManga)
+                    ?.volumes?.map { it.copy() }
+                    ?: emptyList()
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
@@ -176,7 +188,7 @@ class MangaDetailViewModel(
     fun removeMangaFromLibrary() {
         viewModelScope.launch {
             try {
-                localRepository.removeMangaFromLibrary(manga.id)
+                localRepository.removeMangaFromLibrary(idManga)
                 _removeResult.value = Result.success(Unit)
                 isMangaInLibrary.value = false
             } catch (e: Exception) {
@@ -210,7 +222,7 @@ class MangaDetailViewModel(
             currentOffset += limit
             isVolumeLoading.value = true
 
-            val tmpMangaWithVolumes = localRepository.getMangaWithVolume(manga.id)
+            val tmpMangaWithVolumes = localRepository.getMangaWithVolume(idManga)
             if (tmpMangaWithVolumes != null && tmpMangaWithVolumes.volumes.isNotEmpty()) {
                 // If local volumes are greater than the current offset, return
                 if (tmpMangaWithVolumes.volumes.size > currentOffset) {
