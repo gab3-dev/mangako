@@ -101,6 +101,7 @@ fun MangaDetail(
         viewModelStoreOwner = backStackEntry,
         factory = MangaDetailViewModelFactory(apiRepository, localRepository, manga)
     )
+    val mangaState by viewModel.mangaState.collectAsState()
     val volumeList by viewModel.volumeList.collectAsState()
     val filteredVolumeList by remember(specialCoverFilter, volumeList) {
         mutableStateOf(
@@ -153,7 +154,7 @@ fun MangaDetail(
     val shouldLoadMore = remember {
         derivedStateOf {
             val totalItems = listState.layoutInfo.totalItemsCount
-            if (totalItems == manga.volumeCount || canLoadMore) {
+            if (totalItems == mangaState.volumeCount || canLoadMore) {
                 return@derivedStateOf false // já carregou todos os volumes
             }
             try {
@@ -309,15 +310,18 @@ fun MangaDetail(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
+                item(
+                    key = mangaState.id,
+                    span = { GridItemSpan(maxLineSpan) }
+                ) {
                     MangaHeader(
-                        title = manga.title,
-                        enTitle = manga.altTitle,
-                        author = manga.author,
-                        description = manga.description,
-                        situation = manga.status,
-                        coverUrl = manga.coverUrl,
-                        volume = manga.volumeCount
+                        title = mangaState.title,
+                        enTitle = mangaState.altTitle,
+                        author = mangaState.author,
+                        description = mangaState.description,
+                        situation = mangaState.status,
+                        coverUrl = mangaState.coverUrl,
+                        volume = mangaState.volumeCount
                     )
                 }
                 item(span = { GridItemSpan(maxLineSpan) }) {
@@ -344,7 +348,7 @@ fun MangaDetail(
                             shape = RoundedCornerShape(16.dp),
                             onClick = {
                                 viewModel.addMangaToLibrary(
-                                    manga
+                                    mangaState
                                 )
                             }
                         ) {
@@ -446,7 +450,7 @@ fun MangaDetail(
                                             }
                                         }
                                     ),
-                                title = manga.title,
+                                title = mangaState.title,
                                 coverUrl = volume.coverUrl,
                                 owned = volume.owned,
                                 isVolumeCard = true,

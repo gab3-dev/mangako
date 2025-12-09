@@ -16,7 +16,8 @@ class MangaDetailViewModel(
     private val localRepository: LibraryRepository,
     private var manga: Manga,
 ) : ViewModel() {
-    private val idManga = manga.id
+    val mangaState = MutableStateFlow(manga)
+    private val idManga = mangaState.value.id
     private val _addResult = MutableStateFlow<Result<Unit>?>(null)
     private val _removeResult = MutableStateFlow<Result<Unit>?>(null)
     var selectedIds = mutableStateOf(setOf<String>())
@@ -81,7 +82,7 @@ class MangaDetailViewModel(
             try {
                 localRepository.getManga(idManga) ?: run {
                     // If manga is not found in the local database, insert it
-                    localRepository.insertManga(manga)
+                    localRepository.insertManga(mangaState.value)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -161,14 +162,14 @@ class MangaDetailViewModel(
             try {
                 // Fetch updated manga info from the API
                 val updatedManga: Manga = apiRepository.getManga(idManga)
-                val tmpManga = localRepository.updateManga(updatedManga)
-                if (tmpManga != null) {
-                    manga = updatedManga
+                val finalLocalManga = localRepository.updateManga(updatedManga)
+                if (finalLocalManga != null) {
+                    mangaState.value = finalLocalManga
                 }
 
                 // Fetch cover list from the API
                 val coverList: List<Volume> = apiRepository.getCoverListByManga(
-                    manga = manga
+                    manga = mangaState.value
                 )
                 localRepository.updateOrInsertVolumeList(coverList)
 
@@ -203,7 +204,7 @@ class MangaDetailViewModel(
             try {
                 // Fetch cover list from the API
                 val coverList: List<Volume> = apiRepository.getCoverListByManga(
-                    manga = manga
+                    manga = mangaState.value
                 )
                 // Insert the cover list into the local database
                 localRepository.insertVolumeList(coverList)
@@ -240,7 +241,7 @@ class MangaDetailViewModel(
             }
 
             val moreVolumes = apiRepository.getCoverListByManga(
-                manga = manga,
+                manga = mangaState.value,
                 offset = currentOffset,
             )
             // Insert the new volumes into the local database
