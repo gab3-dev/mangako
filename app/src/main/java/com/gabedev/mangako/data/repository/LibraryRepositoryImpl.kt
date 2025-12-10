@@ -3,6 +3,7 @@ package com.gabedev.mangako.data.repository
 import com.gabedev.mangako.core.FileLogger
 import com.gabedev.mangako.data.local.LocalDatabase
 import com.gabedev.mangako.data.model.Manga
+import com.gabedev.mangako.data.model.MangaWithOwned
 import com.gabedev.mangako.data.model.MangaWithVolume
 import com.gabedev.mangako.data.model.Volume
 
@@ -31,8 +32,8 @@ class LibraryRepositoryImpl(
         }
     }
 
-    override suspend fun getMangaOnLibrary(): List<Manga> {
-        return db.mangaDao().getAllManga().filter { it.isOnUserLibrary }
+    override suspend fun getMangaOnLibrary(): List<MangaWithOwned> {
+        return db.mangaDao().getAllMangaWithOwned().filter { it.isOnUserLibrary }
     }
 
     override suspend fun getMangaWithVolume(mangaId: String): MangaWithVolume? {

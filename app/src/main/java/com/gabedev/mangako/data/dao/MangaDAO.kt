@@ -8,6 +8,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
 import com.gabedev.mangako.data.model.Manga
+import com.gabedev.mangako.data.model.MangaWithOwned
 import com.gabedev.mangako.data.model.MangaWithVolume
 
 @Dao
@@ -21,6 +22,12 @@ interface MangaDAO {
     @Transaction
     @Query("SELECT * FROM Manga WHERE id = :id")
     suspend fun getMangaWithVolumeById(id: String): MangaWithVolume?
+
+    // @Query("SELECT * FROM MangaWithOwned WHERE id = :id")
+    // suspend fun getMangaWithOwned(id: String): MangaWithOwned?
+
+    @Query("SELECT * FROM MangaWithOwned ORDER BY title")
+    fun getAllMangaWithOwned(): List<MangaWithOwned>
 
     @Query("SELECT * FROM Manga WHERE title LIKE '%' || :title || '%'")
     suspend fun searchMangaByTitle(title: String): List<Manga>
