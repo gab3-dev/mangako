@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Book
 import androidx.compose.material.icons.outlined.Star
-import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -195,7 +194,10 @@ fun MainAppNavHost(
                         },
                         icon = {
                             if (screen == Screen.UserCollection) {
-                                Icon(screen.icon, contentDescription = screen.title)
+                                AnimatedIcon(
+                                    isSelected = currentRoute == screen.route,
+                                    animatedIconRes = R.drawable.ic_library_selector,
+                                )
                             } else {
                                 AnimatedIcon(
                                     isSelected = currentRoute == screen.route,
