@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gabedev.mangako.data.model.Manga
+import com.gabedev.mangako.data.model.toManga
 import com.gabedev.mangako.data.repository.LibraryRepository
 import com.gabedev.mangako.ui.components.MangaCard
 
@@ -70,11 +71,12 @@ fun MangaCollection(
                         MangaCard(
                             modifier = Modifier
                                 .clickable(
-                                    onClick = { onMangaClick(manga) }
+                                    onClick = { onMangaClick(manga.toManga()) }
                                 ),
                             title = manga.title,
                             coverUrl = manga.coverUrl,
-                            volume = manga.volumeCount.toFloat(),
+                            volumeTotal = manga.volumeCount,
+                            volumesOwned = manga.volumeOwned,
                         )
                     }
                 }

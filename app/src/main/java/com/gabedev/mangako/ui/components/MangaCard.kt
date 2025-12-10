@@ -1,20 +1,28 @@
 package com.gabedev.mangako.ui.components
 
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.gabedev.mangako.core.Utils
 
 const val MANGA_COVER_PLACEHOLDER = "https://uploads.mangadex.org/covers/d65c0332-3764-4c89-84bd-b1a4e7278ad7/8e8a3e18-948d-402a-a9ea-f62366486771.jpg"
@@ -26,6 +34,8 @@ fun MangaCard(
     coverUrl: String,
     owned: Boolean = false,
     selected: Boolean = false,
+    volumesOwned: Int = 0,
+    volumeTotal: Int = 0,
     isVolumeCard: Boolean = false,
     volume: Float? = null,
 ) {
@@ -37,18 +47,43 @@ fun MangaCard(
             .heightIn(min = 200.dp),
         shape = RoundedCornerShape(8.dp),
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(),
+                .fillMaxHeight()
         ) {
             MangaCoverImage(
                 imageUrl = coverUrl,
                 contentDescription = title,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(),
+                    .fillMaxSize()
             )
+            if (!isVolumeCard) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd) // canto inferior direito
+                        .padding(8.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.tertiaryContainer,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    if (volumesOwned == volumeTotal) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Completed",
+                            tint = Color.White,
+                        )
+                    } else {
+                        Text(
+                            text = "$volumesOwned/$volumeTotal",
+                            color = Color.White,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            }
         }
         if (isVolumeCard) {
             Row {
