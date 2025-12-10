@@ -96,7 +96,7 @@ fun MangaDetail(
     var specialCoverFilter by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val viewModeFlow = remember { context.getConfigText() }
-    val viewMode by viewModeFlow.collectAsState(initial = "grid")
+    val viewMode by viewModeFlow.collectAsState(initial = "list")
     val viewModel: MangaDetailViewModel = viewModel(
         viewModelStoreOwner = backStackEntry,
         factory = MangaDetailViewModelFactory(apiRepository, localRepository, manga)
@@ -398,7 +398,7 @@ fun MangaDetail(
                         )
                         Box {
                             ListGridSwitch(
-                                initialMode = viewMode,
+                                initialMode = viewMode.ifEmpty { "list" },
                                 onChange = { selectedMode ->
                                     CoroutineScope(Dispatchers.IO).launch {
                                         context.saveConfigText(selectedMode)
