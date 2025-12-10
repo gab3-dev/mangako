@@ -51,7 +51,7 @@ fun MangaSearchItem(
         ) {
             Card(
                 modifier = Modifier
-                    .fillMaxWidth(0.2f)
+                    .fillMaxWidth(0.23f)
                     .heightIn(128.dp)
                     .fillMaxHeight(),
                 shape = RoundedCornerShape(8.dp),
