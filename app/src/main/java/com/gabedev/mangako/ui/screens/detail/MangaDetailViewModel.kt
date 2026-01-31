@@ -207,8 +207,13 @@ class MangaDetailViewModel(
                     manga = mangaState.value
                 )
                 // Insert the cover list into the local database
-                localRepository.insertVolumeList(coverList)
-                volumeList.value = coverList.map { it.copy() }
+                // Filter duplicated covers (same volume AND same cover_url)
+                val distinctCoverList = coverList.distinctBy { 
+                   "${it.volume}-${it.coverUrl}" // Distinct by volume and cover
+                }
+
+                localRepository.insertVolumeList(distinctCoverList)
+                volumeList.value = distinctCoverList.map { it.copy() }
                 isVolumeLoading.value = false
             } catch (e: Exception) {
                 localRepository.log(e)
@@ -245,16 +250,23 @@ class MangaDetailViewModel(
                 offset = currentOffset,
             )
             // Insert the new volumes into the local database
-            if (moreVolumes.isEmpty()) {
-                isVolumeLoading.value = false
-                noMoreVolume.value = true
-                return@launch
+            // Filter duplicates from incoming list
+            val distinctMoreVolumes = moreVolumes.distinctBy { 
+               "${it.volume}-${it.coverUrl}"
+            }.filter { incoming ->
+               // Also filter against what we already have in the list
+               volumeList.value.none { existing -> 
+                   existing.volume == incoming.volume && existing.coverUrl == incoming.coverUrl 
+               }
             }
-            localRepository.insertVolumeList(moreVolumes)
-            try {
-                volumeList.value += moreVolumes.map { it.copy() }
-            } catch (e: Exception) {
-                localRepository.log(e)
+
+            if (distinctMoreVolumes.isNotEmpty()) {
+                localRepository.insertVolumeList(distinctMoreVolumes)
+                try {
+                    volumeList.value += distinctMoreVolumes.map { it.copy() }
+                } catch (e: Exception) {
+                    localRepository.log(e)
+                }
             }
             isVolumeLoading.value = false
         }

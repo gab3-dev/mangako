@@ -4,7 +4,11 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-@Entity
+@Entity(
+    indices = [
+        androidx.room.Index(value = ["manga_id", "volume", "cover_url"], unique = true)
+    ]
+)
 data class Volume(
     @PrimaryKey val                         id: String,
     @ColumnInfo(name = "manga_id")          val mangaId: String, // chave estrangeira
