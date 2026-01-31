@@ -1,6 +1,6 @@
-# <img src="app/src/main/res/drawable/app_logo.png" width="48" height="48" align="center" /> Mangako
+# <img src="app/src/main/res/drawable/app_logo.png" width="48" height="48" align="center" /> MangaKō
 
-Mangako is an Android application designed to help you manage and track your Manga collection. Keep track of the series you own and update the specific volumes you have acquired.
+MangaKō is an Android application designed to help you manage and track your Manga collection. Keep track of the series you own and update the specific volumes you have acquired.
 
 ## Features
 
