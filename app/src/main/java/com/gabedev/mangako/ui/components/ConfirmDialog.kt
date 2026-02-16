@@ -1,14 +1,16 @@
 package com.gabedev.mangako.ui.components
 
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.gabedev.mangako.R
 
 @Composable
 fun ConfirmDialog(
-    title: String = "Confirmação",
-    text: String = "Tem certeza que deseja continuar?",
+    title: String = stringResource(R.string.dialog_confirm_title),
+    text: String = stringResource(R.string.dialog_confirm_text),
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -22,12 +24,12 @@ fun ConfirmDialog(
         },
         confirmButton = {
             TextButton(onClick = onConfirm) {
-                Text("Confirmar")
+                Text(stringResource(R.string.dialog_confirm_button))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancelar")
+                Text(stringResource(R.string.dialog_cancel_button))
             }
         }
     )

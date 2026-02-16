@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -22,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -74,24 +76,24 @@ class MainActivity : ComponentActivity() {
 
 sealed class Screen(
     val route: String,
-    val title: String,
+    @StringRes val titleRes: Int,
     val icon: ImageVector,
 ) {
     data object UserCollection : Screen(
         "collection",
-        "Biblioteca",
+        R.string.nav_library,
         Icons.Outlined.Book
     )
 
     data object Explore : Screen(
         "explore",
-        "Explorar",
+        R.string.nav_explore,
         Icons.Outlined.Book
     )
 
     data object MangaDetail : Screen(
         "detail/{manga}",
-        "Detalhes",
+        R.string.nav_details,
         Icons.Outlined.Star
     ) {
         fun createRoute(manga: Manga): String {
@@ -205,7 +207,7 @@ fun MainAppNavHost(
                                 )
                             }
                         },
-                        label = { Text(screen.title) }
+                        label = { Text(stringResource(screen.titleRes)) }
                     )
                 }
             }

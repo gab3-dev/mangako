@@ -12,9 +12,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import com.gabedev.mangako.R
 
 @Composable
 fun CustomSearchBar(
@@ -28,7 +30,7 @@ fun CustomSearchBar(
         value = searchQuery,
         onValueChange = onQueryChange,
         modifier = modifier,
-        placeholder = { Text("Search...") },
+        placeholder = { Text(stringResource(R.string.search_placeholder_short)) },
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Text,
             imeAction = ImeAction.Done
@@ -50,7 +52,7 @@ fun CustomSearchBar(
             ) {
                 Icon(
                     imageVector = Icons.Default.Search,
-                    contentDescription = "Search Icon",
+                    contentDescription = stringResource(R.string.cd_search_icon),
                     tint = MaterialTheme.colorScheme.onSurface
                 )
             }
@@ -61,7 +63,7 @@ fun CustomSearchBar(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.cd_back),
                     tint = MaterialTheme.colorScheme.onSurface
                 )
             }

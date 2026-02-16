@@ -36,11 +36,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.gabedev.mangako.R
 import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.repository.MangaDexRepository
 import com.gabedev.mangako.ui.components.CustomLoadingIndicator
@@ -129,12 +131,12 @@ fun MangaSearchScreen(
                         Icons.Default.Search.let { icon ->
                             Icon(
                                 imageVector = icon,
-                                contentDescription = "Search Icon",
+                                contentDescription = stringResource(R.string.cd_search_icon),
                                 tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     },
-                    placeholder = { Text("Pesquisar mangas") }
+                    placeholder = { Text(stringResource(R.string.search_placeholder)) }
                 )
             },
             expanded = expanded,

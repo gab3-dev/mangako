@@ -21,8 +21,10 @@ import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.gabedev.mangako.R
 import com.gabedev.mangako.Screen
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,20 +61,20 @@ fun DynamicTopBar (
                 modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
                 title = {
                     Text(
-                        text = currentScreen.title,
+                        text = stringResource(currentScreen.titleRes),
                         fontWeight = FontWeight.Bold,
                     )
                 },
                 navigationIcon = {
                     Icon(
-                        imageVector = currentScreen.icon, contentDescription = currentScreen.title
+                        imageVector = currentScreen.icon, contentDescription = stringResource(currentScreen.titleRes)
                     )
                 },
                 actions = {
                     IconButton(
                         onClick = onSearchIconClick,
                     ) {
-                        Icon(Icons.Default.Search, contentDescription = "Search")
+                        Icon(Icons.Default.Search, contentDescription = stringResource(R.string.cd_search))
                     }
                 },
             )

@@ -61,6 +61,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -68,6 +69,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
+import com.gabedev.mangako.R
 import com.gabedev.mangako.core.Utils
 import com.gabedev.mangako.data.local.getConfigText
 import com.gabedev.mangako.data.local.saveConfigText
@@ -124,8 +126,8 @@ fun MangaDetail(
     val isMultiSelectActive by viewModel.isMultiSelectActive
     if (showDialogMangaInLibrary) {
         ConfirmDialog(
-            title = "Manga não foi adicionado a biblioteca",
-            text = "Deseja adicionar este manga à sua biblioteca?",
+            title = stringResource(R.string.dialog_manga_not_in_library_title),
+            text = stringResource(R.string.dialog_manga_not_in_library_text),
             onConfirm = {
                 viewModel.addMangaToLibrary(manga)
                 callBackFunction()
@@ -177,12 +179,12 @@ fun MangaDetail(
         addResult?.let {
             if (it.isSuccess) {
                 snackbarHostState.showSnackbar(
-                    message = "Manga adicionado à biblioteca!",
+                    message = context.getString(R.string.snackbar_manga_added),
                     duration = SnackbarDuration.Short,
                 )
             } else {
                 snackbarHostState.showSnackbar(
-                    message = "Erro ao adicionar manga!",
+                    message = context.getString(R.string.snackbar_manga_add_error),
                     duration = SnackbarDuration.Short,
                 )
             }
@@ -194,12 +196,12 @@ fun MangaDetail(
         removeResult?.let {
             if (it.isSuccess) {
                 snackbarHostState.showSnackbar(
-                    message = "Manga removido da biblioteca!",
+                    message = context.getString(R.string.snackbar_manga_removed),
                     duration = SnackbarDuration.Short,
                 )
             } else {
                 snackbarHostState.showSnackbar(
-                    message = "Erro ao remover manga!",
+                    message = context.getString(R.string.snackbar_manga_remove_error),
                     duration = SnackbarDuration.Short,
                 )
             }
@@ -250,7 +252,7 @@ fun MangaDetail(
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.CheckCircle,
-                            contentDescription = "Marcar volumes como possuídos",
+                            contentDescription = stringResource(R.string.cd_mark_as_owned),
                         )
                     }
                     IconButton(
@@ -262,7 +264,7 @@ fun MangaDetail(
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.Cancel,
-                            contentDescription = "Desmarcar volumes como possuídos",
+                            contentDescription = stringResource(R.string.cd_unmark_as_owned),
                         )
                     }
                     FilledIconButton(
@@ -272,7 +274,7 @@ fun MangaDetail(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Undo,
-                            contentDescription = "Parar seleção múltipla",
+                            contentDescription = stringResource(R.string.cd_stop_multi_select),
                         )
                     }
                     IconButton(
@@ -283,7 +285,7 @@ fun MangaDetail(
                     ) {
                         Icon(
                             imageVector = Icons.Default.SelectAll,
-                            contentDescription = "Selecionar todos volumes",
+                            contentDescription = stringResource(R.string.cd_select_all),
                         )
                     }
                     IconButton(
@@ -294,7 +296,7 @@ fun MangaDetail(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Deselect,
-                            contentDescription = "Desfazer seleção",
+                            contentDescription = stringResource(R.string.cd_deselect),
                         )
                     }
                 }
@@ -335,11 +337,11 @@ fun MangaDetail(
                             Icon(
                                 modifier = Modifier.padding(8.dp),
                                 imageVector = Icons.Default.Close,
-                                contentDescription = "Remover manga da coleção",
+                                contentDescription = stringResource(R.string.button_remove_from_collection),
                             )
                             Text(
                                 modifier = Modifier.padding(8.dp),
-                                text = "Remover manga da coleção",
+                                text = stringResource(R.string.button_remove_from_collection),
                                 fontSize = 18.sp,
                             )
                         }
@@ -355,11 +357,11 @@ fun MangaDetail(
                             Icon(
                                 modifier = Modifier.padding(8.dp),
                                 imageVector = Icons.Default.Add,
-                                contentDescription = "Adicionar à coleção"
+                                contentDescription = stringResource(R.string.button_add_to_collection)
                             )
                             Text(
                                 modifier = Modifier.padding(8.dp),
-                                text = "Adicionar à coleção",
+                                text = stringResource(R.string.button_add_to_collection),
                                 fontSize = 18.sp,
                             )
                         }
@@ -369,14 +371,14 @@ fun MangaDetail(
                     FilterChip(
                         onClick = { specialCoverFilter = !specialCoverFilter },
                         label = {
-                            Text("Edições Especiais")
+                            Text(stringResource(R.string.label_special_editions))
                         },
                         selected = specialCoverFilter,
                         leadingIcon = if (specialCoverFilter) {
                             {
                                 Icon(
                                     imageVector = Icons.Filled.Done,
-                                    contentDescription = "Done icon",
+                                    contentDescription = stringResource(R.string.cd_done_icon),
                                     modifier = Modifier.size(FilterChipDefaults.IconSize)
                                 )
                             }
@@ -394,7 +396,7 @@ fun MangaDetail(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "Volumes"
+                            text = stringResource(R.string.label_volumes)
                         )
                         Box {
                             ListGridSwitch(
@@ -416,7 +418,7 @@ fun MangaDetail(
                             horizontalArrangement = Arrangement.Center
                         ) {
                             Text(
-                                text = "Nenhum volume encontrado.",
+                                text = stringResource(R.string.label_no_volumes_found),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -483,7 +485,7 @@ fun MangaDetail(
                                         }
                                     ),
                                 coverUrl = volume.coverUrl,
-                                title = "Volume ${Utils.handleFloatVolume(volume.volume)}",
+                                title = stringResource(R.string.label_volume_format, Utils.handleFloatVolume(volume.volume)),
                                 selected = viewModel.selectedIds.value.contains(volume.id),
                                 owned = volume.owned,
                             )
@@ -505,7 +507,7 @@ fun MangaDetail(
                                     .height(50.dp)
                             )
                             Text(
-                                text = "Carregando capas...",
+                                text = stringResource(R.string.label_loading_covers),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -565,13 +567,13 @@ fun MangaHeader(
                 }
                 Column {
                     SimpleText(
-                        text = "Autor: ${author ?: "Desconhecido"}",
+                        text = if (author != null) stringResource(R.string.header_author, author) else stringResource(R.string.header_author_unknown),
                     )
                     SimpleText(
-                        text = "Situação: ${situation ?: "Desconhecida"}",
+                        text = if (situation != null) stringResource(R.string.header_status, situation) else stringResource(R.string.header_status_unknown),
                     )
                     SimpleText(
-                        text = "Volumes: ${volume?.toString() ?: "N/A"}",
+                        text = if (volume != null) stringResource(R.string.header_volumes, volume.toString()) else stringResource(R.string.header_volumes_na),
                     )
                 }
             }

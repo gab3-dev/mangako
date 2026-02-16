@@ -1,0 +1,65 @@
+<resources>
+    <!-- Navigation -->
+    <string name="nav_library">Biblioteca</string>
+    <string name="nav_explore">Explorar</string>
+    <string name="nav_details">Detalhes</string>
+
+    <!-- Collection Screen -->
+    <string name="welcome_message">Bem-vindo ao MangaKō!</string>
+
+    <!-- Detail Screen - Dialogs -->
+    <string name="dialog_manga_not_in_library_title">Manga não foi adicionado a biblioteca</string>
+    <string name="dialog_manga_not_in_library_text">Deseja adicionar este manga à sua biblioteca?</string>
+    <string name="dialog_confirm_title">Confirmação</string>
+    <string name="dialog_confirm_text">Tem certeza que deseja continuar?</string>
+    <string name="dialog_confirm_button">Confirmar</string>
+    <string name="dialog_cancel_button">Cancelar</string>
+
+    <!-- Detail Screen - Snackbar -->
+    <string name="snackbar_manga_added">Manga adicionado à biblioteca!</string>
+    <string name="snackbar_manga_add_error">Erro ao adicionar manga!</string>
+    <string name="snackbar_manga_removed">Manga removido da biblioteca!</string>
+    <string name="snackbar_manga_remove_error">Erro ao remover manga!</string>
+
+    <!-- Detail Screen - Buttons -->
+    <string name="button_remove_from_collection">Remover manga da coleção</string>
+    <string name="button_add_to_collection">Adicionar à coleção</string>
+
+    <!-- Detail Screen - Labels -->
+    <string name="label_special_editions">Edições Especiais</string>
+    <string name="label_volumes">Volumes</string>
+    <string name="label_no_volumes_found">Nenhum volume encontrado.</string>
+    <string name="label_loading_covers">Carregando capas…</string>
+    <string name="label_volume_format">Volume %1$s</string>
+    <string name="label_volume_card_format">Volume: %1$s</string>
+
+    <!-- Detail Screen - Content Descriptions -->
+    <string name="cd_mark_as_owned">Marcar volumes como possuídos</string>
+    <string name="cd_unmark_as_owned">Desmarcar volumes como possuídos</string>
+    <string name="cd_stop_multi_select">Parar seleção múltipla</string>
+    <string name="cd_select_all">Selecionar todos volumes</string>
+    <string name="cd_deselect">Desfazer seleção</string>
+    <string name="cd_done_icon">Ícone de concluído</string>
+
+    <!-- Detail Screen - Header -->
+    <string name="header_author">Autor: %1$s</string>
+    <string name="header_author_unknown">Autor: Desconhecido</string>
+    <string name="header_status">Situação: %1$s</string>
+    <string name="header_status_unknown">Situação: Desconhecida</string>
+    <string name="header_volumes">Volumes: %1$s</string>
+    <string name="header_volumes_na">Volumes: N/A</string>
+
+    <!-- Search -->
+    <string name="search_placeholder">Pesquisar mangas</string>
+    <string name="search_placeholder_short">Pesquisar…</string>
+    <string name="cd_search_icon">Ícone de busca</string>
+    <string name="cd_back">Voltar</string>
+    <string name="cd_search">Buscar</string>
+
+    <!-- Components -->
+    <string name="no_cover">Sem cover</string>
+    <string name="cd_completed">Completo</string>
+    <string name="unknown_author">Autor Desconhecido</string>
+    <string name="cd_selected_icon">Ícone de selecionado</string>
+    <string name="cd_view_mode_toggle">Alternar modo de visualização</string>
+</resources>

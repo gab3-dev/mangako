@@ -23,7 +23,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.gabedev.mangako.R
 import com.gabedev.mangako.data.model.Manga
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -86,7 +88,7 @@ fun MangaSearchItem(
                     style = MaterialTheme.typography.bodyLarge
                 )
                 Text(
-                    text = manga.author ?: "Unknown Author",
+                    text = manga.author ?: stringResource(R.string.unknown_author),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(vertical = 2.dp)
                 )

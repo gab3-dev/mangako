@@ -16,9 +16,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.gabedev.mangako.R
 import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.model.toManga
 import com.gabedev.mangako.data.repository.LibraryRepository
@@ -55,7 +57,7 @@ fun MangaCollection(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    Text(text = "Welcome to MangaKō!")
+                    Text(text = stringResource(R.string.welcome_message))
                 }
             } else {
                 LazyVerticalGrid(
