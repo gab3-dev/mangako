@@ -108,7 +108,7 @@ fun MangaCollection(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(8.dp)
+                            .padding(16.dp)
                     ) {
                         items(mangaCollection.size) { index ->
                             val manga = mangaCollection[index]

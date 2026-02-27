@@ -89,7 +89,7 @@ fun MangaSearchScreen(
                     modifier = Modifier.fillMaxSize(),
                     state = listState,
                     verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(8.dp),
+                    contentPadding = PaddingValues(16.dp),
                 ) {
                     items(mangaList) { manga: Manga ->
                         MangaSearchItem(
