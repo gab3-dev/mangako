@@ -23,7 +23,12 @@ class MangaSearchListViewModel(
     private var currentOffset = 0
     private val limit = 6
 
+
     fun refreshMangaList() {
+        // Clear cache for this query so we force a fresh fetch
+        val query = queryString.value.trim()
+        MangaSearchCache.invalidate(query)
+
         isMangaLoading.value = true
         viewModelScope.launch {
             val tmpOffset = currentOffset
@@ -35,6 +40,7 @@ class MangaSearchListViewModel(
                     currentOffset
                 )
                 mangaList.value = coverList.map { it.copy() }
+                MangaSearchCache.put(query, currentOffset, mangaList.value)
                 currentOffset += limit
             } catch (e: Exception) {
                 currentOffset = tmpOffset
@@ -52,14 +58,27 @@ class MangaSearchListViewModel(
         loadMangaJob?.cancel()
         noMoreManga.value = false
         if (currentOffset != 0) {
-            print("Carregando mais mangas...\n")
             isLoadingMoreManga.value = true
         } else {
-            print("Carregando lista de mangas...\n")
             isMangaLoading.value = true
         }
 
         activeQuery = currentQuery
+
+        val cached = MangaSearchCache.get(currentQuery, currentOffset)
+
+        if (cached != null) {
+            // Serve from cache — skip API call
+            if (currentOffset != 0) {
+                mangaList.value += cached
+            } else {
+                mangaList.value = cached
+            }
+            currentOffset += limit
+            isMangaLoading.value = false
+            isLoadingMoreManga.value = false
+            return
+        }
 
         loadMangaJob = viewModelScope.launch {
             try {
@@ -69,7 +88,7 @@ class MangaSearchListViewModel(
                     currentOffset
                 )
 
-                // If the query as changed, ignore the results
+                // If the query has changed, ignore the results
                 if (activeQuery != currentQuery || !isActive) return@launch
 
                 if (resultMangaList.isEmpty()) {
@@ -79,10 +98,13 @@ class MangaSearchListViewModel(
                     return@launch
                 }
 
+                val results = resultMangaList.map { it.copy() }
+                MangaSearchCache.put(currentQuery, currentOffset, results)
+
                 if (currentOffset != 0) {
-                    mangaList.value += resultMangaList.map { it.copy() }
+                    mangaList.value += results
                 } else {
-                    mangaList.value = resultMangaList.map { it.copy() }
+                    mangaList.value = results
                 }
                 currentOffset += limit
                 isMangaLoading.value = false
@@ -100,6 +122,9 @@ class MangaSearchListViewModel(
     }
 
     fun setQueryString(newQuery: String) {
+        // Skip if the query hasn't changed
+        if (newQuery == queryString.value) return
+
         queryString.value = newQuery
         mangaList.value = emptyList()
         currentOffset = 0

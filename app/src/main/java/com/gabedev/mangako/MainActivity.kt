@@ -6,7 +6,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.StringRes
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -111,9 +110,8 @@ fun MainAppNavHost(
     logger: FileLogger,
     modifier: Modifier
 ) {
-    // Variável para armazenar a consulta de busca
-    var searchQuery by remember { mutableStateOf("") }
-    val searchMode = remember { mutableStateOf(false) }
+    // Stores the debounced search query shared across screens
+    var debouncedSearchQuery by remember { mutableStateOf("") }
 
     val items = listOf(Screen.UserCollection, Screen.Explore, Screen.MangaDetail)
     val itemsNavBar = items.filter { it != Screen.MangaDetail }
@@ -139,36 +137,25 @@ fun MainAppNavHost(
                 ?.destination
                 ?.route
 
-            if (currentRoute == Screen.MangaDetail.route || currentRoute == Screen.Explore.route) {
-                // Não exibe a barra de topo na tela de detalhes
+            if (currentRoute == Screen.MangaDetail.route) {
+                // Don't show the top bar on the detail screen
                 return@Scaffold
             }
-            DynamicTopBar(
-                currentScreen = items.find { it.route == currentRoute } ?: Screen.UserCollection,
-                searchQuery = searchQuery,
-                searchMode = searchMode.value,
-                onSearchIconClick = {
-                    // Alterna o modo de busca
-                    searchMode.value = !searchMode.value
 
-                    // Alterna para a tela de busca se não estiver lá
-                    if (currentRoute != Screen.Explore.route) {
-                        navController.navigate(Screen.Explore.route)
-                    }
-                },
-                onBackIconClick = {
-                    // Volta para a tela anterior se estiver no modo de busca
-                    if (searchMode.value) {
-                        searchMode.value = false
-                        navController.popBackStack()
-                    }
-                },
-                onQueryChange = { query ->
-                    searchQuery = query
+            val placeholderRes = if (currentRoute == Screen.Explore.route) {
+                R.string.search_placeholder
+            } else {
+                R.string.search_collection_placeholder
+            }
+
+            DynamicTopBar(
+                placeholderRes = placeholderRes,
+                onDebouncedQuery = { query ->
+                    debouncedSearchQuery = query
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 10.dp)
+                    .padding(horizontal = 20.dp, vertical = 10.dp),
             )
         },
         bottomBar = {
@@ -184,9 +171,6 @@ fun MainAppNavHost(
                         selected = currentRoute == screen.route,
                         onClick = {
                             navController.navigate(screen.route) {
-                                if (screen == Screen.UserCollection) {
-                                    searchMode.value = false
-                                }
                                 popUpTo(navController.graph.startDestinationId) {
                                     saveState = false
                                 }
@@ -223,8 +207,6 @@ fun MainAppNavHost(
                 MangaCollection(
                     repository = localRepository,
                     onMangaClick = { manga ->
-                        searchMode.value = false // Desativa o modo de busca
-
                         navController.navigate(
                             Screen.MangaDetail.createRoute(
                                 manga = manga
@@ -233,8 +215,7 @@ fun MainAppNavHost(
                             launchSingleTop = true
                         }
                     },
-                    modifier = Modifier
-                        .fillMaxSize()
+                    searchQuery = debouncedSearchQuery,
                 )
             }
 
@@ -242,9 +223,8 @@ fun MainAppNavHost(
             composable(Screen.Explore.route) {
                 MangaSearchScreen(
                     apiRepository = mangaRepository,
+                    searchQuery = debouncedSearchQuery,
                     onResultClick = { manga ->
-                        searchMode.value = false // Desativa o modo de busca
-
                         navController.navigate(
                             Screen.MangaDetail.createRoute(
                                 manga = manga
