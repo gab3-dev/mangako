@@ -17,6 +17,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -110,8 +111,9 @@ fun MainAppNavHost(
     logger: FileLogger,
     modifier: Modifier
 ) {
-    // Stores the debounced search query shared across screens
-    var debouncedSearchQuery by remember { mutableStateOf("") }
+    // Per-screen search query states
+    var collectionSearchQuery by remember { mutableStateOf("") }
+    var exploreSearchQuery by remember { mutableStateOf("") }
 
     val items = listOf(Screen.UserCollection, Screen.Explore, Screen.MangaDetail)
     val itemsNavBar = items.filter { it != Screen.MangaDetail }
@@ -142,21 +144,30 @@ fun MainAppNavHost(
                 return@Scaffold
             }
 
-            val placeholderRes = if (currentRoute == Screen.Explore.route) {
+            val isExplore = currentRoute == Screen.Explore.route
+            val placeholderRes = if (isExplore) {
                 R.string.search_placeholder
             } else {
                 R.string.search_collection_placeholder
             }
 
-            DynamicTopBar(
-                placeholderRes = placeholderRes,
-                onDebouncedQuery = { query ->
-                    debouncedSearchQuery = query
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 10.dp),
-            )
+            // Key on route so each screen gets its own search bar state
+            key(currentRoute) {
+                DynamicTopBar(
+                    placeholderRes = placeholderRes,
+                    initialQuery = if (isExplore) exploreSearchQuery else collectionSearchQuery,
+                    onDebouncedQuery = { query ->
+                        if (isExplore) {
+                            exploreSearchQuery = query
+                        } else {
+                            collectionSearchQuery = query
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 10.dp),
+                )
+            }
         },
         bottomBar = {
             val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -215,7 +226,7 @@ fun MainAppNavHost(
                             launchSingleTop = true
                         }
                     },
-                    searchQuery = debouncedSearchQuery,
+                    searchQuery = collectionSearchQuery,
                 )
             }
 
@@ -223,7 +234,7 @@ fun MainAppNavHost(
             composable(Screen.Explore.route) {
                 MangaSearchScreen(
                     apiRepository = mangaRepository,
-                    searchQuery = debouncedSearchQuery,
+                    searchQuery = exploreSearchQuery,
                     onResultClick = { manga ->
                         navController.navigate(
                             Screen.MangaDetail.createRoute(

@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,12 +32,12 @@ fun DynamicTopBar(
     modifier: Modifier = Modifier,
     topBarVisible: Boolean = true,
     placeholderRes: Int = R.string.search_placeholder,
+    initialQuery: String = "",
     onDebouncedQuery: (String) -> Unit,
     expandedContent: @Composable (() -> Unit)? = null
 ) {
-    val textFieldState = rememberTextFieldState()
-    var searchQuery by remember { mutableStateOf("") }
-    var debouncedQuery by remember { mutableStateOf("") }
+    var searchQuery by remember { mutableStateOf(initialQuery) }
+    var debouncedQuery by remember { mutableStateOf(initialQuery) }
     // Only allow expansion when there is content to show
     val hasExpandedContent = expandedContent != null
     var expanded by rememberSaveable { mutableStateOf(false) }
@@ -65,13 +64,10 @@ fun DynamicTopBar(
                 .semantics { traversalIndex = 0f },
             inputField = {
                 SearchBarDefaults.InputField(
-                    query = textFieldState.text.toString(),
-                    onQueryChange = {
-                        textFieldState.edit { replace(0, length, it) }
-                        searchQuery = textFieldState.text.toString()
-                    },
+                    query = searchQuery,
+                    onQueryChange = { searchQuery = it },
                     onSearch = {
-                        debouncedQuery = textFieldState.text.toString().trim()
+                        debouncedQuery = searchQuery.trim()
                         expanded = false
                     },
                     expanded = expanded,
