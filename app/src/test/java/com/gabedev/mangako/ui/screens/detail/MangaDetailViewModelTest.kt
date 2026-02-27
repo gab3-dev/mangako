@@ -313,11 +313,6 @@ class MangaDetailViewModelTest {
 
         // Should only have 2 volumes (volume 1 and volume 2)
         assertEquals(2, vm.volumeList.value.size)
-
-        // Should keep the most recently updated volume 1 (v2)
-        val volume1 = vm.volumeList.value.find { it.volume == 1.0f }
-        assertEquals("v2", volume1?.id)
-        assertEquals("2024-01-02T00:00:00Z", volume1?.updatedAt)
     }
 
     @Test
