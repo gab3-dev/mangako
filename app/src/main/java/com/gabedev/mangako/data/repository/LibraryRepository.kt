@@ -21,5 +21,6 @@ interface LibraryRepository {
     suspend fun updateVolume(volume: Volume)
     suspend fun updateVolumeList(volumeList: List<Volume>)
     suspend fun updateOrInsertVolumeList(volumeList: List<Volume>)
+    suspend fun getMangaIdsWithSpecialEditions(): List<String>
     fun log(message: Exception)
 }

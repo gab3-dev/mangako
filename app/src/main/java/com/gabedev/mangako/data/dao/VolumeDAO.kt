@@ -16,6 +16,9 @@ interface VolumeDAO {
     @Query("SELECT * FROM Volume WHERE manga_id = :mangaId")
     suspend fun getVolumesByMangaId(mangaId: String): List<Volume>
 
+    @Query("SELECT DISTINCT manga_id FROM Volume WHERE volume IS NOT NULL AND CAST(volume AS TEXT) NOT LIKE '%.0'")
+    suspend fun getMangaIdsWithSpecialEditions(): List<String>
+
     @Insert
     suspend fun insertVolume(
         volume: Volume

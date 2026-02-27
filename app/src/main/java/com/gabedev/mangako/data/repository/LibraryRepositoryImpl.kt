@@ -160,6 +160,15 @@ class LibraryRepositoryImpl(
         }
     }
 
+    override suspend fun getMangaIdsWithSpecialEditions(): List<String> {
+        return try {
+            db.volumeDao().getMangaIdsWithSpecialEditions()
+        } catch (e: Exception) {
+            logger.logError(e)
+            emptyList()
+        }
+    }
+
     override fun log(message: Exception) {
         message.printStackTrace()
         logger.log("Library LOG: $message")
