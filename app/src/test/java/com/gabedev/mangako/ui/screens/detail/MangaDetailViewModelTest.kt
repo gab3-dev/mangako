@@ -278,21 +278,26 @@ class MangaDetailViewModelTest {
 
     @Test
     fun `init inserts manga if not in local database`() = runTest {
+
         coEvery { localRepository.getManga("manga-1") } returns null
-        val vm = createViewModel()
+
+        createViewModel()
         advanceUntilIdle()
 
-        coVerify { localRepository.insertManga(any()) }
+        coVerify(exactly = 1) { localRepository.getManga("manga-1") }
+        coVerify(exactly = 1) { localRepository.insertManga(any()) }
     }
 
     @Test
     fun `init does not insert manga if already in local database`() = runTest {
+        createViewModel()
+
+        // Override the default mock (which returns null) before init coroutines run
         coEvery { localRepository.getManga("manga-1") } returns createManga()
-        val vm = createViewModel()
         advanceUntilIdle()
 
-        // insertManga may still be mocked, but we verify getManga was checked
         coVerify { localRepository.getManga("manga-1") }
+        coVerify(exactly = 0) { localRepository.insertManga(any()) }
     }
 
     // --- Deduplication tests ---
@@ -390,26 +395,24 @@ class MangaDetailViewModelTest {
             createVolume(id = "v4", volumeNumber = 2.0f, updatedAt = "2024-01-01T00:00:00Z")
         )
 
-        var insertedVolumes: List<Volume>? = null
-        coEvery { apiRepository.getCoverListByManga(any(), any(), any()) } returns duplicateVolumes
-        coEvery { localRepository.insertVolumeList(any()) } answers {
-            insertedVolumes = firstArg()
-        }
-
         val vm = createViewModel(manga)
+
+        coEvery { apiRepository.getCoverListByManga(any(), any(), any()) } returns duplicateVolumes
+        coEvery { localRepository.insertVolumeList(any()) } just Runs
+
         advanceUntilIdle()
 
         // Verify that only unique volumes by volume number are inserted
-        assertEquals(2, insertedVolumes?.size)
+        assertEquals(2, vm.volumeList.value.size)
 
         // Verify no duplicate volume numbers in inserted list
-        val volumeNumbers = insertedVolumes?.mapNotNull { it.volume }?.toSet()
-        assertEquals(2, volumeNumbers?.size)
-        assertTrue(volumeNumbers?.contains(1.0f) == true)
-        assertTrue(volumeNumbers?.contains(2.0f) == true)
+        val volumeNumbers = vm.volumeList.value.mapNotNull { it.volume }.toSet()
+        assertEquals(2, volumeNumbers.size)
+        assertTrue(volumeNumbers.contains(1.0f))
+        assertTrue(volumeNumbers.contains(2.0f))
 
         // Verify the most recently updated volume 1 is inserted (v3)
-        val insertedVolume1 = insertedVolumes?.find { it.volume == 1.0f }
+        val insertedVolume1 = vm.volumeList.value.find { it.volume == 1.0f }
         assertEquals("v3", insertedVolume1?.id)
         assertEquals("2024-01-03T00:00:00Z", insertedVolume1?.updatedAt)
     }
