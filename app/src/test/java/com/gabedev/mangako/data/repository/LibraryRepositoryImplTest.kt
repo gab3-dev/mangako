@@ -448,4 +448,37 @@ class LibraryRepositoryImplTest {
 
         verify { logger.log(match { it.contains("Library LOG") }) }
     }
+
+    // --- getMangaIdsWithSpecialEditions tests ---
+
+    @Test
+    fun `getMangaIdsWithSpecialEditions returns list of manga IDs with special editions`() = runTest {
+        val expectedIds = listOf("manga-1", "manga-2", "manga-3")
+        coEvery { volumeDao.getMangaIdsWithSpecialEditions() } returns expectedIds
+
+        val result = repository.getMangaIdsWithSpecialEditions()
+
+        assertEquals(expectedIds, result)
+        coVerify { volumeDao.getMangaIdsWithSpecialEditions() }
+    }
+
+    @Test
+    fun `getMangaIdsWithSpecialEditions returns empty list when no special editions exist`() = runTest {
+        coEvery { volumeDao.getMangaIdsWithSpecialEditions() } returns emptyList()
+
+        val result = repository.getMangaIdsWithSpecialEditions()
+
+        assertTrue(result.isEmpty())
+        coVerify { volumeDao.getMangaIdsWithSpecialEditions() }
+    }
+
+    @Test
+    fun `getMangaIdsWithSpecialEditions returns empty list on exception`() = runTest {
+        coEvery { volumeDao.getMangaIdsWithSpecialEditions() } throws Exception("Database error")
+
+        val result = repository.getMangaIdsWithSpecialEditions()
+
+        assertTrue(result.isEmpty())
+        verify { logger.logError(any()) }
+    }
 }

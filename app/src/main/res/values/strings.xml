@@ -57,9 +57,15 @@
     <!-- Search -->
     <string name="search_placeholder">Search mangas</string>
     <string name="search_placeholder_short">Search…</string>
+    <string name="search_collection_placeholder">Search your collection…</string>
     <string name="cd_search_icon">Search Icon</string>
     <string name="cd_back">Back</string>
     <string name="cd_search">Search</string>
+
+    <!-- Filters -->
+    <string name="filter_incomplete">Incomplete</string>
+    <string name="filter_special_editions">Special Editions</string>
+    <string name="no_results_found">No results found</string>
 
     <!-- Components -->
     <string name="no_cover">No cover</string>
