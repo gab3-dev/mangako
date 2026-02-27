@@ -55,7 +55,8 @@ class MangaDetailViewModelTest {
         coverUrl = "https://example.com/$id.jpg",
         volume = volumeNumber,
         owned = owned,
-        updatedAt = updatedAt
+        updatedAt = updatedAt,
+        locale = "ja"
     )
 
     @Before
@@ -290,7 +291,7 @@ class MangaDetailViewModelTest {
         val vm = createViewModel()
         advanceUntilIdle()
 
-        // insertManga may still be mocked but we verify getManga was checked
+        // insertManga may still be mocked, but we verify getManga was checked
         coVerify { localRepository.getManga("manga-1") }
     }
 
@@ -305,10 +306,13 @@ class MangaDetailViewModelTest {
             createVolume(id = "v3", volumeNumber = 2.0f, updatedAt = "2024-01-01T00:00:00Z")
         )
 
+        val vm = createViewModel(manga)
+
+        // Set up mocks after createViewModel (which overrides them with emptyList),
+        // but before advanceUntilIdle (which actually runs the init coroutines)
         coEvery { apiRepository.getCoverListByManga(any(), any(), any()) } returns duplicateVolumes
         coEvery { localRepository.insertVolumeList(any()) } just Runs
 
-        val vm = createViewModel(manga)
         advanceUntilIdle()
 
         // Should only have 2 volumes (volume 1 and volume 2)
@@ -324,10 +328,11 @@ class MangaDetailViewModelTest {
             createVolume(id = "v3", volumeNumber = 1.0f, updatedAt = "2024-01-02T00:00:00Z")
         )
 
+        val vm = createViewModel(manga)
+
         coEvery { apiRepository.getCoverListByManga(any(), any(), any()) } returns duplicateVolumes
         coEvery { localRepository.insertVolumeList(any()) } just Runs
 
-        val vm = createViewModel(manga)
         advanceUntilIdle()
 
         // Should only have 1 volume
@@ -350,14 +355,14 @@ class MangaDetailViewModelTest {
             createVolume(id = "v3", volumeNumber = 2.0f, updatedAt = "2024-01-01T00:00:00Z")
         )
 
+        val vm = createViewModel(manga)
+
         coEvery { apiRepository.getCoverListByManga(any(), any(), any()) } returnsMany listOf(
             initialVolumes,
             moreVolumes
         )
         coEvery { localRepository.insertVolumeList(any()) } just Runs
         coEvery { localRepository.getMangaWithVolume(any()) } returns null
-
-        val vm = createViewModel(manga)
         advanceUntilIdle()
 
         // Initial load should have 1 volume
