@@ -72,9 +72,8 @@ class MangaDetailViewModel(
         clearSelection()
     }
 
-    fun selectAllVolumes() {
-        val allIds = volumeList.value.map { it.id }.toSet()
-        selectedIds.value = allIds
+    fun selectAllVolumes(visibleIds: Set<String>) {
+        selectedIds.value = visibleIds
     }
 
     private fun insertMangaOnLocalDatabase() {

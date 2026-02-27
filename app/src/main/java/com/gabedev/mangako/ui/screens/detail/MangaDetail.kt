@@ -279,9 +279,9 @@ fun MangaDetail(
                     }
                     IconButton(
                         onClick = {
-                            viewModel.selectAllVolumes()
+                            viewModel.selectAllVolumes(filteredVolumeList.map { it.id }.toSet())
                         },
-                        enabled = viewModel.selectedIds.value.size < volumeList.size && isMultiSelectActive,
+                        enabled = viewModel.selectedIds.value.size < filteredVolumeList.size && isMultiSelectActive,
                     ) {
                         Icon(
                             imageVector = Icons.Default.SelectAll,

@@ -145,10 +145,29 @@ class MangaDetailViewModelTest {
             createVolume("v3")
         )
 
-        vm.selectAllVolumes()
+        vm.selectAllVolumes(setOf("v1", "v2", "v3"))
 
         assertEquals(3, vm.selectedIds.value.size)
         assertTrue(vm.selectedIds.value.containsAll(setOf("v1", "v2", "v3")))
+    }
+
+    @Test
+    fun `selectAllVolumes selects only visible ids when filtered`() = runTest {
+        val vm = createViewModel()
+        advanceUntilIdle()
+
+        vm.volumeList.value = listOf(
+            createVolume("v1", volumeNumber = 1.0f),
+            createVolume("v2", volumeNumber = 1.5f),
+            createVolume("v3", volumeNumber = 2.0f)
+        )
+
+        // Simulate filter: only regular volumes (v1, v3)
+        vm.selectAllVolumes(setOf("v1", "v3"))
+
+        assertEquals(2, vm.selectedIds.value.size)
+        assertTrue(vm.selectedIds.value.containsAll(setOf("v1", "v3")))
+        assertFalse(vm.selectedIds.value.contains("v2"))
     }
 
     // --- addMangaToLibrary tests ---
