@@ -113,6 +113,7 @@ class MangaDexRepositoryImpl(
                     volume = cover.attributes.volume.toFloatOrNull(),
                     coverUrl = handleCoverUrl(manga.id, cover.attributes.fileName),
                     owned = false,
+                    locale = cover.attributes.locale,
                     updatedAt = cover.attributes.updatedAt
                 )
             }
