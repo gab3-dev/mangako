@@ -108,9 +108,9 @@ fun MangaDetail(
     val filteredVolumeList by remember(specialCoverFilter, volumeList) {
         mutableStateOf(
             if (specialCoverFilter) {
-                volumeList
+                volumeList.filter { it.volume?.rem(1f) != 0f }
             } else {
-                volumeList.filter { it.volume.toString().contains(".0") }
+                volumeList
             }
         )
     }
