@@ -57,7 +57,8 @@ class LibraryRepositoryImplTest {
         title = "One Piece",
         coverUrl = "https://example.com/$id.jpg",
         volume = 1.0f,
-        owned = owned
+        owned = owned,
+        locale = "ja"
     )
 
     @Before

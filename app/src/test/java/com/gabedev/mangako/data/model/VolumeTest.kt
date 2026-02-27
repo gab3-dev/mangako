@@ -14,7 +14,8 @@ class VolumeTest {
         title = "One Piece",
         coverUrl = "https://uploads.mangadex.org/covers/manga-1/vol1.jpg",
         volume = 1.0f,
-        owned = false
+        owned = false,
+        locale = "ja"
     )
 
     @Test
@@ -36,7 +37,8 @@ class VolumeTest {
             mangaId = "m-1",
             title = "Test",
             coverUrl = "url",
-            volume = 1.0f
+            volume = 1.0f,
+            locale = "ja"
         )
 
         assertFalse(volume.owned)

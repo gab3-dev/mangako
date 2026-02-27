@@ -19,7 +19,8 @@ class MangaWithVolumeTest {
         title = "One Piece",
         coverUrl = "https://uploads.mangadex.org/covers/manga-1/$id.jpg",
         volume = volumeNum,
-        owned = false
+        owned = false,
+        locale = "ja"
     )
 
     @Test
