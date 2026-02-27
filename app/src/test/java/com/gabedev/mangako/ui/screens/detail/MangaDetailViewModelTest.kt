@@ -45,14 +45,17 @@ class MangaDetailViewModelTest {
 
     private fun createVolume(
         id: String = "vol-1",
-        owned: Boolean = false
+        owned: Boolean = false,
+        volumeNumber: Float = 1.0f,
+        updatedAt: String? = null
     ) = Volume(
         id = id,
         mangaId = "manga-1",
         title = "One Piece",
         coverUrl = "https://example.com/$id.jpg",
-        volume = 1.0f,
-        owned = owned
+        volume = volumeNumber,
+        owned = owned,
+        updatedAt = updatedAt
     )
 
     @Before
@@ -289,5 +292,120 @@ class MangaDetailViewModelTest {
 
         // insertManga may still be mocked but we verify getManga was checked
         coVerify { localRepository.getManga("manga-1") }
+    }
+
+    // --- Deduplication tests ---
+
+    @Test
+    fun `loadCoverList keeps only one volume per volume number`() = runTest {
+        val manga = createManga()
+        val duplicateVolumes = listOf(
+            createVolume(id = "v1", volumeNumber = 1.0f, updatedAt = "2024-01-01T00:00:00Z"),
+            createVolume(id = "v2", volumeNumber = 1.0f, updatedAt = "2024-01-02T00:00:00Z"),
+            createVolume(id = "v3", volumeNumber = 2.0f, updatedAt = "2024-01-01T00:00:00Z")
+        )
+
+        coEvery { apiRepository.getCoverListByManga(any(), any(), any()) } returns duplicateVolumes
+        coEvery { localRepository.insertVolumeList(any()) } just Runs
+
+        val vm = createViewModel(manga)
+        advanceUntilIdle()
+
+        // Should only have 2 volumes (volume 1 and volume 2)
+        assertEquals(2, vm.volumeList.value.size)
+    }
+
+    @Test
+    fun `loadCoverList keeps most recently updated volume when duplicates exist`() = runTest {
+        val manga = createManga()
+        val duplicateVolumes = listOf(
+            createVolume(id = "v1", volumeNumber = 1.0f, updatedAt = "2024-01-01T00:00:00Z"),
+            createVolume(id = "v2", volumeNumber = 1.0f, updatedAt = "2024-01-03T00:00:00Z"),
+            createVolume(id = "v3", volumeNumber = 1.0f, updatedAt = "2024-01-02T00:00:00Z")
+        )
+
+        coEvery { apiRepository.getCoverListByManga(any(), any(), any()) } returns duplicateVolumes
+        coEvery { localRepository.insertVolumeList(any()) } just Runs
+
+        val vm = createViewModel(manga)
+        advanceUntilIdle()
+
+        // Should only have 1 volume
+        assertEquals(1, vm.volumeList.value.size)
+
+        // Should keep the most recently updated volume (v2 with 2024-01-03)
+        val volume = vm.volumeList.value.first()
+        assertEquals("v2", volume.id)
+        assertEquals("2024-01-03T00:00:00Z", volume.updatedAt)
+    }
+
+    @Test
+    fun `loadMoreVolumes maintains deduplication across pages`() = runTest {
+        val manga = createManga()
+        val initialVolumes = listOf(
+            createVolume(id = "v1", volumeNumber = 1.0f, updatedAt = "2024-01-01T00:00:00Z")
+        )
+        val moreVolumes = listOf(
+            createVolume(id = "v2", volumeNumber = 1.0f, updatedAt = "2024-01-02T00:00:00Z"),
+            createVolume(id = "v3", volumeNumber = 2.0f, updatedAt = "2024-01-01T00:00:00Z")
+        )
+
+        coEvery { apiRepository.getCoverListByManga(any(), any(), any()) } returnsMany listOf(
+            initialVolumes,
+            moreVolumes
+        )
+        coEvery { localRepository.insertVolumeList(any()) } just Runs
+        coEvery { localRepository.getMangaWithVolume(any()) } returns null
+
+        val vm = createViewModel(manga)
+        advanceUntilIdle()
+
+        // Initial load should have 1 volume
+        assertEquals(1, vm.volumeList.value.size)
+
+        vm.loadMoreVolumes()
+        advanceUntilIdle()
+
+        // After loading more, should have 2 unique volumes (1 and 2)
+        assertEquals(2, vm.volumeList.value.size)
+
+        // Volume 1 should be the most recently updated (v2)
+        val volume1 = vm.volumeList.value.find { it.volume == 1.0f }
+        assertEquals("v2", volume1?.id)
+        assertEquals("2024-01-02T00:00:00Z", volume1?.updatedAt)
+    }
+
+    @Test
+    fun `no duplicated covers are inserted into local database`() = runTest {
+        val manga = createManga()
+        val duplicateVolumes = listOf(
+            createVolume(id = "v1", volumeNumber = 1.0f, updatedAt = "2024-01-01T00:00:00Z"),
+            createVolume(id = "v2", volumeNumber = 1.0f, updatedAt = "2024-01-02T00:00:00Z"),
+            createVolume(id = "v3", volumeNumber = 1.0f, updatedAt = "2024-01-03T00:00:00Z"),
+            createVolume(id = "v4", volumeNumber = 2.0f, updatedAt = "2024-01-01T00:00:00Z")
+        )
+
+        var insertedVolumes: List<Volume>? = null
+        coEvery { apiRepository.getCoverListByManga(any(), any(), any()) } returns duplicateVolumes
+        coEvery { localRepository.insertVolumeList(any()) } answers {
+            insertedVolumes = firstArg()
+        }
+
+        val vm = createViewModel(manga)
+        advanceUntilIdle()
+
+        // Verify that only unique volumes by volume number are inserted
+        assertEquals(2, insertedVolumes?.size)
+
+        // Verify no duplicate volume numbers in inserted list
+        val volumeNumbers = insertedVolumes?.mapNotNull { it.volume }?.toSet()
+        assertEquals(2, volumeNumbers?.size)
+        assertTrue(volumeNumbers?.contains(1.0f) == true)
+        assertTrue(volumeNumbers?.contains(2.0f) == true)
+
+        // Verify the most recently updated volume 1 is inserted (v3)
+        val insertedVolume1 = insertedVolumes?.find { it.volume == 1.0f }
+        assertEquals("v3", insertedVolume1?.id)
+        assertEquals("2024-01-03T00:00:00Z", insertedVolume1?.updatedAt)
     }
 }

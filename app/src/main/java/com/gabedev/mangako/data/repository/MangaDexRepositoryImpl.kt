@@ -112,7 +112,8 @@ class MangaDexRepositoryImpl(
                     title = manga.title,
                     volume = cover.attributes.volume.toFloatOrNull(),
                     coverUrl = handleCoverUrl(manga.id, cover.attributes.fileName),
-                    owned = false
+                    owned = false,
+                    updatedAt = cover.attributes.updatedAt
                 )
             }
             return covers

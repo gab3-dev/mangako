@@ -15,5 +15,6 @@ data class Volume(
     @ColumnInfo(name = "title")             val title: String,
     @ColumnInfo(name = "cover_url")         val coverUrl: String,
     @ColumnInfo(name = "volume")            val volume: Float?,
-    @ColumnInfo(name = "owned")             val owned: Boolean = false
+    @ColumnInfo(name = "owned")             val owned: Boolean = false,
+    @ColumnInfo(name = "updated_at")        val updatedAt: String? = null
 )

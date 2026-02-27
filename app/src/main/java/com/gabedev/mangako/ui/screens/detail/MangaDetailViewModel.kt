@@ -207,10 +207,14 @@ class MangaDetailViewModel(
                     manga = mangaState.value
                 )
                 // Insert the cover list into the local database
-                // Filter duplicated covers (same volume AND same cover_url)
-                val distinctCoverList = coverList.distinctBy { 
-                   "${it.volume}-${it.coverUrl}" // Distinct by volume and cover
-                }
+                // Filter duplicated covers by volume number, keeping the most recently updated
+                val distinctCoverList = coverList
+                    .groupBy { it.volume }
+                    .mapValues { (_, volumes) ->
+                        volumes.maxByOrNull { it.updatedAt ?: "" } ?: volumes.first()
+                    }
+                    .values
+                    .toList()
 
                 localRepository.insertVolumeList(distinctCoverList)
                 volumeList.value = distinctCoverList.map { it.copy() }
@@ -250,20 +254,26 @@ class MangaDetailViewModel(
                 offset = currentOffset,
             )
             // Insert the new volumes into the local database
-            // Filter duplicates from incoming list
-            val distinctMoreVolumes = moreVolumes.distinctBy { 
-               "${it.volume}-${it.coverUrl}"
-            }.filter { incoming ->
-               // Also filter against what we already have in the list
-               volumeList.value.none { existing -> 
-                   existing.volume == incoming.volume && existing.coverUrl == incoming.coverUrl 
-               }
+            // Filter duplicates by volume number, keeping the most recently updated
+            val allVolumes = (volumeList.value + moreVolumes)
+                .groupBy { it.volume }
+                .mapValues { (_, volumes) ->
+                    volumes.maxByOrNull { it.updatedAt ?: "" } ?: volumes.first()
+                }
+                .values
+                .toList()
+
+            val distinctMoreVolumes = allVolumes.filter { incoming ->
+                // Only keep volumes that aren't already in the list
+                volumeList.value.none { existing ->
+                    existing.id == incoming.id
+                }
             }
 
             if (distinctMoreVolumes.isNotEmpty()) {
                 localRepository.insertVolumeList(distinctMoreVolumes)
                 try {
-                    volumeList.value += distinctMoreVolumes.map { it.copy() }
+                    volumeList.value = allVolumes
                 } catch (e: Exception) {
                     localRepository.log(e)
                 }
