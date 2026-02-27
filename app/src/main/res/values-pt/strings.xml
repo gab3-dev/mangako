@@ -52,9 +52,15 @@
     <!-- Search -->
     <string name="search_placeholder">Pesquisar mangas</string>
     <string name="search_placeholder_short">Pesquisar…</string>
+    <string name="search_collection_placeholder">Pesquisar na sua coleção…</string>
     <string name="cd_search_icon">Ícone de busca</string>
     <string name="cd_back">Voltar</string>
     <string name="cd_search">Buscar</string>
+
+    <!-- Filters -->
+    <string name="filter_incomplete">Incompletos</string>
+    <string name="filter_special_editions">Edições Especiais</string>
+    <string name="no_results_found">Nenhum resultado encontrado</string>
 
     <!-- Components -->
     <string name="no_cover">Sem cover</string>
