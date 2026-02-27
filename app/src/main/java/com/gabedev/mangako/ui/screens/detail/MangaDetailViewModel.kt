@@ -207,10 +207,8 @@ class MangaDetailViewModel(
                     manga = mangaState.value
                 )
                 // Insert the cover list into the local database
-                // Filter duplicated covers (same volume AND same cover_url)
-                val distinctCoverList = coverList.distinctBy { 
-                   "${it.volume}-${it.coverUrl}" // Distinct by volume and cover
-                }
+                // Filter duplicated covers by volume number only
+                val distinctCoverList = coverList.distinctBy { it.volume }
 
                 localRepository.insertVolumeList(distinctCoverList)
                 volumeList.value = distinctCoverList.map { it.copy() }
@@ -250,15 +248,14 @@ class MangaDetailViewModel(
                 offset = currentOffset,
             )
             // Insert the new volumes into the local database
-            // Filter duplicates from incoming list
-            val distinctMoreVolumes = moreVolumes.distinctBy { 
-               "${it.volume}-${it.coverUrl}"
-            }.filter { incoming ->
-               // Also filter against what we already have in the list
-               volumeList.value.none { existing -> 
-                   existing.volume == incoming.volume && existing.coverUrl == incoming.coverUrl 
-               }
-            }
+            // Filter duplicates by volume number only
+            val distinctMoreVolumes = moreVolumes.distinctBy { it.volume }
+                .filter { incoming ->
+                    // Also filter against what we already have in the list
+                    volumeList.value.none { existing ->
+                        existing.volume == incoming.volume
+                    }
+                }
 
             if (distinctMoreVolumes.isNotEmpty()) {
                 localRepository.insertVolumeList(distinctMoreVolumes)
