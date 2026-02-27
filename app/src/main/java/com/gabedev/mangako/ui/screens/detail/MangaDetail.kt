@@ -110,7 +110,7 @@ fun MangaDetail(
             if (specialCoverFilter) {
                 volumeList
             } else {
-                volumeList.filter { it.volume.toString().contains(".0") }
+                volumeList.filter { !it.isSpecialEdition }
             }
         )
     }

@@ -138,6 +138,7 @@ class LibraryRepositoryImpl(
                     title = volume.title,
                     volume = volume.volume,
                     coverUrl = volume.coverUrl,
+                    isSpecialEdition = volume.isSpecialEdition,
                 )
                 volumesToUpdate.add(mergeVolume)
             } else {

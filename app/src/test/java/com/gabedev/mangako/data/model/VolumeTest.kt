@@ -94,4 +94,19 @@ class VolumeTest {
 
         assertEquals(vol1.hashCode(), vol2.hashCode())
     }
+
+    @Test
+    fun `isSpecialEdition defaults to false`() {
+        val volume = createVolume()
+
+        assertFalse(volume.isSpecialEdition)
+    }
+
+    @Test
+    fun `isSpecialEdition true for special edition volume`() {
+        val volume = createVolume().copy(volume = 13.1f, isSpecialEdition = true)
+
+        assertTrue(volume.isSpecialEdition)
+        assertEquals(13.1f, volume.volume)
+    }
 }
