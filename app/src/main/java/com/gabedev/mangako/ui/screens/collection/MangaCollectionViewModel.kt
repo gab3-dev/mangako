@@ -6,11 +6,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gabedev.mangako.data.model.MangaWithOwned
 import com.gabedev.mangako.data.repository.LibraryRepository
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
-import kotlinx.coroutines.CoroutineDispatcher
 
 class MangaCollectionViewModel (
         private val repository: LibraryRepository,
@@ -33,6 +32,50 @@ class MangaCollectionViewModel (
     val showSpecialEditionsOnly: State<Boolean> = _showSpecialEditionsOnly
 
     private var mangaIdsWithSpecialEditions: Set<String> = emptySet()
+
+    // Multi-select state
+    var selectedIds = mutableStateOf(setOf<String>())
+        private set
+    var isMultiSelectActive = mutableStateOf(false)
+
+    fun toggleSelection(id: String) {
+        selectedIds.value =
+            if (selectedIds.value.contains(id)) {
+                selectedIds.value - id
+            } else {
+                selectedIds.value + id
+            }
+        isMultiSelectActive.value = selectedIds.value.isNotEmpty()
+    }
+
+    fun clearSelection() {
+        selectedIds.value = emptySet()
+    }
+
+    fun finishMultiSelect() {
+        isMultiSelectActive.value = false
+        clearSelection()
+    }
+
+    fun selectAll(visibleIds: Set<String>) {
+        selectedIds.value = visibleIds
+    }
+
+    fun removeSelectedFromLibrary() {
+        viewModelScope.launch {
+            withContext(ioDispatcher) {
+                for (id in selectedIds.value) {
+                    repository.removeMangaFromLibrary(id)
+                }
+            }
+            // Remove from in-memory list
+            _fullMangaCollection.value = _fullMangaCollection.value.filter {
+                !selectedIds.value.contains(it.id)
+            }
+            applyFilters()
+            finishMultiSelect()
+        }
+    }
 
     fun loadLibrary() {
         viewModelScope.launch {

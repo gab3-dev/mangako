@@ -61,6 +61,7 @@
     <string name="filter_incomplete">Incompletos</string>
     <string name="filter_special_editions">Edições Especiais</string>
     <string name="no_results_found">Nenhum resultado encontrado</string>
+    <string name="search_on_explore">Pesquisar \"%1$s\" em Explorar</string>
 
     <!-- Components -->
     <string name="no_cover">Sem cover</string>
@@ -68,4 +69,7 @@
     <string name="unknown_author">Autor Desconhecido</string>
     <string name="cd_selected_icon">Ícone de selecionado</string>
     <string name="cd_view_mode_toggle">Alternar modo de visualização</string>
+    <string name="dialog_remove_selected_title">Remover Manga?</string>
+    <string name="dialog_remove_selected_text">Deseja remover estas obras da sua coleção?</string>
+    <string name="cd_remove_selected">Icone Excluir</string>
 </resources>

@@ -5,7 +5,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -76,7 +75,7 @@ class MainActivity : ComponentActivity() {
 
 sealed class Screen(
     val route: String,
-    @StringRes val titleRes: Int,
+    val titleRes: Int,
     val icon: ImageVector,
 ) {
     data object UserCollection : Screen(
@@ -154,6 +153,8 @@ fun MainAppNavHost(
             // Key on route so each screen gets its own search bar state
             key(currentRoute) {
                 DynamicTopBar(
+                    currentScreen = items.find { it.route == currentRoute } ?: Screen.UserCollection,
+                    alwaysShowSearchBar = isExplore,
                     placeholderRes = placeholderRes,
                     initialQuery = if (isExplore) exploreSearchQuery else collectionSearchQuery,
                     onDebouncedQuery = { query ->
@@ -227,6 +228,16 @@ fun MainAppNavHost(
                         }
                     },
                     searchQuery = collectionSearchQuery,
+                    onSearchOnExplore = { query ->
+                        exploreSearchQuery = query
+                        navController.navigate(Screen.Explore.route) {
+                            popUpTo(navController.graph.startDestinationId) {
+                                saveState = false
+                            }
+                            launchSingleTop = true
+                            restoreState = false
+                        }
+                    },
                 )
             }
 

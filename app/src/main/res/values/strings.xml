@@ -1,8 +1,8 @@
 <resources>
-    <string name="app_name">MangaKō</string>
-    <string name="title_activity_manga_card">MangaCard</string>
-    <string name="title_activity_manga_list">MangaList</string>
-    <string name="title_activity_user_collection_list">UserCollectionList</string>
+    <string name="app_name" translatable="false">MangaKō</string>
+    <string name="title_activity_manga_card" translatable="false">MangaCard</string>
+    <string name="title_activity_manga_list" translatable="false">MangaList</string>
+    <string name="title_activity_user_collection_list" translatable="false">UserCollectionList</string>
 
     <!-- Navigation -->
     <string name="nav_library">Library</string>
@@ -66,6 +66,7 @@
     <string name="filter_incomplete">Incomplete</string>
     <string name="filter_special_editions">Special Editions</string>
     <string name="no_results_found">No results found</string>
+    <string name="search_on_explore">Search \"%1$s\" on Explore</string>
 
     <!-- Components -->
     <string name="no_cover">No cover</string>
@@ -73,4 +74,7 @@
     <string name="unknown_author">Unknown Author</string>
     <string name="cd_selected_icon">Selected Icon</string>
     <string name="cd_view_mode_toggle">View mode toggle</string>
+    <string name="dialog_remove_selected_title">Remove Manga?</string>
+    <string name="dialog_remove_selected_text">Do you wish to remove these works from your collection?</string>
+    <string name="cd_remove_selected">Delete icon</string>
 </resources>

@@ -86,10 +86,16 @@ class LibraryRepositoryImpl(
 
     override suspend fun removeMangaFromLibrary(mangaId: String) {
         val manga = db.mangaDao().getMangaById(mangaId)
-        manga?.let {
-            val updatedManga = it.copy(isOnUserLibrary = false)
-            db.mangaDao().updateMangaLibraryStatus(updatedManga)
+        if (manga == null) {
+            logger.log("Manga with ID $mangaId not found in database.")
+            return
         }
+        val updatedManga = manga.copy(isOnUserLibrary = false)
+        val volumeList = db.mangaDao().getMangaWithVolumeById(mangaId)
+        volumeList?.volumes?.forEach { volume ->
+            db.volumeDao().updateVolume(volume.copy(owned = false))
+        }
+        db.mangaDao().updateMangaLibraryStatus(updatedManga)
     }
 
     override suspend fun removeMangaFromLibrary(manga: Manga) {

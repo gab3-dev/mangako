@@ -271,11 +271,18 @@ class LibraryRepositoryImplTest {
     @Test
     fun `removeMangaFromLibrary by id updates library status`() = runTest {
         val manga = createManga(isOnLibrary = true)
+        val vol1 = createVolume("v1", owned = true)
+        val vol2 = createVolume("v2", owned = true)
+        val mwv = MangaWithVolume(manga, listOf(vol1, vol2))
+
         coEvery { mangaDao.getMangaById("manga-1") } returns manga
+        coEvery { mangaDao.getMangaWithVolumeById("manga-1") } returns mwv
+        coEvery { volumeDao.updateVolume(any()) } returns 1
         coEvery { mangaDao.updateMangaLibraryStatus(any()) } returns 1
 
         repository.removeMangaFromLibrary("manga-1")
 
+        coVerify(exactly = 2) { volumeDao.updateVolume(match { !it.owned }) }
         coVerify { mangaDao.updateMangaLibraryStatus(match { !it.isOnUserLibrary }) }
     }
 
