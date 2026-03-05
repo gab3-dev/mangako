@@ -179,6 +179,10 @@ class MangaDetailViewModel(
         isVolumeLoading.value = true
         viewModelScope.launch {
             try {
+                // Reset pagination state to allow loading more volumes
+                currentOffset = 0
+                noMoreVolume.value = false
+
                 // Fetch updated manga info from the API
                 val updatedManga: Manga = apiRepository.getManga(idManga)
                 val finalLocalManga = localRepository.updateManga(updatedManga)
@@ -244,9 +248,8 @@ class MangaDetailViewModel(
     }
 
     fun loadMoreVolumes() {
-        if (isVolumeLoading.value) return
+        if (isVolumeLoading.value || noMoreVolume.value) return
         viewModelScope.launch {
-            currentOffset += limit
             isVolumeLoading.value = true
 
             val tmpMangaWithVolumes = localRepository.getMangaWithVolume(idManga)
@@ -270,6 +273,14 @@ class MangaDetailViewModel(
                 manga = mangaState.value,
                 offset = currentOffset,
             )
+
+            // If no more volumes are returned, mark pagination as complete
+            if (moreVolumes.isEmpty()) {
+                noMoreVolume.value = true
+                isVolumeLoading.value = false
+                return@launch
+            }
+
             // Insert the new volumes into the local database
             // Filter duplicates by volume number, keeping the most recently updated
             val allVolumes = deduplicateVolumes(volumeList.value + moreVolumes)
@@ -285,9 +296,14 @@ class MangaDetailViewModel(
                 localRepository.insertVolumeList(distinctMoreVolumes)
                 try {
                     volumeList.value = allVolumes
+                    // Only increment offset after successfully loading new volumes
+                    currentOffset += limit
                 } catch (e: Exception) {
                     localRepository.log(e)
                 }
+            } else {
+                // No new volumes to add, mark as complete
+                noMoreVolume.value = true
             }
             isVolumeLoading.value = false
         }

@@ -503,4 +503,75 @@ class MangaDetailViewModelTest {
         assertTrue(unnumberedVolumes.any { it.id == "special2" })
         assertTrue(unnumberedVolumes.any { it.id == "special3" })
     }
+
+    @Test
+    fun `loadMoreVolumes sets noMoreVolume when API returns empty list`() = runTest {
+        val manga = createManga()
+        val initialVolumes = listOf(
+            createVolume(id = "v1", volumeNumber = 1.0f)
+        )
+
+        val vm = createViewModel(manga)
+
+        // Setup initial volumes
+        coEvery { apiRepository.getCoverListByManga(any(), any(), any()) } returns initialVolumes
+        coEvery { localRepository.insertVolumeList(any()) } just Runs
+
+        advanceUntilIdle()
+
+        // Setup for loadMore returning empty list
+        coEvery { apiRepository.getCoverListByManga(any(), offset = any(), any()) } returns emptyList()
+
+        vm.loadMoreVolumes()
+        advanceUntilIdle()
+
+        // Verify noMoreVolume is set to true
+        assertTrue(vm.noMoreVolume.value)
+    }
+
+    @Test
+    fun `refreshManga resets pagination state`() = runTest {
+        val manga = createManga()
+        val volumes = listOf(
+            createVolume(id = "v1", volumeNumber = 1.0f)
+        )
+
+        val vm = createViewModel(manga)
+        advanceUntilIdle()
+
+        // Manually set noMoreVolume to true
+        vm.noMoreVolume.value = true
+
+        // Setup mock for refresh
+        coEvery { apiRepository.getManga(any()) } returns manga
+        coEvery { localRepository.updateManga(any()) } returns manga
+        coEvery { apiRepository.getCoverListByManga(any(), any(), any()) } returns volumes
+        coEvery { localRepository.updateOrInsertVolumeList(any()) } just Runs
+        coEvery { localRepository.getMangaWithVolume(any()) } returns null
+
+        vm.refreshManga()
+        advanceUntilIdle()
+
+        // Verify noMoreVolume is reset to false
+        assertFalse(vm.noMoreVolume.value)
+    }
+
+    @Test
+    fun `loadMoreVolumes does not call API when noMoreVolume is true`() = runTest {
+        val manga = createManga()
+        val vm = createViewModel(manga)
+        advanceUntilIdle()
+
+        // Set noMoreVolume to true
+        vm.noMoreVolume.value = true
+
+        // Try to load more volumes
+        vm.loadMoreVolumes()
+        advanceUntilIdle()
+
+        // Verify API was not called with offset
+        coVerify(exactly = 0) {
+            apiRepository.getCoverListByManga(any(), offset = any(), any())
+        }
+    }
 }
