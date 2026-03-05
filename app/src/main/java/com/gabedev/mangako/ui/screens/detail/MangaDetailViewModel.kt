@@ -15,6 +15,7 @@ class MangaDetailViewModel(
     private val apiRepository: MangaDexRepository,
     private val localRepository: LibraryRepository,
     private var manga: Manga,
+    private val autoLoad: Boolean = true
 ) : ViewModel() {
     val mangaState = MutableStateFlow(manga)
     private val idManga = mangaState.value.id
@@ -318,8 +319,10 @@ class MangaDetailViewModel(
     }
 
     init {
-        insertMangaOnLocalDatabase()
-        checkMangaInLibrary()
-        checkCoverInLibrary()
+        if (autoLoad) {
+            insertMangaOnLocalDatabase()
+            checkMangaInLibrary()
+            checkCoverInLibrary()
+        }
     }
 }

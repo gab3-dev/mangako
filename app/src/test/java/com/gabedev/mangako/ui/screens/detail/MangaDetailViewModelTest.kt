@@ -72,7 +72,7 @@ class MangaDetailViewModelTest {
         clearAllMocks()
     }
 
-    private fun createViewModel(manga: Manga = createManga()): MangaDetailViewModel {
+    private fun createViewModel(manga: Manga = createManga(), autoLoad: Boolean = true): MangaDetailViewModel {
         // Mock init calls
         coEvery { localRepository.getManga(any()) } returns null
         coEvery { localRepository.insertManga(any()) } just Runs
@@ -81,7 +81,7 @@ class MangaDetailViewModelTest {
         coEvery { apiRepository.getCoverListByManga(any(), any(), any()) } returns emptyList()
         coEvery { localRepository.insertVolumeList(any()) } just Runs
 
-        return MangaDetailViewModel(apiRepository, localRepository, manga)
+        return MangaDetailViewModel(apiRepository, localRepository, manga, autoLoad)
     }
 
     // --- Selection tests ---
@@ -559,7 +559,7 @@ class MangaDetailViewModelTest {
     @Test
     fun `loadMoreVolumes does not call API when noMoreVolume is true`() = runTest {
         val manga = createManga()
-        val vm = createViewModel(manga)
+        val vm = createViewModel(manga, false) // disable auto-load in init
         advanceUntilIdle()
 
         // Set noMoreVolume to true
