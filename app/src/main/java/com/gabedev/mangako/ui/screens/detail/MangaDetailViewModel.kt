@@ -170,7 +170,17 @@ class MangaDetailViewModel(
                 val coverList: List<Volume> = apiRepository.getCoverListByManga(
                     manga = mangaState.value
                 )
-                localRepository.updateOrInsertVolumeList(coverList)
+
+                // Filter duplicated covers by volume number, keeping the most recently updated
+                val distinctCoverList = coverList
+                    .groupBy { it.volume }
+                    .mapValues { (_, volumes) ->
+                        volumes.maxByOrNull { it.updatedAt ?: "" } ?: volumes.first()
+                    }
+                    .values
+                    .toList()
+
+                localRepository.updateOrInsertVolumeList(distinctCoverList)
 
                 // Get updated cover list from local database
                 volumeList.value = localRepository

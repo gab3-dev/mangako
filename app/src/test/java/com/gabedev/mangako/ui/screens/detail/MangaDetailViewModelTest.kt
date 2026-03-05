@@ -435,4 +435,38 @@ class MangaDetailViewModelTest {
         assertEquals("v3", insertedVolume1?.id)
         assertEquals("2024-01-03T00:00:00Z", insertedVolume1?.updatedAt)
     }
+
+    @Test
+    fun `refreshManga deduplicates volumes by volume number`() = runTest {
+        val manga = createManga()
+        val duplicateVolumes = listOf(
+            createVolume(id = "v1", volumeNumber = 15.0f, updatedAt = "2024-01-01T00:00:00Z"),
+            createVolume(id = "v2", volumeNumber = 15.0f, updatedAt = "2024-01-02T00:00:00Z"),
+            createVolume(id = "v3", volumeNumber = 16.0f, updatedAt = "2024-01-01T00:00:00Z")
+        )
+
+        val vm = createViewModel(manga)
+        advanceUntilIdle()
+
+        // Setup mock for refresh
+        coEvery { apiRepository.getManga(any()) } returns manga
+        coEvery { localRepository.updateManga(any()) } returns manga
+        coEvery { apiRepository.getCoverListByManga(any(), any(), any()) } returns duplicateVolumes
+        coEvery { localRepository.updateOrInsertVolumeList(any()) } just Runs
+        coEvery { localRepository.getMangaWithVolume(any()) } returns null
+
+        vm.refreshManga()
+        advanceUntilIdle()
+
+        // Verify that updateOrInsertVolumeList was called with deduplicated list
+        coVerify {
+            localRepository.updateOrInsertVolumeList(match { volumeList ->
+                // Should have only 2 unique volumes (15 and 16)
+                volumeList.size == 2 &&
+                volumeList.mapNotNull { it.volume }.toSet().size == 2 &&
+                // Volume 15 should be the most recent one (v2)
+                volumeList.find { it.volume == 15.0f }?.id == "v2"
+            })
+        }
+    }
 }
