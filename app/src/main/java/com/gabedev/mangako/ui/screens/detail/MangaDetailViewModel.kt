@@ -32,6 +32,26 @@ class MangaDetailViewModel(
     private var currentOffset = 0
     private val limit = 50
 
+    /**
+     * Deduplicates volumes by volume number, keeping the most recently updated entry.
+     * Volumes with null volume numbers (e.g., specials/unnumbered covers) are preserved as-is.
+     * @param volumes List of volumes that may contain duplicates
+     * @return Deduplicated list with one volume per volume number, plus all null-volume entries
+     */
+    private fun deduplicateVolumes(volumes: List<Volume>): List<Volume> {
+        val (numbered, unnumbered) = volumes.partition { it.volume != null }
+
+        val deduplicatedNumbered = numbered
+            .groupBy { it.volume }
+            .mapValues { (_, vols) ->
+                vols.maxByOrNull { it.updatedAt ?: "" } ?: vols.first()
+            }
+            .values
+            .toList()
+
+        return deduplicatedNumbered + unnumbered
+    }
+
     fun markSelectedListAsOwned(isOwned: Boolean) {
         viewModelScope.launch {
             val updatedVolumes = volumeList.value.map { volume ->
@@ -159,6 +179,10 @@ class MangaDetailViewModel(
         isVolumeLoading.value = true
         viewModelScope.launch {
             try {
+                // Reset pagination state to allow loading more volumes
+                currentOffset = 0
+                noMoreVolume.value = false
+
                 // Fetch updated manga info from the API
                 val updatedManga: Manga = apiRepository.getManga(idManga)
                 val finalLocalManga = localRepository.updateManga(updatedManga)
@@ -170,7 +194,11 @@ class MangaDetailViewModel(
                 val coverList: List<Volume> = apiRepository.getCoverListByManga(
                     manga = mangaState.value
                 )
-                localRepository.updateOrInsertVolumeList(coverList)
+
+                // Filter duplicated covers by volume number, keeping the most recently updated
+                val distinctCoverList = deduplicateVolumes(coverList)
+
+                localRepository.updateOrInsertVolumeList(distinctCoverList)
 
                 // Get updated cover list from local database
                 volumeList.value = localRepository
@@ -207,13 +235,7 @@ class MangaDetailViewModel(
                 )
                 // Insert the cover list into the local database
                 // Filter duplicated covers by volume number, keeping the most recently updated
-                val distinctCoverList = coverList
-                    .groupBy { it.volume }
-                    .mapValues { (_, volumes) ->
-                        volumes.maxByOrNull { it.updatedAt ?: "" } ?: volumes.first()
-                    }
-                    .values
-                    .toList()
+                val distinctCoverList = deduplicateVolumes(coverList)
 
                 localRepository.insertVolumeList(distinctCoverList)
                 volumeList.value = distinctCoverList.map { it.copy() }
@@ -226,9 +248,8 @@ class MangaDetailViewModel(
     }
 
     fun loadMoreVolumes() {
-        if (isVolumeLoading.value) return
+        if (isVolumeLoading.value || noMoreVolume.value) return
         viewModelScope.launch {
-            currentOffset += limit
             isVolumeLoading.value = true
 
             val tmpMangaWithVolumes = localRepository.getMangaWithVolume(idManga)
@@ -252,15 +273,17 @@ class MangaDetailViewModel(
                 manga = mangaState.value,
                 offset = currentOffset,
             )
+
+            // If no more volumes are returned, mark pagination as complete
+            if (moreVolumes.isEmpty()) {
+                noMoreVolume.value = true
+                isVolumeLoading.value = false
+                return@launch
+            }
+
             // Insert the new volumes into the local database
             // Filter duplicates by volume number, keeping the most recently updated
-            val allVolumes = (volumeList.value + moreVolumes)
-                .groupBy { it.volume }
-                .mapValues { (_, volumes) ->
-                    volumes.maxByOrNull { it.updatedAt ?: "" } ?: volumes.first()
-                }
-                .values
-                .toList()
+            val allVolumes = deduplicateVolumes(volumeList.value + moreVolumes)
 
             val distinctMoreVolumes = allVolumes.filter { incoming ->
                 // Only keep volumes that aren't already in the list
@@ -273,9 +296,14 @@ class MangaDetailViewModel(
                 localRepository.insertVolumeList(distinctMoreVolumes)
                 try {
                     volumeList.value = allVolumes
+                    // Only increment offset after successfully loading new volumes
+                    currentOffset += limit
                 } catch (e: Exception) {
                     localRepository.log(e)
                 }
+            } else {
+                // No new volumes to add, mark as complete
+                noMoreVolume.value = true
             }
             isVolumeLoading.value = false
         }
