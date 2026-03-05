@@ -46,7 +46,7 @@ class MangaDetailViewModelTest {
     private fun createVolume(
         id: String = "vol-1",
         owned: Boolean = false,
-        volumeNumber: Float = 1.0f,
+        volumeNumber: Float? = 1.0f,
         updatedAt: String? = null
     ) = Volume(
         id = id,
