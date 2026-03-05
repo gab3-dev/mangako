@@ -1,4 +1,5 @@
 # <img src="app/src/main/res/drawable/app_logo.png" width="48" height="48" align="center" /> MangaKō
+[![Android CI](https://github.com/gab3-dev/mangako/actions/workflows/android.yml/badge.svg?branch=main)](https://github.com/gab3-dev/mangako/actions/workflows/android.yml)
 
 MangaKō is an Android application designed to help you manage and track your Manga collection. Keep track of the series you own and update the specific volumes you have acquired.
 
