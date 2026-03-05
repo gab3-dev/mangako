@@ -34,17 +34,22 @@ class MangaDetailViewModel(
 
     /**
      * Deduplicates volumes by volume number, keeping the most recently updated entry.
+     * Volumes with null volume numbers (e.g., specials/unnumbered covers) are preserved as-is.
      * @param volumes List of volumes that may contain duplicates
-     * @return Deduplicated list with one volume per volume number
+     * @return Deduplicated list with one volume per volume number, plus all null-volume entries
      */
     private fun deduplicateVolumes(volumes: List<Volume>): List<Volume> {
-        return volumes
+        val (numbered, unnumbered) = volumes.partition { it.volume != null }
+
+        val deduplicatedNumbered = numbered
             .groupBy { it.volume }
             .mapValues { (_, vols) ->
                 vols.maxByOrNull { it.updatedAt ?: "" } ?: vols.first()
             }
             .values
             .toList()
+
+        return deduplicatedNumbered + unnumbered
     }
 
     fun markSelectedListAsOwned(isOwned: Boolean) {

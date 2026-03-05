@@ -469,4 +469,38 @@ class MangaDetailViewModelTest {
             })
         }
     }
+
+    @Test
+    fun `deduplication preserves all null-volume entries`() = runTest {
+        val manga = createManga()
+        val volumesWithNulls = listOf(
+            createVolume(id = "v1", volumeNumber = 1.0f, updatedAt = "2024-01-01T00:00:00Z"),
+            createVolume(id = "v2", volumeNumber = 1.0f, updatedAt = "2024-01-02T00:00:00Z"),
+            createVolume(id = "special1", volumeNumber = null, updatedAt = "2024-01-01T00:00:00Z"),
+            createVolume(id = "special2", volumeNumber = null, updatedAt = "2024-01-02T00:00:00Z"),
+            createVolume(id = "special3", volumeNumber = null, updatedAt = "2024-01-03T00:00:00Z")
+        )
+
+        val vm = createViewModel(manga)
+
+        coEvery { apiRepository.getCoverListByManga(any(), any(), any()) } returns volumesWithNulls
+        coEvery { localRepository.insertVolumeList(any()) } just Runs
+
+        advanceUntilIdle()
+
+        // Verify that all null-volume entries are preserved (3 specials + 1 numbered volume)
+        assertEquals(4, vm.volumeList.value.size)
+
+        // Verify the numbered volume was deduplicated (only v2 kept)
+        val numberedVolumes = vm.volumeList.value.filter { it.volume != null }
+        assertEquals(1, numberedVolumes.size)
+        assertEquals("v2", numberedVolumes.first().id)
+
+        // Verify all 3 null-volume entries are preserved
+        val unnumberedVolumes = vm.volumeList.value.filter { it.volume == null }
+        assertEquals(3, unnumberedVolumes.size)
+        assertTrue(unnumberedVolumes.any { it.id == "special1" })
+        assertTrue(unnumberedVolumes.any { it.id == "special2" })
+        assertTrue(unnumberedVolumes.any { it.id == "special3" })
+    }
 }
