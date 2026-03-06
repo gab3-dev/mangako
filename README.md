@@ -72,5 +72,5 @@ This project is licensed under the terms found in the [LICENSE](LICENSE) file.
 
 ## Developer
 
-Developed by gab3-dev.
+Developed with ☕ by Gabe.
 Check out my profile at [github.com/gab3-dev](https://github.com/gab3-dev).
