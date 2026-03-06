@@ -155,17 +155,11 @@ fun MangaDetail(
 
     val shouldLoadMore = remember {
         derivedStateOf {
+            if (canLoadMore || isCoverLoading) return@derivedStateOf false
             val totalItems = listState.layoutInfo.totalItemsCount
-            if (totalItems == mangaState.volumeCount || canLoadMore) {
-                return@derivedStateOf false // já carregou todos os volumes
-            }
-            try {
-                val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-                lastVisible >= totalItems - 3 // quando estiver perto do fim
-            } catch (e: Exception) {
-                e.printStackTrace()
-                false // caso ocorra algum erro, não carregar mais
-            }
+            if (totalItems == 0) return@derivedStateOf false
+            val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            lastVisible >= totalItems - 3
         }
     }
 

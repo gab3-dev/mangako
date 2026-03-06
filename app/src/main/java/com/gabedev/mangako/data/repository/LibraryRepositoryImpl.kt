@@ -73,6 +73,7 @@ class LibraryRepositoryImpl(
             coverUrl = manga.coverUrl,
             description = manga.description,
             status = manga.status,
+            volumeCount = manga.volumeCount,
         )
         if (updatedManga != null)
             db.mangaDao().updateManga(updatedManga)

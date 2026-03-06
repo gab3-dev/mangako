@@ -369,4 +369,183 @@ class MangaCollectionViewModelTest {
 
         assertEquals("One Piece", viewModel!!.searchQuery.value)
     }
+
+    // Multi-select state tests
+    @Test
+    fun `selectedIds initial state is empty set`() = runTest(testDispatcher) {
+        viewModel = MangaCollectionViewModel(repository, testDispatcher)
+
+        assertTrue(viewModel!!.selectedIds.value.isEmpty())
+    }
+
+    @Test
+    fun `isMultiSelectActive initial state is false`() = runTest(testDispatcher) {
+        viewModel = MangaCollectionViewModel(repository, testDispatcher)
+
+        assertFalse(viewModel!!.isMultiSelectActive.value)
+    }
+
+    @Test
+    fun `toggleSelection adds id to selectedIds when not already selected`() = runTest(testDispatcher) {
+        viewModel = MangaCollectionViewModel(repository, testDispatcher)
+
+        viewModel!!.toggleSelection("1")
+
+        assertTrue(viewModel!!.selectedIds.value.contains("1"))
+    }
+
+    @Test
+    fun `toggleSelection removes id from selectedIds when already selected`() = runTest(testDispatcher) {
+        viewModel = MangaCollectionViewModel(repository, testDispatcher)
+
+        viewModel!!.toggleSelection("1")
+        viewModel!!.toggleSelection("1")
+
+        assertFalse(viewModel!!.selectedIds.value.contains("1"))
+    }
+
+    @Test
+    fun `toggleSelection sets isMultiSelectActive to true when selection is non-empty`() = runTest(testDispatcher) {
+        viewModel = MangaCollectionViewModel(repository, testDispatcher)
+
+        viewModel!!.toggleSelection("1")
+
+        assertTrue(viewModel!!.isMultiSelectActive.value)
+    }
+
+    @Test
+    fun `toggleSelection sets isMultiSelectActive to false when last item is deselected`() = runTest(testDispatcher) {
+        viewModel = MangaCollectionViewModel(repository, testDispatcher)
+
+        viewModel!!.toggleSelection("1")
+        viewModel!!.toggleSelection("1")
+
+        assertFalse(viewModel!!.isMultiSelectActive.value)
+    }
+
+    @Test
+    fun `clearSelection resets selectedIds to empty set`() = runTest(testDispatcher) {
+        viewModel = MangaCollectionViewModel(repository, testDispatcher)
+
+        viewModel!!.toggleSelection("1")
+        viewModel!!.toggleSelection("2")
+        viewModel!!.clearSelection()
+
+        assertTrue(viewModel!!.selectedIds.value.isEmpty())
+    }
+
+    @Test
+    fun `clearSelection does not change isMultiSelectActive`() = runTest(testDispatcher) {
+        viewModel = MangaCollectionViewModel(repository, testDispatcher)
+
+        viewModel!!.toggleSelection("1")
+        assertTrue(viewModel!!.isMultiSelectActive.value)
+
+        viewModel!!.clearSelection()
+
+        assertTrue(viewModel!!.isMultiSelectActive.value)
+    }
+
+    @Test
+    fun `finishMultiSelect sets isMultiSelectActive to false and clears selectedIds`() = runTest(testDispatcher) {
+        viewModel = MangaCollectionViewModel(repository, testDispatcher)
+
+        viewModel!!.toggleSelection("1")
+        viewModel!!.toggleSelection("2")
+        viewModel!!.finishMultiSelect()
+
+        assertFalse(viewModel!!.isMultiSelectActive.value)
+        assertTrue(viewModel!!.selectedIds.value.isEmpty())
+    }
+
+    @Test
+    fun `selectAll sets selectedIds to provided set`() = runTest(testDispatcher) {
+        viewModel = MangaCollectionViewModel(repository, testDispatcher)
+
+        val ids = setOf("1", "2", "3")
+        viewModel!!.selectAll(ids)
+
+        assertEquals(ids, viewModel!!.selectedIds.value)
+    }
+
+    // removeSelectedFromLibrary tests
+    @Test
+    fun `removeSelectedFromLibrary calls removeMangaFromLibrary for each selected id`() = runTest(testDispatcher) {
+        coEvery { repository.getMangaOnLibrary() } returns emptyList()
+        coEvery { repository.getMangaIdsWithSpecialEditions() } returns emptyList()
+
+        viewModel = MangaCollectionViewModel(repository, testDispatcher)
+        advanceUntilIdle()
+
+        viewModel!!.toggleSelection("1")
+        viewModel!!.toggleSelection("2")
+        viewModel!!.removeSelectedFromLibrary()
+        advanceUntilIdle()
+
+        coVerify { repository.removeMangaFromLibrary("1") }
+        coVerify { repository.removeMangaFromLibrary("2") }
+    }
+
+    @Test
+    fun `removeSelectedFromLibrary removes selected manga from mangaCollection`() = runTest(testDispatcher) {
+        val manga1 = createMangaWithOwned(id = "1", title = "One Piece")
+        val manga2 = createMangaWithOwned(id = "2", title = "Naruto")
+        val manga3 = createMangaWithOwned(id = "3", title = "Bleach")
+
+        coEvery { repository.getMangaOnLibrary() } returns listOf(manga1, manga2, manga3)
+        coEvery { repository.getMangaIdsWithSpecialEditions() } returns emptyList()
+
+        viewModel = MangaCollectionViewModel(repository, testDispatcher)
+        advanceUntilIdle()
+
+        viewModel!!.toggleSelection("1")
+        viewModel!!.toggleSelection("3")
+        viewModel!!.removeSelectedFromLibrary()
+        advanceUntilIdle()
+
+        val result = viewModel!!.mangaCollection.value
+        assertEquals(1, result.size)
+        assertEquals("2", result.first().id)
+    }
+
+    @Test
+    fun `removeSelectedFromLibrary re-applies active filters after removal`() = runTest(testDispatcher) {
+        val manga1 = createMangaWithOwned(id = "1", title = "One Piece", volumeOwned = 5, volumeCount = 10)
+        val manga2 = createMangaWithOwned(id = "2", title = "Naruto", volumeOwned = 10, volumeCount = 10)
+        val manga3 = createMangaWithOwned(id = "3", title = "Bleach", volumeOwned = 3, volumeCount = 8)
+
+        coEvery { repository.getMangaOnLibrary() } returns listOf(manga1, manga2, manga3)
+        coEvery { repository.getMangaIdsWithSpecialEditions() } returns emptyList()
+
+        viewModel = MangaCollectionViewModel(repository, testDispatcher)
+        advanceUntilIdle()
+
+        viewModel!!.toggleIncompleteFilter()
+        // Visible: manga1 (5/10), manga3 (3/8); manga2 is complete
+
+        viewModel!!.toggleSelection("1")
+        viewModel!!.removeSelectedFromLibrary()
+        advanceUntilIdle()
+
+        // After removal, incomplete filter still active: only manga3 should remain
+        val result = viewModel!!.mangaCollection.value
+        assertEquals(1, result.size)
+        assertEquals("3", result.first().id)
+    }
+
+    @Test
+    fun `removeSelectedFromLibrary resets multi-select state after completion`() = runTest(testDispatcher) {
+        coEvery { repository.getMangaOnLibrary() } returns emptyList()
+        coEvery { repository.getMangaIdsWithSpecialEditions() } returns emptyList()
+
+        viewModel = MangaCollectionViewModel(repository, testDispatcher)
+        advanceUntilIdle()
+
+        viewModel!!.toggleSelection("1")
+        viewModel!!.removeSelectedFromLibrary()
+        advanceUntilIdle()
+
+        assertFalse(viewModel!!.isMultiSelectActive.value)
+        assertTrue(viewModel!!.selectedIds.value.isEmpty())
+    }
 }

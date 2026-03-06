@@ -557,6 +557,28 @@ class MangaDetailViewModelTest {
     }
 
     @Test
+    fun `refreshManga updates mangaState volumeCount`() = runTest {
+        val manga = createManga()
+        val updatedManga = manga.copy(volumeCount = 27)
+
+        val vm = createViewModel(manga)
+        advanceUntilIdle()
+
+        assertEquals(0, vm.mangaState.value.volumeCount)
+
+        coEvery { apiRepository.getManga(any()) } returns updatedManga
+        coEvery { localRepository.updateManga(any()) } returns updatedManga
+        coEvery { apiRepository.getCoverListByManga(any(), any(), any()) } returns emptyList()
+        coEvery { localRepository.updateOrInsertVolumeList(any()) } just Runs
+        coEvery { localRepository.getMangaWithVolume(any()) } returns null
+
+        vm.refreshManga()
+        advanceUntilIdle()
+
+        assertEquals(27, vm.mangaState.value.volumeCount)
+    }
+
+    @Test
     fun `loadMoreVolumes does not call API when noMoreVolume is true`() = runTest {
         val manga = createManga()
         val vm = createViewModel(manga, false) // disable auto-load in init

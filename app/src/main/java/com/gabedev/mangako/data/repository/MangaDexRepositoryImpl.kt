@@ -36,7 +36,7 @@ class MangaDexRepositoryImpl(
         mangaList.forEach { dto ->
             val author = getAuthor(api, dto, logger)
             val cover = getCover(api, dto, logger)
-            val coverTotal = getCoverTotal(api, dto, logger)
+            val lastVolumeNumber = getLastVolumeNumber(api, dto, logger)
             try {
                 val mangaTitle = Utils.handleMangaTitle(dto.attributes)
                 mangaListWithAuthorAndCover.add(
@@ -57,7 +57,7 @@ class MangaDexRepositoryImpl(
                         author = author?.data?.attributes?.name,
                         description = Utils.handleMangaDescription(dto.attributes),
                         status = dto.attributes.status,
-                        volumeCount = coverTotal,
+                        volumeCount = lastVolumeNumber,
                     )
                 )
             } catch (e: Exception) {
@@ -85,7 +85,7 @@ class MangaDexRepositoryImpl(
         val cover = api.getCoverById(dto.relationships.find {
             it.type == "cover_art"
         }?.id.orEmpty())
-        val coverTotal = api.getCover(manga = listOf(dto.id), limit = 1).total
+        val lastVolumeNumber = getLastVolumeNumber(api, dto, logger)
         return Manga(
             id = dto.id,
             title = Utils.handleMangaTitle(dto.attributes),
@@ -97,7 +97,7 @@ class MangaDexRepositoryImpl(
             author = author.data.attributes.name,
             description = Utils.handleMangaDescription(dto.attributes),
             status = dto.attributes.status,
-            volumeCount = coverTotal,
+            volumeCount = lastVolumeNumber,
         )
     }
 
@@ -177,15 +177,26 @@ class MangaDexRepositoryImpl(
         return null
     }
 
-    private suspend fun getCoverTotal(api: MangaDexAPI, dto: MangaDto, logger: FileLogger): Int {
-        val coverTotal = try {
-            api.getCover(manga = listOf(dto.id), limit = 1).total
+    private suspend fun getLastVolumeNumber(api: MangaDexAPI, dto: MangaDto, logger: FileLogger): Int {
+        try {
+            val response = api.getCover(manga = listOf(dto.id), limit = 1, orderVolume = "desc")
+            val volumeStr = response.data.firstOrNull()?.attributes?.volume
+            val parsed = volumeStr?.toFloatOrNull()?.toInt()
+            if (parsed != null) {
+                logger.log("Last volume number: $parsed for manga: ${dto.id}")
+                return parsed
+            }
         } catch (e: Exception) {
-            logger.logError(Throwable(message = "Error while trying to get cover total: $e"))
-            0
+            logger.logError(Throwable(message = "Error while trying to get last volume number: $e"))
         }
-        logger.log("Cover total fetched successfully: $coverTotal for manga: ${dto.id}")
-        return coverTotal
+        // Fallback to lastVolume from manga attributes
+        val fallback = dto.attributes.lastVolume?.toFloatOrNull()?.toInt()
+        if (fallback != null) {
+            logger.log("Last volume number (fallback): $fallback for manga: ${dto.id}")
+            return fallback
+        }
+        logger.log("No volume number found for manga: ${dto.id}")
+        return 0
     }
 
     override fun log(message: Exception) {

@@ -104,7 +104,10 @@ class MangaDexRepositoryImplTest {
         )
     )
 
-    private fun createCoverListResponse(total: Int = 10) = CoverArtListResponseDTO(
+    private fun createCoverListResponse(
+        total: Int = 10,
+        volume: String = "1"
+    ) = CoverArtListResponseDTO(
         result = "ok",
         response = "collection",
         data = listOf(
@@ -113,7 +116,7 @@ class MangaDexRepositoryImplTest {
                 type = "cover_art",
                 attributes = CoverArtAttributesDTO(
                     description = "",
-                    volume = "1",
+                    volume = volume,
                     fileName = "vol1.jpg",
                     locale = "ja",
                     createdAt = "2020-01-01",
@@ -125,6 +128,15 @@ class MangaDexRepositoryImplTest {
         limit = 50,
         offset = 0,
         total = total
+    )
+
+    private fun createEmptyCoverListResponse() = CoverArtListResponseDTO(
+        result = "ok",
+        response = "collection",
+        data = emptyList(),
+        limit = 50,
+        offset = 0,
+        total = 0
     )
 
     @Before
@@ -143,7 +155,7 @@ class MangaDexRepositoryImplTest {
                 MangaListResponse("ok", "collection", listOf(mangaDto), 6, 0, 1)
         coEvery { api.getAuthorById("author-1") } returns createAuthorResponse()
         coEvery { api.getCoverById("cover-1") } returns createCoverResponse()
-        coEvery { api.getCover(manga = listOf("manga-1"), limit = 1) } returns createCoverListResponse()
+        coEvery { api.getCover(manga = listOf("manga-1"), limit = 1, orderVolume = "desc") } returns createCoverListResponse()
 
         val result = repository.searchManga("One Piece")
 
@@ -180,7 +192,7 @@ class MangaDexRepositoryImplTest {
         coEvery { api.getManga("manga-1") } returns MangaResponseDto("ok", "entity", mangaDto)
         coEvery { api.getAuthorById("author-1") } returns createAuthorResponse()
         coEvery { api.getCoverById("cover-1") } returns createCoverResponse()
-        coEvery { api.getCover(manga = listOf("manga-1"), limit = 1) } returns createCoverListResponse()
+        coEvery { api.getCover(manga = listOf("manga-1"), limit = 1, orderVolume = "desc") } returns createCoverListResponse()
 
         val result = repository.getManga("manga-1")
 
@@ -257,6 +269,70 @@ class MangaDexRepositoryImplTest {
         val result = repository.getAuthorNameById("author-1")
 
         assertEquals("Eiichiro Oda", result)
+    }
+
+    // --- getLastVolumeNumber tests (via searchManga/getManga) ---
+
+    @Test
+    fun `searchManga sets volumeCount to last volume number from cover API`() = runTest {
+        val mangaDto = createMangaDto()
+        coEvery { api.searchMangas(title = "One Piece", offset = null) } returns
+                MangaListResponse("ok", "collection", listOf(mangaDto), 6, 0, 1)
+        coEvery { api.getAuthorById("author-1") } returns createAuthorResponse()
+        coEvery { api.getCoverById("cover-1") } returns createCoverResponse()
+        coEvery { api.getCover(manga = listOf("manga-1"), limit = 1, orderVolume = "desc") } returns
+                createCoverListResponse(volume = "27")
+
+        val result = repository.searchManga("One Piece")
+
+        assertEquals(27, result[0].volumeCount)
+    }
+
+    @Test
+    fun `searchManga truncates decimal volume number to Int`() = runTest {
+        val mangaDto = createMangaDto()
+        coEvery { api.searchMangas(title = "One Piece", offset = null) } returns
+                MangaListResponse("ok", "collection", listOf(mangaDto), 6, 0, 1)
+        coEvery { api.getAuthorById("author-1") } returns createAuthorResponse()
+        coEvery { api.getCoverById("cover-1") } returns createCoverResponse()
+        coEvery { api.getCover(manga = listOf("manga-1"), limit = 1, orderVolume = "desc") } returns
+                createCoverListResponse(volume = "15.5")
+
+        val result = repository.searchManga("One Piece")
+
+        assertEquals(15, result[0].volumeCount)
+    }
+
+    @Test
+    fun `searchManga falls back to lastVolume when cover has no parseable volume`() = runTest {
+        val mangaDto = createMangaDto().copy(
+            attributes = createMangaDto().attributes.copy(lastVolume = "42")
+        )
+        coEvery { api.searchMangas(title = "One Piece", offset = null) } returns
+                MangaListResponse("ok", "collection", listOf(mangaDto), 6, 0, 1)
+        coEvery { api.getAuthorById("author-1") } returns createAuthorResponse()
+        coEvery { api.getCoverById("cover-1") } returns createCoverResponse()
+        coEvery { api.getCover(manga = listOf("manga-1"), limit = 1, orderVolume = "desc") } returns
+                createEmptyCoverListResponse()
+
+        val result = repository.searchManga("One Piece")
+
+        assertEquals(42, result[0].volumeCount)
+    }
+
+    @Test
+    fun `searchManga returns 0 volumeCount on API exception`() = runTest {
+        val mangaDto = createMangaDto()
+        coEvery { api.searchMangas(title = "One Piece", offset = null) } returns
+                MangaListResponse("ok", "collection", listOf(mangaDto), 6, 0, 1)
+        coEvery { api.getAuthorById("author-1") } returns createAuthorResponse()
+        coEvery { api.getCoverById("cover-1") } returns createCoverResponse()
+        coEvery { api.getCover(manga = listOf("manga-1"), limit = 1, orderVolume = "desc") } throws
+                RuntimeException("Network error")
+
+        val result = repository.searchManga("One Piece")
+
+        assertEquals(0, result[0].volumeCount)
     }
 
     // --- log tests ---
