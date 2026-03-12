@@ -57,7 +57,7 @@ fun MangaCollection(
     onMangaClick: (Manga) -> Unit,
     searchQuery: String,
     modifier: Modifier = Modifier,
-    onSearchOnExplore: (String) -> Unit = {}
+    onExploreSearch: (String) -> Unit = {}
 ) {
     val viewModel: MangaCollectionViewModel = viewModel(
         factory = MangaCollectionViewModelFactory(repository)
@@ -145,7 +145,10 @@ fun MangaCollection(
                             )
                             if (searchQuery.isNotBlank()) {
                                 TextButton(
-                                    onClick = { onSearchOnExplore(searchQuery) }
+                                    onClick = {
+                                        viewModel.clearSearchQuery()
+                                        onExploreSearch(searchQuery)
+                                    }
                                 ) {
                                     Text(
                                         text = stringResource(R.string.search_on_explore, searchQuery),

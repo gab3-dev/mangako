@@ -228,7 +228,8 @@ fun MainAppNavHost(
                         }
                     },
                     searchQuery = collectionSearchQuery,
-                    onSearchOnExplore = { query ->
+                    onExploreSearch = { query ->
+                        collectionSearchQuery = ""
                         exploreSearchQuery = query
                         navController.navigate(Screen.Explore.route) {
                             popUpTo(navController.graph.startDestinationId) {

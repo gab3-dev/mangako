@@ -548,4 +548,39 @@ class MangaCollectionViewModelTest {
         assertFalse(viewModel!!.isMultiSelectActive.value)
         assertTrue(viewModel!!.selectedIds.value.isEmpty())
     }
+
+    // clearSearchQuery tests
+    @Test
+    fun `clearSearchQuery resets query to empty string`() = runTest(testDispatcher) {
+        coEvery { repository.getMangaOnLibrary() } returns emptyList()
+        coEvery { repository.getMangaIdsWithSpecialEditions() } returns emptyList()
+
+        viewModel = MangaCollectionViewModel(repository, testDispatcher)
+        advanceUntilIdle()
+
+        viewModel!!.setSearchQuery("One Piece")
+        assertEquals("One Piece", viewModel!!.searchQuery.value)
+
+        viewModel!!.clearSearchQuery()
+        assertEquals("", viewModel!!.searchQuery.value)
+    }
+
+    @Test
+    fun `clearSearchQuery after filtering shows all manga`() = runTest(testDispatcher) {
+        val manga1 = createMangaWithOwned(id = "1", title = "One Piece")
+        val manga2 = createMangaWithOwned(id = "2", title = "Naruto")
+        val manga3 = createMangaWithOwned(id = "3", title = "Bleach")
+
+        coEvery { repository.getMangaOnLibrary() } returns listOf(manga1, manga2, manga3)
+        coEvery { repository.getMangaIdsWithSpecialEditions() } returns emptyList()
+
+        viewModel = MangaCollectionViewModel(repository, testDispatcher)
+        advanceUntilIdle()
+
+        viewModel!!.setSearchQuery("One")
+        assertEquals(1, viewModel!!.mangaCollection.value.size)
+
+        viewModel!!.clearSearchQuery()
+        assertEquals(3, viewModel!!.mangaCollection.value.size)
+    }
 }

@@ -100,6 +100,11 @@ class MangaCollectionViewModel (
         applyFilters()
     }
 
+    fun clearSearchQuery() {
+        _searchQuery.value = ""
+        applyFilters()
+    }
+
     fun toggleIncompleteFilter() {
         _showIncompleteOnly.value = !_showIncompleteOnly.value
         applyFilters()

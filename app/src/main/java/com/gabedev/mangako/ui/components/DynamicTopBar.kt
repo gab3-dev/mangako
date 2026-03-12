@@ -6,6 +6,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -106,6 +107,23 @@ fun DynamicTopBar(
                                     contentDescription = stringResource(R.string.cd_search_icon),
                                     tint = MaterialTheme.colorScheme.onSurface
                                 )
+                            }
+                        },
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = {
+                                    searchQuery = ""
+                                    debouncedQuery = ""
+                                    if (!alwaysShowSearchBar) {
+                                        searchBarVisible = false
+                                    }
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = stringResource(R.string.cd_close_search),
+                                        tint = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
                             }
                         },
                         placeholder = { Text(stringResource(placeholderRes)) }
