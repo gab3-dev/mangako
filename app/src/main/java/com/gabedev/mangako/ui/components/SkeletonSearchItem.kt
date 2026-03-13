@@ -11,9 +11,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -67,13 +67,12 @@ fun shimmerBrush(): Brush {
 }
 
 @Composable
-fun SkeletonSearchItem() {
+fun SkeletonSearchItem(modifier: Modifier = Modifier) {
     val brush = shimmerBrush()
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .fillMaxHeight(0.2f),
+        modifier = modifier
+            .fillMaxWidth(),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -83,7 +82,6 @@ fun SkeletonSearchItem() {
             Box(
                 modifier = Modifier
                     .fillMaxWidth(0.23f)
-                    .heightIn(128.dp)
                     .fillMaxHeight()
                     .clip(RoundedCornerShape(8.dp))
                     .background(brush),
@@ -126,13 +124,15 @@ fun SkeletonSearchItem() {
 }
 
 @Composable
-fun SkeletonSearchList(count: Int = 3) {
+fun SkeletonSearchList(count: Int = 5) {
     Column(
-        modifier = Modifier.padding(16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         repeat(count) {
-            SkeletonSearchItem()
+            SkeletonSearchItem(modifier = Modifier.weight(1f))
         }
     }
 }

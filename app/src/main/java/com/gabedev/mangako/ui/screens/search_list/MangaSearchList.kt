@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -71,9 +72,7 @@ fun MangaSearchScreen(
             .fillMaxHeight()
             .fillMaxWidth(),
     ) {
-        Column(
-            verticalArrangement = Arrangement.Center,
-        ) {
+        Column {
             if (isLoading && mangaList.isEmpty()) {
                 SkeletonSearchList()
             } else {
