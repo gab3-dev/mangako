@@ -27,8 +27,8 @@ import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.repository.MangaDexRepository
 import com.gabedev.mangako.ui.components.CustomLoadingIndicator
 import com.gabedev.mangako.ui.components.MangaSearchItem
+import com.gabedev.mangako.ui.components.SkeletonSearchList
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun MangaSearchScreen(
     modifier: Modifier = Modifier,
@@ -75,12 +75,7 @@ fun MangaSearchScreen(
             verticalArrangement = Arrangement.Center,
         ) {
             if (isLoading && mangaList.isEmpty()) {
-                CircularWavyProgressIndicator(
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .padding(top = 32.dp),
-                )
+                SkeletonSearchList()
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
