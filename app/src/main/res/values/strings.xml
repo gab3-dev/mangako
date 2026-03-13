@@ -61,6 +61,7 @@
     <string name="cd_search_icon">Search Icon</string>
     <string name="cd_back">Back</string>
     <string name="cd_search">Search</string>
+    <string name="cd_close_search">Clear search</string>
 
     <!-- Filters -->
     <string name="filter_incomplete">Incomplete</string>

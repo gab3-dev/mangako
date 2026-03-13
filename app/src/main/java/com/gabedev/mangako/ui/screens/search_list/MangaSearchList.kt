@@ -10,12 +10,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.CircularWavyProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,8 +28,8 @@ import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.repository.MangaDexRepository
 import com.gabedev.mangako.ui.components.CustomLoadingIndicator
 import com.gabedev.mangako.ui.components.MangaSearchItem
+import com.gabedev.mangako.ui.components.SkeletonSearchList
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun MangaSearchScreen(
     modifier: Modifier = Modifier,
@@ -74,16 +72,9 @@ fun MangaSearchScreen(
             .fillMaxHeight()
             .fillMaxWidth(),
     ) {
-        Column(
-            verticalArrangement = Arrangement.Center,
-        ) {
+        Column {
             if (isLoading && mangaList.isEmpty()) {
-                CircularWavyProgressIndicator(
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .padding(top = 32.dp),
-                )
+                SkeletonSearchList()
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),

@@ -2,6 +2,7 @@ package com.gabedev.mangako.data.model
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -85,12 +86,10 @@ class MangaWithOwnedTest {
 
     @Test
     fun `toManga does not include volumeOwned`() {
-        val mwo = createMangaWithOwned()
-        val manga = mwo.toManga()
+        val manga = createMangaWithOwned().toManga()
 
-        // Manga data class does not have volumeOwned field
-        // We verify it's a Manga instance with the correct type
-        assertTrue(manga is Manga)
+        val mangaFields = manga::class.java.declaredFields.map { it.name }
+        assertFalse("Manga should not have volumeOwned field", mangaFields.contains("volumeOwned"))
     }
 
     @Test
@@ -135,5 +134,40 @@ class MangaWithOwnedTest {
         val mwo2 = createMangaWithOwned()
 
         assertEquals(mwo1, mwo2)
+    }
+
+    @Test
+    fun `MangaWithOwned inequality when field differs`() {
+        val mwo1 = createMangaWithOwned()
+        val mwo2 = mwo1.copy(volumeOwned = 99)
+
+        assertNotEquals(mwo1, mwo2)
+    }
+
+    @Test
+    fun `toManga handles edge case values`() {
+        val mwo = MangaWithOwned(
+            id = "",
+            title = "",
+            altTitle = null,
+            type = null,
+            coverId = null,
+            coverFileName = null,
+            coverUrl = "",
+            authorId = null,
+            author = null,
+            description = "",
+            status = null,
+            volumeCount = 0,
+            isOnUserLibrary = false,
+            volumeOwned = 0
+        )
+        val manga = mwo.toManga()
+
+        assertEquals("", manga.id)
+        assertEquals("", manga.title)
+        assertEquals("", manga.coverUrl)
+        assertEquals("", manga.description)
+        assertEquals(0, manga.volumeCount)
     }
 }
