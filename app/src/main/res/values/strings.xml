@@ -32,6 +32,7 @@
 
     <!-- Detail Screen - Labels -->
     <string name="label_special_editions">Special Editions</string>
+    <string name="label_not_owned">Not Owned</string>
     <string name="label_volumes">Volumes</string>
     <string name="label_no_volumes_found">No volumes found.</string>
     <string name="label_loading_covers">Loading covers…</string>

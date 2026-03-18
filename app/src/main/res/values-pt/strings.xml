@@ -27,6 +27,7 @@
 
     <!-- Detail Screen - Labels -->
     <string name="label_special_editions">Edições Especiais</string>
+    <string name="label_not_owned">Não Adquiridos</string>
     <string name="label_volumes">Volumes</string>
     <string name="label_no_volumes_found">Nenhum volume encontrado.</string>
     <string name="label_loading_covers">Carregando capas…</string>
