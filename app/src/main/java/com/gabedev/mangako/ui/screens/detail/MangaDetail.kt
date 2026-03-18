@@ -74,6 +74,7 @@ import com.gabedev.mangako.core.Utils
 import com.gabedev.mangako.data.local.getConfigText
 import com.gabedev.mangako.data.local.saveConfigText
 import com.gabedev.mangako.data.model.Manga
+import com.gabedev.mangako.data.model.Volume
 import com.gabedev.mangako.data.repository.LibraryRepository
 import com.gabedev.mangako.data.repository.MangaDexRepository
 import com.gabedev.mangako.ui.components.ConfirmDialog
@@ -86,6 +87,17 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+internal fun filterVolumes(
+    volumes: List<Volume>,
+    showSpecialEditions: Boolean,
+    showNotOwnedOnly: Boolean
+): List<Volume> {
+    var result = volumes
+    if (!showSpecialEditions) result = result.filter { !it.isSpecialEdition }
+    if (showNotOwnedOnly) result = result.filter { !it.owned }
+    return result
+}
+
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterialApi::class)
 @Composable
 fun MangaDetail(
@@ -96,6 +108,7 @@ fun MangaDetail(
     modifier: Modifier = Modifier
 ) {
     var specialCoverFilter by remember { mutableStateOf(false) }
+    var notOwnedFilter by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val viewModeFlow = remember { context.getConfigText() }
     val viewMode by viewModeFlow.collectAsState(initial = "list")
@@ -105,14 +118,8 @@ fun MangaDetail(
     )
     val mangaState by viewModel.mangaState.collectAsState()
     val volumeList by viewModel.volumeList.collectAsState()
-    val filteredVolumeList by remember(specialCoverFilter, volumeList) {
-        mutableStateOf(
-            if (specialCoverFilter) {
-                volumeList
-            } else {
-                volumeList.filter { !it.isSpecialEdition }
-            }
-        )
+    val filteredVolumeList = remember(specialCoverFilter, notOwnedFilter, volumeList) {
+        filterVolumes(volumeList, specialCoverFilter, notOwnedFilter)
     }
     val isCoverLoading by viewModel.isVolumeLoading.collectAsState()
     val canLoadMore by viewModel.noMoreVolume.collectAsState()
@@ -362,24 +369,44 @@ fun MangaDetail(
                     }
                 }
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    FilterChip(
-                        onClick = { specialCoverFilter = !specialCoverFilter },
-                        label = {
-                            Text(stringResource(R.string.label_special_editions))
-                        },
-                        selected = specialCoverFilter,
-                        leadingIcon = if (specialCoverFilter) {
-                            {
-                                Icon(
-                                    imageVector = Icons.Filled.Done,
-                                    contentDescription = stringResource(R.string.cd_done_icon),
-                                    modifier = Modifier.size(FilterChipDefaults.IconSize)
-                                )
-                            }
-                        } else {
-                            null
-                        },
-                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(
+                            onClick = { specialCoverFilter = !specialCoverFilter },
+                            label = {
+                                Text(stringResource(R.string.label_special_editions))
+                            },
+                            selected = specialCoverFilter,
+                            leadingIcon = if (specialCoverFilter) {
+                                {
+                                    Icon(
+                                        imageVector = Icons.Filled.Done,
+                                        contentDescription = stringResource(R.string.cd_done_icon),
+                                        modifier = Modifier.size(FilterChipDefaults.IconSize)
+                                    )
+                                }
+                            } else {
+                                null
+                            },
+                        )
+                        FilterChip(
+                            onClick = { notOwnedFilter = !notOwnedFilter },
+                            label = {
+                                Text(stringResource(R.string.label_not_owned))
+                            },
+                            selected = notOwnedFilter,
+                            leadingIcon = if (notOwnedFilter) {
+                                {
+                                    Icon(
+                                        imageVector = Icons.Filled.Done,
+                                        contentDescription = stringResource(R.string.cd_done_icon),
+                                        modifier = Modifier.size(FilterChipDefaults.IconSize)
+                                    )
+                                }
+                            } else {
+                                null
+                            },
+                        )
+                    }
                 }
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Row(
