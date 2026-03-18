@@ -87,7 +87,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-fun filterVolumes(
+internal fun filterVolumes(
     volumes: List<Volume>,
     showSpecialEditions: Boolean,
     showNotOwnedOnly: Boolean
