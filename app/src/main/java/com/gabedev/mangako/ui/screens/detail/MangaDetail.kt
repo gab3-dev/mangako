@@ -118,8 +118,8 @@ fun MangaDetail(
     )
     val mangaState by viewModel.mangaState.collectAsState()
     val volumeList by viewModel.volumeList.collectAsState()
-    val filteredVolumeList by remember(specialCoverFilter, notOwnedFilter, volumeList) {
-        mutableStateOf(filterVolumes(volumeList, specialCoverFilter, notOwnedFilter))
+    val filteredVolumeList = remember(specialCoverFilter, notOwnedFilter, volumeList) {
+        filterVolumes(volumeList, specialCoverFilter, notOwnedFilter)
     }
     val isCoverLoading by viewModel.isVolumeLoading.collectAsState()
     val canLoadMore by viewModel.noMoreVolume.collectAsState()
