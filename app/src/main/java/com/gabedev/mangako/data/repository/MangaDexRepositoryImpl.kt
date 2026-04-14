@@ -106,14 +106,15 @@ class MangaDexRepositoryImpl(
             val coverResponse =
                 api.getCover(manga = listOf(manga.id), offset = offset ?: 0, limit = limit)
             val covers = coverResponse.data.map { cover ->
+                val volumeNumber = cover.attributes.volume?.toFloatOrNull()
                 Volume(
                     id = cover.id,
                     mangaId = manga.id,
                     title = manga.title,
-                    volume = cover.attributes.volume?.toFloatOrNull(),
+                    volume = volumeNumber,
                     coverUrl = handleCoverUrl(manga.id, cover.attributes.fileName),
                     owned = false,
-                    isSpecialEdition = cover.attributes.volume?.toFloatOrNull()?.let { it % 1.0f != 0.0f } ?: false,
+                    isSpecialEdition = volumeNumber?.let { it % 1.0f != 0.0f } ?: false,
                     locale = cover.attributes.locale,
                     updatedAt = cover.attributes.updatedAt
                 )
