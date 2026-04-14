@@ -295,10 +295,14 @@ class MangaDexRepositoryImplTest {
                 responseWithNullVolume
 
         val result = repository.getCoverListByManga(manga)
+        val promoCover = result.firstOrNull { it.id == "cover-promo" }
+        val volumeOneCover = result.firstOrNull { it.id == "cover-vol1" }
 
         assertEquals(2, result.size)
-        assertNull(result[0].volume)
-        assertEquals(1.0f, result[1].volume)
+        assertTrue(promoCover != null)
+        assertTrue(volumeOneCover != null)
+        assertNull(promoCover?.volume)
+        assertEquals(1.0f, volumeOneCover?.volume)
     }
 
     // --- getMangaCoverFileName tests ---
