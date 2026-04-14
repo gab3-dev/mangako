@@ -28,6 +28,22 @@ class CoverDtoTest {
         assertEquals(1, attrs.version)
     }
 
+    @Test
+    fun `CoverArtAttributesDTO with null volume`() {
+        val attrs = CoverArtAttributesDTO(
+            description = "Promotional cover",
+            volume = null,
+            fileName = "promo.jpg",
+            locale = "ja",
+            createdAt = "2020-01-01T00:00:00+00:00",
+            updatedAt = "2024-01-01T00:00:00+00:00",
+            version = 1
+        )
+
+        assertNull(attrs.volume)
+        assertEquals("promo.jpg", attrs.fileName)
+    }
+
     // --- CoverArtDTO tests ---
 
     @Test
