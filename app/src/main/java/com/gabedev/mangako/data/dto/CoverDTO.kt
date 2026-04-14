@@ -18,7 +18,7 @@ data class CoverArtDTO(
 
 data class CoverArtAttributesDTO(
     val description: String,
-    val volume: String,
+    val volume: String?,
     val fileName: String,
     val locale: String,
     val createdAt: String,

@@ -23,6 +23,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -247,6 +248,61 @@ class MangaDexRepositoryImplTest {
         val result = repository.getCoverListByManga(manga, offset = 50, limit = 25)
 
         assertEquals(1, result.size)
+    }
+
+    @Test
+    fun `getCoverListByManga handles null volume field gracefully`() = runTest {
+        val manga = Manga(
+            id = "manga-1", title = "Soul Eater",
+            coverUrl = "url", description = "desc"
+        )
+        val responseWithNullVolume = CoverArtListResponseDTO(
+            result = "ok",
+            response = "collection",
+            data = listOf(
+                CoverArtDTO(
+                    id = "cover-promo",
+                    type = "cover_art",
+                    attributes = CoverArtAttributesDTO(
+                        description = "Promotional cover",
+                        volume = null,
+                        fileName = "promo.jpg",
+                        locale = "ja",
+                        createdAt = "2020-01-01",
+                        updatedAt = "2024-01-01",
+                        version = 1
+                    )
+                ),
+                CoverArtDTO(
+                    id = "cover-vol1",
+                    type = "cover_art",
+                    attributes = CoverArtAttributesDTO(
+                        description = "",
+                        volume = "1",
+                        fileName = "vol1.jpg",
+                        locale = "ja",
+                        createdAt = "2020-01-01",
+                        updatedAt = "2024-01-01",
+                        version = 1
+                    )
+                )
+            ),
+            limit = 50,
+            offset = 0,
+            total = 2
+        )
+        coEvery { api.getCover(manga = listOf("manga-1"), offset = 0, limit = 50) } returns
+                responseWithNullVolume
+
+        val result = repository.getCoverListByManga(manga)
+        val promoCover = result.firstOrNull { it.id == "cover-promo" }
+        val volumeOneCover = result.firstOrNull { it.id == "cover-vol1" }
+
+        assertEquals(2, result.size)
+        assertTrue(promoCover != null)
+        assertTrue(volumeOneCover != null)
+        assertNull(promoCover?.volume)
+        assertEquals(1.0f, volumeOneCover?.volume)
     }
 
     // --- getMangaCoverFileName tests ---
