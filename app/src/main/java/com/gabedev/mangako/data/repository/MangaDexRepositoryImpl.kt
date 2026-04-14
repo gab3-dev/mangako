@@ -114,7 +114,7 @@ class MangaDexRepositoryImpl(
                     volume = volumeNumber,
                     coverUrl = handleCoverUrl(manga.id, cover.attributes.fileName),
                     owned = false,
-                    isSpecialEdition = volumeNumber?.let { it % 1.0f != 0.0f } ?: false,
+                    isSpecialEdition = volumeNumber?.let { it % 1.0f != 0.0f } ?: true,
                     locale = cover.attributes.locale,
                     updatedAt = cover.attributes.updatedAt
                 )
