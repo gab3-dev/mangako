@@ -1,13 +1,16 @@
 package com.gabedev.mangako.ui.screens.collection
 
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -38,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -70,6 +74,12 @@ fun MangaCollection(
     val isMultiSelectActive by viewModel.isMultiSelectActive
 
     val lifecycleOwner = LocalLifecycleOwner.current
+    val density = LocalDensity.current
+    val imeBottomPadding = with(density) { WindowInsets.ime.getBottom(this).toDp() }
+    val animatedImeBottomPadding by animateDpAsState(
+        targetValue = imeBottomPadding,
+        label = "collectionEmptyStateImePadding",
+    )
 
     var showRemoveDialog by remember { mutableStateOf(false) }
 
@@ -130,7 +140,9 @@ fun MangaCollection(
                 if (mangaCollection.isEmpty()) {
                     Box(
                         contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(bottom = animatedImeBottomPadding)
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
