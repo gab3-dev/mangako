@@ -51,7 +51,7 @@ android {
     defaultConfig {
         applicationId = "com.gabedev.mangako"
         minSdk = 25
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -59,6 +59,12 @@ android {
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+            resValue("string", "app_name", "MangaKō Debug")
+        }
+
         release {
             signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
