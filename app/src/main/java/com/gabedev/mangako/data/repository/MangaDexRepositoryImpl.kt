@@ -2,8 +2,6 @@ package com.gabedev.mangako.data.repository
 
 import com.gabedev.mangako.core.FileLogger
 import com.gabedev.mangako.core.Utils
-import com.gabedev.mangako.data.dto.AuthorResponseDTO
-import com.gabedev.mangako.data.dto.CoverArtResponseDTO
 import com.gabedev.mangako.data.dto.MangaDto
 import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.model.Volume
@@ -14,67 +12,78 @@ class MangaDexRepositoryImpl(
     private val logger: FileLogger
 ) : MangaDexRepository {
 
+    private fun defaultCoverUrl(mangaId: String): String {
+        return "https://uploads.mangadex.org/covers/$mangaId/default-cover.png"
+    }
+
     private fun handleCoverUrl(mangaId: String, coverFileName: String): String {
         return "https://uploads.mangadex.org/covers/$mangaId/$coverFileName.512.jpg"
     }
 
     override suspend fun searchManga(title: String, offset: Int?): List<Manga> {
-        val mangaListWithAuthorAndCover = mutableListOf<Manga>()
-        val mangaList: List<MangaDto>
-        try {
-            val tmp = api.searchMangas(title = title, offset = offset)
-            logger.log("Search Manga: API response received with $tmp mangas for title '$title'")
-            mangaList = tmp.data
+        return searchMangaPage(title, offset).map { enrichManga(it) }
+    }
+
+    override suspend fun searchMangaPage(title: String, offset: Int?, limit: Int): List<Manga> {
+        return try {
+            val trimmedTitle = title.trim()
+            val response = api.searchMangas(
+                title = trimmedTitle,
+                offset = offset,
+                limit = limit,
+                orderRelevance = if (trimmedTitle.isBlank()) null else "desc",
+                orderFollowedCount = if (trimmedTitle.isBlank()) "desc" else null
+            )
+            logger.log("Search Manga: API response received with ${response.data.size} mangas for title '$title'")
+            response.data.mapNotNull { dto ->
+                try {
+                    dto.toManga()
+                } catch (e: Exception) {
+                    logger.logError(Throwable(message = "Error while mapping manga data: $e"))
+                    null
+                }
+            }.distinctBy { it.id }
         } catch (e: Exception) {
             logger.logError(Throwable(message = "Error while searching manga: $e"))
-            return emptyList()
+            emptyList()
         }
-        if (mangaList.isEmpty()) {
-            logger.log("Search Manga: No mangas found for title '$title'")
-            return emptyList()
-        }
-        mangaList.forEach { dto ->
-            val author = getAuthor(api, dto, logger)
-            val cover = getCover(api, dto, logger)
-            val lastVolumeNumber = getLastVolumeNumber(api, dto, logger)
+    }
+
+    override suspend fun enrichManga(manga: Manga): Manga {
+        var enriched = manga
+
+        val authorId = enriched.authorId
+        if (enriched.author.isNullOrBlank() && !authorId.isNullOrBlank()) {
             try {
-                val mangaTitle = Utils.handleMangaTitle(dto.attributes)
-                mangaListWithAuthorAndCover.add(
-                    Manga(
-                        id = dto.id,
-                        title = mangaTitle,
-                        altTitle = dto.attributes.altTitles?.find { it.containsKey("ja-ro") }
-                            ?.get("ja-ro"),
-                        type = dto.type,
-                        coverId = cover?.data?.id,
-                        coverFileName = cover?.data?.attributes?.fileName,
-                        coverUrl = if (cover != null) {
-                            handleCoverUrl(dto.id, cover.data.attributes.fileName)
-                        } else {
-                            "https://uploads.mangadex.org/covers/${dto.id}/default-cover.png"
-                        },
-                        authorId = author?.data?.id,
-                        author = author?.data?.attributes?.name,
-                        description = Utils.handleMangaDescription(dto.attributes),
-                        status = dto.attributes.status,
-                        volumeCount = lastVolumeNumber,
-                    )
-                )
+                val author = api.getAuthorById(authorId)
+                enriched = enriched.copy(author = author.data.attributes.name)
             } catch (e: Exception) {
-                logger.logError(Throwable(message = "Error while try to add manga data, to the final list: $e"))
-                Manga(
-                    id = dto.id,
-                    title = Utils.handleMangaTitle(dto.attributes),
-                    coverUrl = "https://uploads.mangadex.org/covers/${dto.id}/default-cover.png",
-                    description = Utils.handleMangaDescription(dto.attributes)
-                )
+                logger.logError(Throwable(message = "Error while enriching manga author: $e"))
             }
         }
-        logger.log("Search Manga: Found ${mangaList.size} mangas for title '$title'")
-        if (mangaList.isNotEmpty()) {
-            return mangaListWithAuthorAndCover
+
+        val coverId = enriched.coverId
+        if (enriched.coverFileName.isNullOrBlank() && !coverId.isNullOrBlank()) {
+            try {
+                val cover = api.getCoverById(coverId)
+                enriched = enriched.copy(
+                    coverId = cover.data.id,
+                    coverFileName = cover.data.attributes.fileName,
+                    coverUrl = handleCoverUrl(enriched.id, cover.data.attributes.fileName)
+                )
+            } catch (e: Exception) {
+                logger.logError(Throwable(message = "Error while enriching manga cover: $e"))
+            }
         }
-        return emptyList()
+
+        try {
+            val lastVolumeNumber = getLastVolumeNumber(api, enriched.id, enriched.volumeCount, logger)
+            enriched = enriched.copy(volumeCount = lastVolumeNumber)
+        } catch (e: Exception) {
+            logger.logError(Throwable(message = "Error while enriching manga volume count: $e"))
+        }
+
+        return enriched
     }
 
     override suspend fun getManga(id: String): Manga {
@@ -136,68 +145,60 @@ class MangaDexRepositoryImpl(
         return author.data.attributes.name
     }
 
-    private suspend fun getAuthor(
-        api: MangaDexAPI,
-        dto: MangaDto,
-        logger: FileLogger
-    ): AuthorResponseDTO? {
-        val author = try {
-            api.getAuthorById(dto.relationships.find {
-                it.type == "author"
-            }?.id.orEmpty())
-        } catch (e: Exception) {
-            logger.logError(Throwable(message = "Error while trying to get author data: $e"))
-            null
-        }
-        if (author != null) {
-            logger.log("Author data fetched successfully: ${author.data.id}")
-            return author
-        }
-        logger.log("No author data found for manga: ${dto.id}")
-        return null
-    }
-
-    private suspend fun getCover(
-        api: MangaDexAPI,
-        dto: MangaDto,
-        logger: FileLogger
-    ): CoverArtResponseDTO? {
-        val cover = try {
-            api.getCoverById(dto.relationships.find {
-                it.type == "cover_art"
-            }?.id.orEmpty())
-        } catch (e: Exception) {
-            logger.logError(Throwable(message = "Error while trying to get cover data: $e"))
-            null
-        }
-        if (cover != null) {
-            logger.log("Cover data fetched successfully: ${cover.data.id}")
-            return cover
-        }
-        logger.log("No cover data found for manga: ${dto.id}")
-        return null
-    }
-
     private suspend fun getLastVolumeNumber(api: MangaDexAPI, dto: MangaDto, logger: FileLogger): Int {
+        return getLastVolumeNumber(
+            api = api,
+            mangaId = dto.id,
+            fallbackVolumeCount = dto.attributes.lastVolume?.toFloatOrNull()?.toInt(),
+            logger = logger
+        )
+    }
+
+    private suspend fun getLastVolumeNumber(
+        api: MangaDexAPI,
+        mangaId: String,
+        fallbackVolumeCount: Int?,
+        logger: FileLogger
+    ): Int {
         try {
-            val response = api.getCover(manga = listOf(dto.id), limit = 1, orderVolume = "desc")
+            val response = api.getCover(manga = listOf(mangaId), limit = 1, orderVolume = "desc")
             val volumeStr = response.data.firstOrNull()?.attributes?.volume
             val parsed = volumeStr?.toFloatOrNull()?.toInt()
             if (parsed != null) {
-                logger.log("Last volume number: $parsed for manga: ${dto.id}")
+                logger.log("Last volume number: $parsed for manga: $mangaId")
                 return parsed
             }
         } catch (e: Exception) {
             logger.logError(Throwable(message = "Error while trying to get last volume number: $e"))
         }
-        // Fallback to lastVolume from manga attributes
-        val fallback = dto.attributes.lastVolume?.toFloatOrNull()?.toInt()
-        if (fallback != null) {
-            logger.log("Last volume number (fallback): $fallback for manga: ${dto.id}")
-            return fallback
+        if (fallbackVolumeCount != null) {
+            logger.log("Last volume number (fallback): $fallbackVolumeCount for manga: $mangaId")
+            return fallbackVolumeCount
         }
-        logger.log("No volume number found for manga: ${dto.id}")
+        logger.log("No volume number found for manga: $mangaId")
         return 0
+    }
+
+    private fun MangaDto.toManga(): Manga {
+        val authorRelationship = relationships.firstOrNull { it.type == "author" }
+        val coverRelationship = relationships.firstOrNull { it.type == "cover_art" }
+        val coverFileName = coverRelationship?.attributes?.fileName
+        val fallbackVolumeCount = attributes.lastVolume?.toFloatOrNull()?.toInt() ?: 0
+
+        return Manga(
+            id = id,
+            title = Utils.handleMangaTitle(attributes),
+            altTitle = attributes.altTitles?.find { it.containsKey("ja-ro") }?.get("ja-ro"),
+            type = type,
+            coverId = coverRelationship?.id,
+            coverFileName = coverFileName,
+            coverUrl = coverFileName?.let { handleCoverUrl(id, it) } ?: defaultCoverUrl(id),
+            authorId = authorRelationship?.id,
+            author = authorRelationship?.attributes?.name,
+            description = Utils.handleMangaDescription(attributes),
+            status = attributes.status,
+            volumeCount = fallbackVolumeCount,
+        )
     }
 
     override fun log(message: Exception) {

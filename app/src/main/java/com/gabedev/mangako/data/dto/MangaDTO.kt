@@ -70,5 +70,13 @@ data class TagAttributesDto(
 @Serializable
 data class RelationshipDto(
     val id: String?,
-    val type: String?
+    val type: String?,
+    val attributes: RelationshipAttributesDto? = null
+)
+
+@Serializable
+data class RelationshipAttributesDto(
+    val name: String? = null,
+    val fileName: String? = null,
+    val volume: String? = null
 )

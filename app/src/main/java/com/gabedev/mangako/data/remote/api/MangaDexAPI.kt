@@ -18,7 +18,10 @@ interface MangaDexAPI {
     suspend fun searchMangas(
         @Query("limit") limit: Int = 6,
         @Query("title") title: String,
-        @Query("offset") offset: Int?
+        @Query("offset") offset: Int?,
+        @Query("includes[]") includes: List<String> = listOf("cover_art", "author"),
+        @Query("order[relevance]") orderRelevance: String? = null,
+        @Query("order[followedCount]") orderFollowedCount: String? = null
     ): MangaListResponse
 
     @GET("cover")

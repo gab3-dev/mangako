@@ -49,11 +49,10 @@ fun MangaSearchScreen(
 
     // Forward debounced search query to ViewModel
     LaunchedEffect(searchQuery) {
-        if (searchQuery.isBlank()) return@LaunchedEffect
         viewModel.setQueryString(searchQuery)
     }
 
-    // Infinite scroll: load more when reaching the end
+    // Infinite scroll: preload before the user reaches the end.
     LaunchedEffect(listState, noMoreManga) {
         snapshotFlow {
             val info = listState.layoutInfo
@@ -61,7 +60,7 @@ fun MangaSearchScreen(
             val totalItems = info.totalItemsCount
             lastVisible to totalItems
         }.collect { (lastVisible, totalItems) ->
-            if (!noMoreManga && lastVisible >= totalItems - 1) {
+            if (!noMoreManga && totalItems > 0 && lastVisible >= totalItems - 3) {
                 viewModel.loadMangaList()
             }
         }
@@ -82,7 +81,7 @@ fun MangaSearchScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(16.dp),
                 ) {
-                    items(mangaList) { manga: Manga ->
+                    items(mangaList, key = { it.id }) { manga: Manga ->
                         MangaSearchItem(
                             manga = manga,
                             navigate = {

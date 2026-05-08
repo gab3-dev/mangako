@@ -16,9 +16,11 @@ import com.gabedev.mangako.data.dto.MangaDto
 import com.gabedev.mangako.data.dto.MangaListResponse
 import com.gabedev.mangako.data.dto.MangaResponseDto
 import com.gabedev.mangako.data.dto.RelationshipDto
+import com.gabedev.mangako.data.dto.RelationshipAttributesDto
 import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.remote.api.MangaDexAPI
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
@@ -153,7 +155,7 @@ class MangaDexRepositoryImplTest {
     @Test
     fun `searchManga returns mapped manga list`() = runTest {
         val mangaDto = createMangaDto()
-        coEvery { api.searchMangas(title = "One Piece", offset = null) } returns
+        coEvery { api.searchMangas(title = "One Piece", offset = null, limit = any(), orderRelevance = any(), orderFollowedCount = any()) } returns
                 MangaListResponse("ok", "collection", listOf(mangaDto), 6, 0, 1)
         coEvery { api.getAuthorById("author-1") } returns createAuthorResponse()
         coEvery { api.getCoverById("cover-1") } returns createCoverResponse()
@@ -169,7 +171,7 @@ class MangaDexRepositoryImplTest {
 
     @Test
     fun `searchManga returns empty list when no results`() = runTest {
-        coEvery { api.searchMangas(title = "xyz", offset = null) } returns
+        coEvery { api.searchMangas(title = "xyz", offset = null, limit = any(), orderRelevance = any(), orderFollowedCount = any()) } returns
                 MangaListResponse("ok", "collection", emptyList(), 6, 0, 0)
 
         val result = repository.searchManga("xyz")
@@ -179,11 +181,130 @@ class MangaDexRepositoryImplTest {
 
     @Test
     fun `searchManga returns empty list on API exception`() = runTest {
-        coEvery { api.searchMangas(title = any(), offset = any()) } throws RuntimeException("Network error")
+        coEvery { api.searchMangas(title = any(), offset = any(), limit = any(), orderRelevance = any(), orderFollowedCount = any()) } throws RuntimeException("Network error")
 
         val result = repository.searchManga("test")
 
         assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun `searchMangaPage maps base results without per item metadata calls`() = runTest {
+        val mangaDto = createMangaDto().copy(
+            attributes = createMangaDto().attributes.copy(lastVolume = "12")
+        )
+        coEvery {
+            api.searchMangas(
+                title = "One Piece",
+                offset = 0,
+                limit = any(),
+                orderRelevance = any(),
+                orderFollowedCount = any()
+            )
+        } returns
+                MangaListResponse("ok", "collection", listOf(mangaDto), 6, 0, 1)
+
+        val result = repository.searchMangaPage("One Piece", 0)
+
+        assertEquals(1, result.size)
+        assertEquals("manga-1", result[0].id)
+        assertEquals(12, result[0].volumeCount)
+        coVerify(exactly = 0) { api.getAuthorById(any()) }
+        coVerify(exactly = 0) { api.getCoverById(any()) }
+        coVerify(exactly = 0) { api.getCover(manga = any(), limit = 1, orderVolume = "desc") }
+    }
+
+    @Test
+    fun `searchMangaPage uses included relationship attributes when available`() = runTest {
+        val mangaDto = createMangaDto().copy(
+            relationships = listOf(
+                RelationshipDto(
+                    id = "author-1",
+                    type = "author",
+                    attributes = RelationshipAttributesDto(name = "Eiichiro Oda")
+                ),
+                RelationshipDto(
+                    id = "cover-1",
+                    type = "cover_art",
+                    attributes = RelationshipAttributesDto(fileName = "included-cover.jpg")
+                )
+            )
+        )
+        coEvery {
+            api.searchMangas(
+                title = "One Piece",
+                offset = 0,
+                limit = any(),
+                orderRelevance = any(),
+                orderFollowedCount = any()
+            )
+        } returns
+                MangaListResponse("ok", "collection", listOf(mangaDto), 6, 0, 1)
+
+        val result = repository.searchMangaPage("One Piece", 0)
+
+        assertEquals("Eiichiro Oda", result[0].author)
+        assertEquals("included-cover.jpg", result[0].coverFileName)
+        assertTrue(result[0].coverUrl.contains("included-cover.jpg"))
+        coVerify(exactly = 0) { api.getAuthorById(any()) }
+        coVerify(exactly = 0) { api.getCoverById(any()) }
+    }
+
+    @Test
+    fun `searchMangaPage uses stable ordering for search and discovery pages`() = runTest {
+        coEvery {
+            api.searchMangas(
+                title = any(),
+                offset = any(),
+                limit = any(),
+                orderRelevance = any(),
+                orderFollowedCount = any()
+            )
+        } returns MangaListResponse("ok", "collection", emptyList(), 6, 0, 0)
+
+        repository.searchMangaPage("One Piece", 0)
+        repository.searchMangaPage("", 6)
+
+        coVerify {
+            api.searchMangas(
+                title = "One Piece",
+                offset = 0,
+                limit = 6,
+                orderRelevance = "desc",
+                orderFollowedCount = null
+            )
+        }
+        coVerify {
+            api.searchMangas(
+                title = "",
+                offset = 6,
+                limit = 6,
+                orderRelevance = null,
+                orderFollowedCount = "desc"
+            )
+        }
+    }
+
+    @Test
+    fun `enrichManga falls back to author and cover endpoints when relationship attributes are missing`() = runTest {
+        val manga = Manga(
+            id = "manga-1",
+            title = "One Piece",
+            coverId = "cover-1",
+            coverUrl = "placeholder",
+            authorId = "author-1",
+            description = "A pirate adventure"
+        )
+        coEvery { api.getAuthorById("author-1") } returns createAuthorResponse()
+        coEvery { api.getCoverById("cover-1") } returns createCoverResponse()
+        coEvery { api.getCover(manga = listOf("manga-1"), limit = 1, orderVolume = "desc") } returns
+                createCoverListResponse(volume = "27")
+
+        val result = repository.enrichManga(manga)
+
+        assertEquals("Eiichiro Oda", result.author)
+        assertEquals("cover-file.jpg", result.coverFileName)
+        assertEquals(27, result.volumeCount)
     }
 
     // --- getManga tests ---
@@ -335,7 +456,7 @@ class MangaDexRepositoryImplTest {
     @Test
     fun `searchManga sets volumeCount to last volume number from cover API`() = runTest {
         val mangaDto = createMangaDto()
-        coEvery { api.searchMangas(title = "One Piece", offset = null) } returns
+        coEvery { api.searchMangas(title = "One Piece", offset = null, limit = any(), orderRelevance = any(), orderFollowedCount = any()) } returns
                 MangaListResponse("ok", "collection", listOf(mangaDto), 6, 0, 1)
         coEvery { api.getAuthorById("author-1") } returns createAuthorResponse()
         coEvery { api.getCoverById("cover-1") } returns createCoverResponse()
@@ -350,7 +471,7 @@ class MangaDexRepositoryImplTest {
     @Test
     fun `searchManga truncates decimal volume number to Int`() = runTest {
         val mangaDto = createMangaDto()
-        coEvery { api.searchMangas(title = "One Piece", offset = null) } returns
+        coEvery { api.searchMangas(title = "One Piece", offset = null, limit = any(), orderRelevance = any(), orderFollowedCount = any()) } returns
                 MangaListResponse("ok", "collection", listOf(mangaDto), 6, 0, 1)
         coEvery { api.getAuthorById("author-1") } returns createAuthorResponse()
         coEvery { api.getCoverById("cover-1") } returns createCoverResponse()
@@ -367,7 +488,7 @@ class MangaDexRepositoryImplTest {
         val mangaDto = createMangaDto().copy(
             attributes = createMangaDto().attributes.copy(lastVolume = "42")
         )
-        coEvery { api.searchMangas(title = "One Piece", offset = null) } returns
+        coEvery { api.searchMangas(title = "One Piece", offset = null, limit = any(), orderRelevance = any(), orderFollowedCount = any()) } returns
                 MangaListResponse("ok", "collection", listOf(mangaDto), 6, 0, 1)
         coEvery { api.getAuthorById("author-1") } returns createAuthorResponse()
         coEvery { api.getCoverById("cover-1") } returns createCoverResponse()
@@ -382,7 +503,7 @@ class MangaDexRepositoryImplTest {
     @Test
     fun `searchManga returns 0 volumeCount on API exception`() = runTest {
         val mangaDto = createMangaDto()
-        coEvery { api.searchMangas(title = "One Piece", offset = null) } returns
+        coEvery { api.searchMangas(title = "One Piece", offset = null, limit = any(), orderRelevance = any(), orderFollowedCount = any()) } returns
                 MangaListResponse("ok", "collection", listOf(mangaDto), 6, 0, 1)
         coEvery { api.getAuthorById("author-1") } returns createAuthorResponse()
         coEvery { api.getCoverById("cover-1") } returns createCoverResponse()

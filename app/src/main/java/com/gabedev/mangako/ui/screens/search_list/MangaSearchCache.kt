@@ -17,6 +17,13 @@ object MangaSearchCache {
         cache["$query:$offset"] = results
     }
 
+    fun updateItem(query: String, offset: Int, manga: Manga) {
+        val key = "$query:$offset"
+        cache[key] = cache[key]?.map {
+            if (it.id == manga.id) manga else it
+        } ?: return
+    }
+
     fun invalidate(query: String) {
         cache.keys.removeAll { it.startsWith("$query:") }
     }

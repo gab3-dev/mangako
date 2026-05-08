@@ -5,6 +5,8 @@ import com.gabedev.mangako.data.model.Volume
 
 interface MangaDexRepository {
     suspend fun searchManga(title: String, offset: Int? = null): List<Manga>
+    suspend fun searchMangaPage(title: String, offset: Int? = null, limit: Int = 6): List<Manga>
+    suspend fun enrichManga(manga: Manga): Manga
     suspend fun getManga(id: String): Manga
     suspend fun getMangaCoverFileName(id: String): String
     suspend fun getAuthorNameById(id: String): String
