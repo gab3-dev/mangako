@@ -1,5 +1,6 @@
 package com.gabedev.mangako.ui.components
 
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -9,12 +10,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
@@ -26,19 +31,31 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.dp
+
+private const val ShimmerTravelDistance = 1400f
+private const val ShimmerGradientWidth = 900f
 
 fun shimmerGradientColors(
     baseColor: Color,
     highlightColor: Color,
-    progress: Float
 ): List<Pair<Float, Color>> {
-    val offset = progress * 2f
     return listOf(
-        (0f + offset).coerceIn(0f, 1f) to baseColor,
-        (0.3f + offset).coerceIn(0f, 1f) to highlightColor,
-        (0.6f + offset).coerceIn(0f, 1f) to baseColor,
+        0f to baseColor,
+        0.42f to baseColor,
+        0.5f to highlightColor,
+        0.58f to baseColor,
+        1f to baseColor,
     )
+}
+
+fun shimmerGradientOffsets(progress: Float): Pair<Offset, Offset> {
+    val clampedProgress = progress.coerceIn(0f, 1f)
+    val center = -ShimmerTravelDistance + (ShimmerTravelDistance * 2f * clampedProgress)
+
+    return Offset(center - ShimmerGradientWidth / 2f, 0f) to
+        Offset(center + ShimmerGradientWidth / 2f, 0f)
 }
 
 @Composable
@@ -48,34 +65,50 @@ fun shimmerBrush(): Brush {
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1200),
+            animation = tween(
+                durationMillis = 1800,
+                easing = LinearEasing,
+            ),
             repeatMode = RepeatMode.Restart,
         ),
         label = "shimmerProgress",
     )
 
-    val baseColor = MaterialTheme.colorScheme.surfaceVariant
-    val highlightColor = MaterialTheme.colorScheme.surface
+    val baseColor = lerp(
+        MaterialTheme.colorScheme.surfaceVariant,
+        MaterialTheme.colorScheme.tertiaryContainer,
+        0.45f,
+    )
+    val highlightColor = lerp(
+        baseColor,
+        MaterialTheme.colorScheme.tertiary,
+        0.28f,
+    )
 
-    val colorStops = shimmerGradientColors(baseColor, highlightColor, progress)
+    val colorStops = shimmerGradientColors(baseColor, highlightColor)
+    val (startOffset, endOffset) = shimmerGradientOffsets(progress)
 
     return Brush.linearGradient(
         colorStops = colorStops.toTypedArray(),
-        start = Offset.Zero,
-        end = Offset(1000f, 0f),
+        start = startOffset,
+        end = endOffset,
     )
 }
 
 @Composable
-fun SkeletonSearchItem(modifier: Modifier = Modifier) {
-    val brush = shimmerBrush()
-
+fun SkeletonSearchItem(
+    modifier: Modifier = Modifier,
+    brush: Brush = shimmerBrush(),
+) {
     Card(
         modifier = modifier
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .heightIn(min = 128.dp),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(128.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -125,14 +158,17 @@ fun SkeletonSearchItem(modifier: Modifier = Modifier) {
 
 @Composable
 fun SkeletonSearchList(count: Int = 5) {
-    Column(
+    val brush = shimmerBrush()
+
+    LazyColumn(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
+            .fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
+        userScrollEnabled = false,
     ) {
-        repeat(count) {
-            SkeletonSearchItem(modifier = Modifier.weight(1f))
+        items(count) {
+            SkeletonSearchItem(brush = brush)
         }
     }
 }
