@@ -2,6 +2,10 @@ package com.gabedev.mangako
 
 import android.net.Uri
 import android.os.Bundle
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -111,7 +115,6 @@ fun MainAppNavHost(
     modifier: Modifier
 ) {
     // Per-screen search query states
-    var collectionSearchQuery by remember { mutableStateOf("") }
     var exploreSearchQuery by remember { mutableStateOf("") }
 
     val items = listOf(Screen.UserCollection, Screen.Explore, Screen.MangaDetail)
@@ -128,6 +131,8 @@ fun MainAppNavHost(
 
     val mangaRepository = MangaDexRepositoryImpl(api, logger)
     val localRepository = LibraryRepositoryImpl(db, logger)
+    val screenTransitionDuration = 300
+    val detailRoute = Screen.MangaDetail.route
 
     Scaffold(
         contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0.dp),
@@ -144,25 +149,19 @@ fun MainAppNavHost(
             }
 
             val isExplore = currentRoute == Screen.Explore.route
-            val placeholderRes = if (isExplore) {
-                R.string.search_placeholder
-            } else {
-                R.string.search_collection_placeholder
+            if (!isExplore) {
+                return@Scaffold
             }
 
             // Key on route so each screen gets its own search bar state
             key(currentRoute) {
                 DynamicTopBar(
-                    currentScreen = items.find { it.route == currentRoute } ?: Screen.UserCollection,
-                    alwaysShowSearchBar = isExplore,
-                    placeholderRes = placeholderRes,
-                    initialQuery = if (isExplore) exploreSearchQuery else collectionSearchQuery,
+                    currentScreen = Screen.Explore,
+                    alwaysShowSearchBar = true,
+                    placeholderRes = R.string.search_placeholder,
+                    initialQuery = exploreSearchQuery,
                     onDebouncedQuery = { query ->
-                        if (isExplore) {
-                            exploreSearchQuery = query
-                        } else {
-                            collectionSearchQuery = query
-                        }
+                        exploreSearchQuery = query
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -212,7 +211,107 @@ fun MainAppNavHost(
         NavHost(
             navController = navController,
             startDestination = Screen.UserCollection.route,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding),
+            enterTransition = {
+                val initialRoute = initialState.destination.route
+                val targetRoute = targetState.destination.route
+
+                when {
+                    targetRoute == detailRoute -> slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Up,
+                        animationSpec = tween(screenTransitionDuration),
+                    )
+
+                    initialRoute == Screen.UserCollection.route && targetRoute == Screen.Explore.route ->
+                        slideIntoContainer(
+                            towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                            animationSpec = tween(screenTransitionDuration),
+                        )
+
+                    initialRoute == Screen.Explore.route && targetRoute == Screen.UserCollection.route ->
+                        slideIntoContainer(
+                            towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                            animationSpec = tween(screenTransitionDuration),
+                        )
+
+                    else -> EnterTransition.None
+                }
+            },
+            exitTransition = {
+                val initialRoute = initialState.destination.route
+                val targetRoute = targetState.destination.route
+
+                when {
+                    targetRoute == detailRoute -> slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Up,
+                        animationSpec = tween(screenTransitionDuration),
+                    )
+
+                    initialRoute == Screen.UserCollection.route && targetRoute == Screen.Explore.route ->
+                        slideOutOfContainer(
+                            towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                            animationSpec = tween(screenTransitionDuration),
+                        )
+
+                    initialRoute == Screen.Explore.route && targetRoute == Screen.UserCollection.route ->
+                        slideOutOfContainer(
+                            towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                            animationSpec = tween(screenTransitionDuration),
+                        )
+
+                    else -> ExitTransition.None
+                }
+            },
+            popEnterTransition = {
+                val initialRoute = initialState.destination.route
+                val targetRoute = targetState.destination.route
+
+                when {
+                    initialRoute == detailRoute -> slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Down,
+                        animationSpec = tween(screenTransitionDuration),
+                    )
+
+                    initialRoute == Screen.Explore.route && targetRoute == Screen.UserCollection.route ->
+                        slideIntoContainer(
+                            towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                            animationSpec = tween(screenTransitionDuration),
+                        )
+
+                    initialRoute == Screen.UserCollection.route && targetRoute == Screen.Explore.route ->
+                        slideIntoContainer(
+                            towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                            animationSpec = tween(screenTransitionDuration),
+                        )
+
+                    else -> EnterTransition.None
+                }
+            },
+            popExitTransition = {
+                val initialRoute = initialState.destination.route
+                val targetRoute = targetState.destination.route
+
+                when {
+                    initialRoute == detailRoute -> slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Down,
+                        animationSpec = tween(screenTransitionDuration),
+                    )
+
+                    initialRoute == Screen.Explore.route && targetRoute == Screen.UserCollection.route ->
+                        slideOutOfContainer(
+                            towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                            animationSpec = tween(screenTransitionDuration),
+                        )
+
+                    initialRoute == Screen.UserCollection.route && targetRoute == Screen.Explore.route ->
+                        slideOutOfContainer(
+                            towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                            animationSpec = tween(screenTransitionDuration),
+                        )
+
+                    else -> ExitTransition.None
+                }
+            },
         ) {
             // 2.0 HomeScreen
             composable(Screen.UserCollection.route) {
@@ -227,9 +326,7 @@ fun MainAppNavHost(
                             launchSingleTop = true
                         }
                     },
-                    searchQuery = collectionSearchQuery,
                     onExploreSearch = { query ->
-                        collectionSearchQuery = ""
                         exploreSearchQuery = query
                         navController.navigate(Screen.Explore.route) {
                             popUpTo(navController.graph.startDestinationId) {

@@ -50,19 +50,16 @@ fun DynamicTopBar(
     var searchQuery by remember { mutableStateOf(initialQuery) }
     var debouncedQuery by remember { mutableStateOf(initialQuery) }
     var searchBarVisible by rememberSaveable { mutableStateOf(alwaysShowSearchBar) }
-    // Only allow expansion when there is content to show
     val hasExpandedContent = expandedContent != null
     var expanded by rememberSaveable { mutableStateOf(false) }
 
     val scrollBehavior: TopAppBarScrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
-    // Apply debounce when user types
     LaunchedEffect(searchQuery) {
         delay(600)
         debouncedQuery = searchQuery.trim()
     }
 
-    // Notify parent when debounced query changes
     LaunchedEffect(debouncedQuery) {
         onDebouncedQuery(debouncedQuery)
     }
@@ -89,7 +86,6 @@ fun DynamicTopBar(
                         onExpandedChange = { expanded = it && hasExpandedContent },
                         leadingIcon = {
                             if (!alwaysShowSearchBar) {
-                                // Show back arrow to return to TopAppBar
                                 IconButton(onClick = {
                                     searchQuery = ""
                                     debouncedQuery = ""
