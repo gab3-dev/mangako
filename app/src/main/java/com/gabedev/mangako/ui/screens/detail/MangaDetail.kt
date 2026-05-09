@@ -479,6 +479,8 @@ fun MangaDetail(
                                 isVolumeCard = true,
                                 selected = viewModel.selectedIds.value.contains(volume.id),
                                 volume = volume.volume,
+                                volumeLocale = volume.locale,
+                                isSpecialEdition = volume.isSpecialEdition,
                             )
                         } else {
                             MangaListItem(
@@ -506,7 +508,14 @@ fun MangaDetail(
                                         }
                                     ),
                                 coverUrl = volume.coverUrl,
-                                title = stringResource(R.string.label_volume_format, Utils.handleFloatVolume(volume.volume)),
+                                title = stringResource(
+                                    R.string.label_volume_format,
+                                    Utils.handleVolumeLabel(
+                                        volume.volume,
+                                        volume.locale,
+                                        volume.isSpecialEdition
+                                    )
+                                ),
                                 selected = viewModel.selectedIds.value.contains(volume.id),
                                 owned = volume.owned,
                             )

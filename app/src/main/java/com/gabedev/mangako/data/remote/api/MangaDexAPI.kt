@@ -28,7 +28,7 @@ interface MangaDexAPI {
     suspend fun getCover(
         @Query("limit") limit: Int = 50,
         @Query("manga[]") manga: List<String>,
-        @Query("locales[]") locales: List<String> = listOf("ja"),
+        @Query("locales[]") locales: List<String>? = null,
         @Query("offset") offset: Int = 0,
         @Query("order[createdAt]") orderCreatedAt: String? = null,
         @Query("order[updatedAt]") orderUpdatedAt: String? = null,

@@ -402,10 +402,9 @@ class LibraryRepositoryImplTest {
     @Test
     fun `updateOrInsertVolumeList updates existing and inserts new`() = runTest {
         val existingVol = createVolume("v1", owned = true)
-        val newVol = createVolume("v2")
+        val newVol = createVolume("v2").copy(volume = 2.0f)
 
-        coEvery { volumeDao.getVolumeById("v1") } returns existingVol
-        coEvery { volumeDao.getVolumeById("v2") } returns null
+        coEvery { volumeDao.getVolumesByMangaId("manga-1") } returns listOf(existingVol)
         coEvery { volumeDao.updateVolumeList(any()) } returns 1
         coEvery { volumeDao.insertVolumeList(any()) } just Runs
 
@@ -420,13 +419,13 @@ class LibraryRepositoryImplTest {
     fun `updateOrInsertVolumeList does nothing for empty list`() = runTest {
         repository.updateOrInsertVolumeList(emptyList())
 
-        coVerify(exactly = 0) { volumeDao.getVolumeById(any()) }
+        coVerify(exactly = 0) { volumeDao.getVolumesByMangaId(any()) }
     }
 
     @Test
     fun `updateOrInsertVolumeList only updates when all exist`() = runTest {
         val existing = createVolume("v1", owned = true)
-        coEvery { volumeDao.getVolumeById("v1") } returns existing
+        coEvery { volumeDao.getVolumesByMangaId("manga-1") } returns listOf(existing)
         coEvery { volumeDao.updateVolumeList(any()) } returns 1
 
         repository.updateOrInsertVolumeList(listOf(createVolume("v1")))
@@ -437,13 +436,58 @@ class LibraryRepositoryImplTest {
 
     @Test
     fun `updateOrInsertVolumeList only inserts when all new`() = runTest {
-        coEvery { volumeDao.getVolumeById("v1") } returns null
+        coEvery { volumeDao.getVolumesByMangaId("manga-1") } returns emptyList()
         coEvery { volumeDao.insertVolumeList(any()) } just Runs
 
         repository.updateOrInsertVolumeList(listOf(createVolume("v1")))
 
         coVerify(exactly = 0) { volumeDao.updateVolumeList(any()) }
         coVerify { volumeDao.insertVolumeList(any()) }
+    }
+
+    @Test
+    fun `updateOrInsertVolumeList replaces old id for same volume and locale preserving owned`() = runTest {
+        val oldVolume = createVolume("old-id", owned = true)
+        val incoming = createVolume("new-id").copy(
+            coverUrl = "new-url",
+            createdAt = "2024-01-01T00:00:00Z",
+            updatedAt = "2024-01-02T00:00:00Z"
+        )
+
+        coEvery { volumeDao.getVolumesByMangaId("manga-1") } returns listOf(oldVolume)
+        coEvery { volumeDao.deleteVolumeById("old-id") } returns 1
+        coEvery { volumeDao.insertVolumeList(any()) } just Runs
+
+        repository.updateOrInsertVolumeList(listOf(incoming))
+
+        coVerify { volumeDao.deleteVolumeById("old-id") }
+        coVerify {
+            volumeDao.insertVolumeList(match { volumes ->
+                volumes.single().id == "new-id" &&
+                    volumes.single().owned &&
+                    volumes.single().coverUrl == "new-url" &&
+                    volumes.single().createdAt == "2024-01-01T00:00:00Z"
+            })
+        }
+        coVerify(exactly = 0) { volumeDao.updateVolumeList(any()) }
+    }
+
+    @Test
+    fun `updateOrInsertVolumeList does not match null volume by locale identity`() = runTest {
+        val oldSpecial = createVolume("old-special", owned = true).copy(volume = null)
+        val incomingSpecial = createVolume("new-special").copy(volume = null)
+
+        coEvery { volumeDao.getVolumesByMangaId("manga-1") } returns listOf(oldSpecial)
+        coEvery { volumeDao.insertVolumeList(any()) } just Runs
+
+        repository.updateOrInsertVolumeList(listOf(incomingSpecial))
+
+        coVerify(exactly = 0) { volumeDao.deleteVolumeById(any()) }
+        coVerify {
+            volumeDao.insertVolumeList(match { volumes ->
+                volumes.single().id == "new-special" && !volumes.single().owned
+            })
+        }
     }
 
     // --- log tests ---

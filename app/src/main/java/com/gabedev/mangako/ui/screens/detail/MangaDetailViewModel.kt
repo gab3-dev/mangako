@@ -34,7 +34,7 @@ class MangaDetailViewModel(
     private val limit = 50
 
     /**
-     * Deduplicates volumes by volume number, keeping the most recently updated entry.
+     * Deduplicates volumes by volume number and locale, keeping the most recently updated entry.
      * Volumes with null volume numbers (e.g., specials/unnumbered covers) are preserved as-is.
      * @param volumes List of volumes that may contain duplicates
      * @return Deduplicated list with one volume per volume number, plus all null-volume entries
@@ -43,7 +43,7 @@ class MangaDetailViewModel(
         val (numbered, unnumbered) = volumes.partition { it.volume != null }
 
         val deduplicatedNumbered = numbered
-            .groupBy { it.volume }
+            .groupBy { it.volume to it.locale }
             .mapValues { (_, vols) ->
                 vols.maxByOrNull { it.updatedAt ?: "" } ?: vols.first()
             }

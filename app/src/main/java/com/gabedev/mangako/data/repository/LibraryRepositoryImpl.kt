@@ -136,20 +136,63 @@ class LibraryRepositoryImpl(
 
     override suspend fun updateOrInsertVolumeList(volumeList: List<Volume>) {
         if (volumeList.isEmpty()) return
+        val incomingVolumes = volumeList.deduplicateForPersistence()
         val volumesToUpdate = mutableListOf<Volume>()
         val volumesToInsert = mutableListOf<Volume>()
-        for (volume in volumeList) {
-            val existingVolume = db.volumeDao().getVolumeById(volume.id)
-            if (existingVolume != null) {
-                val mergeVolume: Volume = existingVolume.copy(
+        val volumeIdsToDelete = mutableSetOf<String>()
+        val localVolumesByManga = incomingVolumes
+            .map { it.mangaId }
+            .distinct()
+            .associateWith { mangaId ->
+                db.volumeDao().getVolumesByMangaId(mangaId).toMutableList()
+            }
+
+        for (volume in incomingVolumes) {
+            val localVolumes = localVolumesByManga[volume.mangaId].orEmpty()
+            val matchingVolumes = localVolumes.filter { existing ->
+                existing.id == volume.id || existing.hasSameNumberedIdentity(volume)
+            }
+
+            if (matchingVolumes.isNotEmpty()) {
+                val owned = matchingVolumes.any { it.owned }
+                val existingSameId = matchingVolumes.firstOrNull { it.id == volume.id }
+                val mergedVolume = (existingSameId ?: volume).copy(
+                    id = existingSameId?.id ?: volume.id,
+                    mangaId = volume.mangaId,
                     title = volume.title,
                     volume = volume.volume,
                     coverUrl = volume.coverUrl,
+                    locale = volume.locale,
+                    owned = owned,
                     isSpecialEdition = volume.isSpecialEdition,
+                    createdAt = volume.createdAt,
+                    updatedAt = volume.updatedAt,
                 )
-                volumesToUpdate.add(mergeVolume)
+
+                if (existingSameId != null) {
+                    volumesToUpdate.add(mergedVolume)
+                    volumeIdsToDelete += matchingVolumes
+                        .filter { it.id != existingSameId.id }
+                        .map { it.id }
+                } else {
+                    volumesToInsert.add(mergedVolume)
+                    volumeIdsToDelete += matchingVolumes.map { it.id }
+                }
+
+                localVolumesByManga[volume.mangaId]?.removeAll { local ->
+                    matchingVolumes.any { it.id == local.id }
+                }
+                localVolumesByManga[volume.mangaId]?.add(mergedVolume)
             } else {
                 volumesToInsert.add(volume)
+                localVolumesByManga[volume.mangaId]?.add(volume)
+            }
+        }
+        volumeIdsToDelete.forEach { volumeId ->
+            try {
+                db.volumeDao().deleteVolumeById(volumeId)
+            } catch (e: Exception) {
+                logger.logError(e)
             }
         }
         if (volumesToUpdate.isNotEmpty()) {
@@ -166,6 +209,31 @@ class LibraryRepositoryImpl(
                 logger.logError(e)
             }
         }
+    }
+
+    private fun Volume.hasSameNumberedIdentity(other: Volume): Boolean {
+        return volume != null &&
+            other.volume != null &&
+            mangaId == other.mangaId &&
+            volume == other.volume &&
+            locale == other.locale
+    }
+
+    private fun List<Volume>.deduplicateForPersistence(): List<Volume> {
+        val (numbered, unnumbered) = partition { it.volume != null }
+        val deduplicatedNumbered = numbered
+            .groupBy { Triple(it.mangaId, it.volume, it.locale) }
+            .map { (_, volumes) -> volumes.preferredVolume() }
+
+        return deduplicatedNumbered + unnumbered.distinctBy { it.id }
+    }
+
+    private fun List<Volume>.preferredVolume(): Volume {
+        return maxWithOrNull(
+            compareBy<Volume> { it.updatedAt.orEmpty() }
+                .thenBy { it.owned }
+                .thenByDescending { it.id }
+        ) ?: first()
     }
 
     override suspend fun getMangaIdsWithSpecialEditions(): List<String> {

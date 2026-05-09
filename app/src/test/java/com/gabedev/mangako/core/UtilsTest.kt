@@ -68,6 +68,13 @@ class UtilsTest {
         assertEquals("0.5", Utils.handleFloatVolume(0.5f))
     }
 
+    @Test
+    fun `handleVolumeLabel appends locale only for special editions`() {
+        assertEquals("1", Utils.handleVolumeLabel(1.0f, "ja", false))
+        assertEquals("1 (en)", Utils.handleVolumeLabel(1.0f, "en", true))
+        assertEquals("1.5 (ja)", Utils.handleVolumeLabel(1.5f, "ja", true))
+    }
+
     // --- handleMangaTitle tests ---
 
     @Test

@@ -47,7 +47,8 @@ class MangaDetailViewModelTest {
         id: String = "vol-1",
         owned: Boolean = false,
         volumeNumber: Float? = 1.0f,
-        updatedAt: String? = null
+        updatedAt: String? = null,
+        locale: String = "ja"
     ) = Volume(
         id = id,
         mangaId = "manga-1",
@@ -56,7 +57,7 @@ class MangaDetailViewModelTest {
         volume = volumeNumber,
         owned = owned,
         updatedAt = updatedAt,
-        locale = "ja"
+        locale = locale
     )
 
     @Before
@@ -402,6 +403,26 @@ class MangaDetailViewModelTest {
         val volume1 = vm.volumeList.value.find { it.volume == 1.0f }
         assertEquals("v2", volume1?.id)
         assertEquals("2024-01-02T00:00:00Z", volume1?.updatedAt)
+    }
+
+    @Test
+    fun `loadCoverList keeps same volume number for different locales`() = runTest {
+        val manga = createManga()
+        val regionalVolumes = listOf(
+            createVolume(id = "v1-ja", volumeNumber = 1.0f, locale = "ja"),
+            createVolume(id = "v1-en", volumeNumber = 1.0f, locale = "en")
+        )
+
+        val vm = createViewModel(manga)
+
+        coEvery { apiRepository.getCoverListByManga(any(), any(), any()) } returns regionalVolumes
+        coEvery { localRepository.insertVolumeList(any()) } just Runs
+
+        advanceUntilIdle()
+
+        assertEquals(2, vm.volumeList.value.size)
+        assertTrue(vm.volumeList.value.any { it.volume == 1.0f && it.locale == "ja" })
+        assertTrue(vm.volumeList.value.any { it.volume == 1.0f && it.locale == "en" })
     }
 
     @Test

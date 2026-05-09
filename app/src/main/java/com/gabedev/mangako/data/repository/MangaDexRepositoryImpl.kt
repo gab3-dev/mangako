@@ -123,8 +123,10 @@ class MangaDexRepositoryImpl(
                     volume = volumeNumber,
                     coverUrl = handleCoverUrl(manga.id, cover.attributes.fileName),
                     owned = false,
-                    isSpecialEdition = volumeNumber?.let { it % 1.0f != 0.0f } ?: true,
+                    isSpecialEdition = cover.attributes.locale != "ja" ||
+                        (volumeNumber?.let { it % 1.0f != 0.0f } ?: true),
                     locale = cover.attributes.locale,
+                    createdAt = cover.attributes.createdAt,
                     updatedAt = cover.attributes.updatedAt
                 )
             }
@@ -161,7 +163,12 @@ class MangaDexRepositoryImpl(
         logger: FileLogger
     ): Int {
         try {
-            val response = api.getCover(manga = listOf(mangaId), limit = 1, orderVolume = "desc")
+            val response = api.getCover(
+                manga = listOf(mangaId),
+                locales = listOf("ja"),
+                limit = 1,
+                orderVolume = "desc"
+            )
             val volumeStr = response.data.firstOrNull()?.attributes?.volume
             val parsed = volumeStr?.toFloatOrNull()?.toInt()
             if (parsed != null) {

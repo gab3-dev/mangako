@@ -16,7 +16,15 @@ interface VolumeDAO {
     @Query("SELECT * FROM Volume WHERE manga_id = :mangaId")
     suspend fun getVolumesByMangaId(mangaId: String): List<Volume>
 
-    @Query("SELECT DISTINCT manga_id FROM Volume WHERE volume IS NOT NULL AND CAST(volume AS TEXT) NOT LIKE '%.0'")
+    @Query(
+        """
+        SELECT DISTINCT manga_id FROM Volume
+        WHERE is_special_edition = 1
+        OR locale != 'ja'
+        OR volume IS NULL
+        OR (CAST(volume AS TEXT) LIKE '%.%' AND CAST(volume AS TEXT) NOT LIKE '%.0')
+        """
+    )
     suspend fun getMangaIdsWithSpecialEditions(): List<String>
 
     @Insert
@@ -40,7 +48,8 @@ interface VolumeDAO {
     ): Int
 
     @Delete
-    suspend fun deleteVolumeById(
-        volume: Volume
-    ): Int
+    suspend fun deleteVolume(volume: Volume): Int
+
+    @Query("DELETE FROM Volume WHERE id = :id")
+    suspend fun deleteVolumeById(id: String): Int
 }

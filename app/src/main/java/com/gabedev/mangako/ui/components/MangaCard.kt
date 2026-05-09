@@ -40,6 +40,8 @@ fun MangaCard(
     volumeTotal: Int = 0,
     isVolumeCard: Boolean = false,
     volume: Float? = null,
+    volumeLocale: String = "ja",
+    isSpecialEdition: Boolean = false,
 ) {
     Card(
         modifier = modifier
@@ -90,7 +92,10 @@ fun MangaCard(
         if (isVolumeCard) {
             Row {
                 Text(
-                    text = stringResource(R.string.label_volume_card_format, Utils.handleFloatVolume(volume)),
+                    text = stringResource(
+                        R.string.label_volume_card_format,
+                        Utils.handleVolumeLabel(volume, volumeLocale, isSpecialEdition)
+                    ),
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.padding(8.dp),
                 )

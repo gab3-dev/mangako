@@ -12,6 +12,15 @@ object Utils {
         return volumeStr.removeSuffix(".0")
     }
 
+    fun handleVolumeLabel(volume: Float?, locale: String, isSpecialEdition: Boolean): String {
+        val volumeLabel = handleFloatVolume(volume)
+        return if (isSpecialEdition) {
+            "$volumeLabel ($locale)"
+        } else {
+            volumeLabel
+        }
+    }
+
     // Search and return the correct manga title
     fun handleMangaTitle(attributes: AttributesDto) :String  {
         val mangatitle = attributes.title?.get("en")

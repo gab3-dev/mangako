@@ -6,7 +6,7 @@ import androidx.room.PrimaryKey
 
 @Entity(
     indices = [
-        androidx.room.Index(value = ["manga_id", "volume", "cover_url"], unique = true)
+        androidx.room.Index(value = ["manga_id", "volume", "locale"], unique = true)
     ]
 )
 data class Volume(
@@ -18,5 +18,6 @@ data class Volume(
     @ColumnInfo(name = "locale")                val locale: String,
     @ColumnInfo(name = "owned")                 val owned: Boolean = false,
     @ColumnInfo(name = "is_special_edition")    val isSpecialEdition: Boolean = false,
+    @ColumnInfo(name = "created_at")            val createdAt: String? = null,
     @ColumnInfo(name = "updated_at")            val updatedAt: String? = null
 )

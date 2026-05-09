@@ -110,7 +110,10 @@ class MangaDexRepositoryImplTest {
 
     private fun createCoverListResponse(
         total: Int = 10,
-        volume: String = "1"
+        volume: String = "1",
+        locale: String = "ja",
+        createdAt: String = "2020-01-01",
+        updatedAt: String = "2024-01-01"
     ) = CoverArtListResponseDTO(
         result = "ok",
         response = "collection",
@@ -122,9 +125,9 @@ class MangaDexRepositoryImplTest {
                     description = "",
                     volume = volume,
                     fileName = "vol1.jpg",
-                    locale = "ja",
-                    createdAt = "2020-01-01",
-                    updatedAt = "2024-01-01",
+                    locale = locale,
+                    createdAt = createdAt,
+                    updatedAt = updatedAt,
                     version = 1
                 )
             )
@@ -159,7 +162,7 @@ class MangaDexRepositoryImplTest {
                 MangaListResponse("ok", "collection", listOf(mangaDto), 6, 0, 1)
         coEvery { api.getAuthorById("author-1") } returns createAuthorResponse()
         coEvery { api.getCoverById("cover-1") } returns createCoverResponse()
-        coEvery { api.getCover(manga = listOf("manga-1"), limit = 1, orderVolume = "desc") } returns createCoverListResponse()
+        coEvery { api.getCover(manga = listOf("manga-1"), locales = listOf("ja"), limit = 1, orderVolume = "desc") } returns createCoverListResponse()
 
         val result = repository.searchManga("One Piece")
 
@@ -211,7 +214,7 @@ class MangaDexRepositoryImplTest {
         assertEquals(12, result[0].volumeCount)
         coVerify(exactly = 0) { api.getAuthorById(any()) }
         coVerify(exactly = 0) { api.getCoverById(any()) }
-        coVerify(exactly = 0) { api.getCover(manga = any(), limit = 1, orderVolume = "desc") }
+        coVerify(exactly = 0) { api.getCover(manga = any(), locales = listOf("ja"), limit = 1, orderVolume = "desc") }
     }
 
     @Test
@@ -297,7 +300,7 @@ class MangaDexRepositoryImplTest {
         )
         coEvery { api.getAuthorById("author-1") } returns createAuthorResponse()
         coEvery { api.getCoverById("cover-1") } returns createCoverResponse()
-        coEvery { api.getCover(manga = listOf("manga-1"), limit = 1, orderVolume = "desc") } returns
+        coEvery { api.getCover(manga = listOf("manga-1"), locales = listOf("ja"), limit = 1, orderVolume = "desc") } returns
                 createCoverListResponse(volume = "27")
 
         val result = repository.enrichManga(manga)
@@ -315,7 +318,7 @@ class MangaDexRepositoryImplTest {
         coEvery { api.getManga("manga-1") } returns MangaResponseDto("ok", "entity", mangaDto)
         coEvery { api.getAuthorById("author-1") } returns createAuthorResponse()
         coEvery { api.getCoverById("cover-1") } returns createCoverResponse()
-        coEvery { api.getCover(manga = listOf("manga-1"), limit = 1, orderVolume = "desc") } returns createCoverListResponse()
+        coEvery { api.getCover(manga = listOf("manga-1"), locales = listOf("ja"), limit = 1, orderVolume = "desc") } returns createCoverListResponse()
 
         val result = repository.getManga("manga-1")
 
@@ -343,6 +346,36 @@ class MangaDexRepositoryImplTest {
         assertEquals("cover-1", result[0].id)
         assertEquals("manga-1", result[0].mangaId)
         assertTrue(result[0].coverUrl.contains("vol1.jpg"))
+        coVerify {
+            api.getCover(
+                manga = listOf("manga-1"),
+                offset = 0,
+                limit = 50,
+                locales = null
+            )
+        }
+    }
+
+    @Test
+    fun `getCoverListByManga maps createdAt and marks non ja locale as special edition`() = runTest {
+        val manga = Manga(
+            id = "manga-1", title = "One Piece",
+            coverUrl = "url", description = "desc"
+        )
+        coEvery { api.getCover(manga = listOf("manga-1"), offset = 0, limit = 50) } returns
+                createCoverListResponse(
+                    volume = "1",
+                    locale = "en",
+                    createdAt = "2024-02-01T00:00:00Z",
+                    updatedAt = "2024-02-02T00:00:00Z"
+                )
+
+        val result = repository.getCoverListByManga(manga)
+
+        assertEquals("en", result[0].locale)
+        assertEquals("2024-02-01T00:00:00Z", result[0].createdAt)
+        assertEquals("2024-02-02T00:00:00Z", result[0].updatedAt)
+        assertTrue(result[0].isSpecialEdition)
     }
 
     @Test
@@ -460,7 +493,7 @@ class MangaDexRepositoryImplTest {
                 MangaListResponse("ok", "collection", listOf(mangaDto), 6, 0, 1)
         coEvery { api.getAuthorById("author-1") } returns createAuthorResponse()
         coEvery { api.getCoverById("cover-1") } returns createCoverResponse()
-        coEvery { api.getCover(manga = listOf("manga-1"), limit = 1, orderVolume = "desc") } returns
+        coEvery { api.getCover(manga = listOf("manga-1"), locales = listOf("ja"), limit = 1, orderVolume = "desc") } returns
                 createCoverListResponse(volume = "27")
 
         val result = repository.searchManga("One Piece")
@@ -475,7 +508,7 @@ class MangaDexRepositoryImplTest {
                 MangaListResponse("ok", "collection", listOf(mangaDto), 6, 0, 1)
         coEvery { api.getAuthorById("author-1") } returns createAuthorResponse()
         coEvery { api.getCoverById("cover-1") } returns createCoverResponse()
-        coEvery { api.getCover(manga = listOf("manga-1"), limit = 1, orderVolume = "desc") } returns
+        coEvery { api.getCover(manga = listOf("manga-1"), locales = listOf("ja"), limit = 1, orderVolume = "desc") } returns
                 createCoverListResponse(volume = "15.5")
 
         val result = repository.searchManga("One Piece")
@@ -492,7 +525,7 @@ class MangaDexRepositoryImplTest {
                 MangaListResponse("ok", "collection", listOf(mangaDto), 6, 0, 1)
         coEvery { api.getAuthorById("author-1") } returns createAuthorResponse()
         coEvery { api.getCoverById("cover-1") } returns createCoverResponse()
-        coEvery { api.getCover(manga = listOf("manga-1"), limit = 1, orderVolume = "desc") } returns
+        coEvery { api.getCover(manga = listOf("manga-1"), locales = listOf("ja"), limit = 1, orderVolume = "desc") } returns
                 createEmptyCoverListResponse()
 
         val result = repository.searchManga("One Piece")
@@ -507,7 +540,7 @@ class MangaDexRepositoryImplTest {
                 MangaListResponse("ok", "collection", listOf(mangaDto), 6, 0, 1)
         coEvery { api.getAuthorById("author-1") } returns createAuthorResponse()
         coEvery { api.getCoverById("cover-1") } returns createCoverResponse()
-        coEvery { api.getCover(manga = listOf("manga-1"), limit = 1, orderVolume = "desc") } throws
+        coEvery { api.getCover(manga = listOf("manga-1"), locales = listOf("ja"), limit = 1, orderVolume = "desc") } throws
                 RuntimeException("Network error")
 
         val result = repository.searchManga("One Piece")
