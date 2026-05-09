@@ -191,6 +191,57 @@ class MangaCollectionViewModelTest {
         assertTrue(result.isEmpty())
     }
 
+    @Test
+    fun `default sort orders manga by title ascending`() = runTest(testDispatcher) {
+        val manga1 = createMangaWithOwned(id = "1", title = "One Piece")
+        val manga2 = createMangaWithOwned(id = "2", title = "Bleach")
+        val manga3 = createMangaWithOwned(id = "3", title = "Naruto")
+
+        coEvery { repository.getMangaOnLibrary() } returns listOf(manga1, manga2, manga3)
+        coEvery { repository.getMangaIdsWithSpecialEditions() } returns emptyList()
+
+        viewModel = MangaCollectionViewModel(repository, testDispatcher)
+        advanceUntilIdle()
+
+        assertEquals(listOf("2", "3", "1"), viewModel!!.mangaCollection.value.map { it.id })
+    }
+
+    @Test
+    fun `setSortOption orders manga by title descending`() = runTest(testDispatcher) {
+        val manga1 = createMangaWithOwned(id = "1", title = "One Piece")
+        val manga2 = createMangaWithOwned(id = "2", title = "Bleach")
+        val manga3 = createMangaWithOwned(id = "3", title = "Naruto")
+
+        coEvery { repository.getMangaOnLibrary() } returns listOf(manga1, manga2, manga3)
+        coEvery { repository.getMangaIdsWithSpecialEditions() } returns emptyList()
+
+        viewModel = MangaCollectionViewModel(repository, testDispatcher)
+        advanceUntilIdle()
+
+        viewModel!!.setSortOption(MangaCollectionSortOption.TITLE_DESC)
+
+        assertEquals(listOf("1", "3", "2"), viewModel!!.mangaCollection.value.map { it.id })
+    }
+
+    @Test
+    fun `setSortOption orders manga by completion progress`() = runTest(testDispatcher) {
+        val complete = createMangaWithOwned(id = "1", title = "Complete", volumeOwned = 10, volumeCount = 10)
+        val partial = createMangaWithOwned(id = "2", title = "Partial", volumeOwned = 5, volumeCount = 10)
+        val empty = createMangaWithOwned(id = "3", title = "Empty", volumeOwned = 0, volumeCount = 10)
+
+        coEvery { repository.getMangaOnLibrary() } returns listOf(partial, empty, complete)
+        coEvery { repository.getMangaIdsWithSpecialEditions() } returns emptyList()
+
+        viewModel = MangaCollectionViewModel(repository, testDispatcher)
+        advanceUntilIdle()
+
+        viewModel!!.setSortOption(MangaCollectionSortOption.PROGRESS_DESC)
+        assertEquals(listOf("1", "2", "3"), viewModel!!.mangaCollection.value.map { it.id })
+
+        viewModel!!.setSortOption(MangaCollectionSortOption.PROGRESS_ASC)
+        assertEquals(listOf("3", "2", "1"), viewModel!!.mangaCollection.value.map { it.id })
+    }
+
     // Incomplete filter tests
     @Test
     fun `toggleIncompleteFilter shows only manga with unacquired volumes`() = runTest(testDispatcher) {

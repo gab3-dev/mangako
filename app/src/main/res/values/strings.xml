@@ -67,6 +67,18 @@
     <!-- Filters -->
     <string name="filter_incomplete">Incomplete</string>
     <string name="filter_special_editions">Special Editions</string>
+    <string name="collection_options">Collection options</string>
+    <string name="filters">Filters</string>
+    <string name="density">Density</string>
+    <string name="view_mode">View mode</string>
+    <string name="sort_by">Sort: %1$s</string>
+    <string name="sort_title_asc">Title A-Z</string>
+    <string name="sort_title_desc">Title Z-A</string>
+    <string name="sort_progress_desc">Most complete</string>
+    <string name="sort_progress_asc">Least complete</string>
+    <string name="grid_columns_2">2 columns</string>
+    <string name="grid_columns_3">3 columns</string>
+    <string name="grid_columns_count">%1$d per row</string>
     <string name="no_results_found">No results found</string>
     <string name="search_on_explore">Search \"%1$s\" on Explore</string>
 
@@ -76,7 +88,8 @@
     <string name="unknown_author">Unknown Author</string>
     <string name="cd_selected_icon">Selected Icon</string>
     <string name="cd_view_mode_toggle">View mode toggle</string>
+    <string name="cd_filter_options">Filter options</string>
     <string name="dialog_remove_selected_title">Remove Manga?</string>
     <string name="dialog_remove_selected_text">Do you wish to remove these works from your collection?</string>
-    <string name="cd_remove_selected">Delete icon</string>
+    <string name="cd_remove_selected">Remove selected</string>
 </resources>

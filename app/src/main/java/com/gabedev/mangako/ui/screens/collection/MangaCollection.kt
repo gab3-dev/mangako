@@ -26,10 +26,13 @@ import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Deselect
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.outlined.Book
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
@@ -40,17 +43,26 @@ import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.PlainTooltip
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -89,6 +101,7 @@ import com.gabedev.mangako.ui.components.MangaCard
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -96,7 +109,7 @@ fun MangaCollection(
     repository: LibraryRepository,
     onMangaClick: (Manga) -> Unit,
     modifier: Modifier = Modifier,
-    onExploreSearch: (String) -> Unit = {}
+    onExploreSearch: (String) -> Unit = {},
 ) {
     val viewModel: MangaCollectionViewModel = viewModel(
         factory = MangaCollectionViewModelFactory(repository)
@@ -107,6 +120,7 @@ fun MangaCollection(
     val showIncompleteOnly by viewModel.showIncompleteOnly
     val showSpecialEditionsOnly by viewModel.showSpecialEditionsOnly
     val isMultiSelectActive by viewModel.isMultiSelectActive
+    val sortOption by viewModel.sortOption
 
     val lifecycleOwner = LocalLifecycleOwner.current
     val density = LocalDensity.current
@@ -120,11 +134,14 @@ fun MangaCollection(
     var searchSnapJob by remember { mutableStateOf<Job?>(null) }
     var searchQuery by remember { mutableStateOf("") }
     var debouncedSearchQuery by remember { mutableStateOf("") }
-    var collectionSearchHeightPx by remember { mutableStateOf(0f) }
-    var collectionSearchMaxHeightPx by remember { mutableStateOf(0f) }
+    var collectionSearchHeightPx by remember { mutableFloatStateOf(0f) }
+    var collectionSearchMaxHeightPx by remember { mutableFloatStateOf(0f) }
     var collectionSearchBarOpen by remember { mutableStateOf(false) }
     var collectionSearchDockedAboveKeyboard by remember { mutableStateOf(false) }
-    var collectionSearchFocusRequest by remember { mutableStateOf(0) }
+    var collectionSearchFocusRequest by remember { mutableIntStateOf(0) }
+    var sortMenuExpanded by remember { mutableStateOf(false) }
+    var filterSheetOpen by remember { mutableStateOf(false) }
+    var gridColumns by remember { mutableIntStateOf(2) }
     val animatedImeBottomPadding by animateDpAsState(
         targetValue = imeBottomPadding,
         label = "collectionEmptyStateImePadding",
@@ -368,6 +385,36 @@ fun MangaCollection(
         ) {}
     }
 
+    @Composable
+    fun sortOptionLabel(option: MangaCollectionSortOption): String {
+        return when (option) {
+            MangaCollectionSortOption.TITLE_ASC -> stringResource(R.string.sort_title_asc)
+            MangaCollectionSortOption.TITLE_DESC -> stringResource(R.string.sort_title_desc)
+            MangaCollectionSortOption.PROGRESS_DESC -> stringResource(R.string.sort_progress_desc)
+            MangaCollectionSortOption.PROGRESS_ASC -> stringResource(R.string.sort_progress_asc)
+        }
+    }
+
+    @Composable
+    fun ToolbarTooltip(
+        label: String,
+        content: @Composable () -> Unit,
+    ) {
+        TooltipBox(
+            positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+                positioning = TooltipAnchorPosition.Above
+            ),
+            tooltip = {
+                PlainTooltip {
+                    Text(label)
+                }
+            },
+            state = rememberTooltipState(),
+        ) {
+            content()
+        }
+    }
+
     if (showRemoveDialog) {
         ConfirmDialog(
             title = stringResource(R.string.dialog_remove_selected_title),
@@ -380,6 +427,62 @@ fun MangaCollection(
                 showRemoveDialog = false
             },
         )
+    }
+
+    if (filterSheetOpen) {
+        ModalBottomSheet(
+            onDismissRequest = { filterSheetOpen = false },
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 24.dp, end = 24.dp, bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.collection_options),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = stringResource(R.string.filters),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(
+                            selected = showIncompleteOnly,
+                            onClick = { viewModel.toggleIncompleteFilter() },
+                            label = { Text(stringResource(R.string.filter_incomplete)) }
+                        )
+                        FilterChip(
+                            selected = showSpecialEditionsOnly,
+                            onClick = { viewModel.toggleSpecialEditionsFilter() },
+                            label = { Text(stringResource(R.string.filter_special_editions)) }
+                        )
+                    }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = stringResource(R.string.density),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        text = stringResource(R.string.grid_columns_count, gridColumns),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Slider(
+                        value = gridColumns.toFloat(),
+                        onValueChange = { value ->
+                            gridColumns = value.roundToInt().coerceIn(1, 5)
+                        },
+                        valueRange = 1f..5f,
+                        steps = 3
+                    )
+                }
+            }
+        }
     }
 
     // Observa retorno à tela
@@ -449,23 +552,38 @@ fun MangaCollection(
                 }
             }
 
-            // Filter chips
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                FilterChip(
-                    selected = showIncompleteOnly,
-                    onClick = { viewModel.toggleIncompleteFilter() },
-                    label = { Text(stringResource(R.string.filter_incomplete)) }
-                )
-                FilterChip(
-                    selected = showSpecialEditionsOnly,
-                    onClick = { viewModel.toggleSpecialEditionsFilter() },
-                    label = { Text(stringResource(R.string.filter_special_editions)) }
-                )
+                Box {
+                    TextButton(onClick = { sortMenuExpanded = true }) {
+                        Text(stringResource(R.string.sort_by, sortOptionLabel(sortOption)))
+                    }
+                    DropdownMenu(
+                        expanded = sortMenuExpanded,
+                        onDismissRequest = { sortMenuExpanded = false }
+                    ) {
+                        MangaCollectionSortOption.entries.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text(sortOptionLabel(option)) },
+                                onClick = {
+                                    viewModel.setSortOption(option)
+                                    sortMenuExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+                IconButton(onClick = { filterSheetOpen = true }) {
+                    Icon(
+                        imageVector = Icons.Default.FilterList,
+                        contentDescription = stringResource(R.string.cd_filter_options)
+                    )
+                }
             }
 
             if (isLoading) {
@@ -513,14 +631,14 @@ fun MangaCollection(
                 } else {
                     Box(modifier = Modifier.fillMaxSize()) {
                         LazyVerticalGrid(
-                            columns = GridCells.Fixed(2),
+                            columns = GridCells.Fixed(gridColumns),
                             state = gridState,
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .nestedScroll(searchRevealNestedScrollConnection)
-                                .padding(16.dp)
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
                         ) {
                             items(mangaCollection.size) { index ->
                                 val manga = mangaCollection[index]
@@ -558,48 +676,64 @@ fun MangaCollection(
                                 colors = FloatingToolbarDefaults.vibrantFloatingToolbarColors(),
                                 expanded = true
                             ) {
-                                IconButton(
-                                    onClick = {
-                                        showRemoveDialog = true
-                                    },
-                                    enabled = viewModel.selectedIds.value.isNotEmpty(),
+                                ToolbarTooltip(
+                                    label = stringResource(R.string.cd_remove_selected),
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Delete,
-                                        contentDescription = stringResource(R.string.cd_remove_selected),
-                                    )
+                                    IconButton(
+                                        onClick = {
+                                            showRemoveDialog = true
+                                        },
+                                        enabled = viewModel.selectedIds.value.isNotEmpty(),
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = stringResource(R.string.cd_remove_selected),
+                                        )
+                                    }
                                 }
-                                FilledIconButton(
-                                    onClick = {
-                                        viewModel.finishMultiSelect()
-                                    },
+                                ToolbarTooltip(
+                                    label = stringResource(R.string.cd_stop_multi_select),
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.Undo,
-                                        contentDescription = stringResource(R.string.cd_stop_multi_select),
-                                    )
+                                    FilledIconButton(
+                                        onClick = {
+                                            viewModel.finishMultiSelect()
+                                        },
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.Undo,
+                                            contentDescription = stringResource(R.string.cd_stop_multi_select),
+                                        )
+                                    }
                                 }
-                                IconButton(
-                                    onClick = {
-                                        viewModel.selectAll(mangaCollection.map { it.id }.toSet())
-                                    },
-                                    enabled = viewModel.selectedIds.value.size < mangaCollection.size && isMultiSelectActive,
+                                ToolbarTooltip(
+                                    label = stringResource(R.string.cd_select_all),
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.SelectAll,
-                                        contentDescription = stringResource(R.string.cd_select_all),
-                                    )
+                                    IconButton(
+                                        onClick = {
+                                            viewModel.selectAll(mangaCollection.map { it.id }.toSet())
+                                        },
+                                        enabled = viewModel.selectedIds.value.size < mangaCollection.size && isMultiSelectActive,
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.SelectAll,
+                                            contentDescription = stringResource(R.string.cd_select_all),
+                                        )
+                                    }
                                 }
-                                IconButton(
-                                    onClick = {
-                                        viewModel.clearSelection()
-                                    },
-                                    enabled = viewModel.selectedIds.value.isNotEmpty() && isMultiSelectActive,
+                                ToolbarTooltip(
+                                    label = stringResource(R.string.cd_deselect),
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Deselect,
-                                        contentDescription = stringResource(R.string.cd_deselect),
-                                    )
+                                    IconButton(
+                                        onClick = {
+                                            viewModel.clearSelection()
+                                        },
+                                        enabled = viewModel.selectedIds.value.isNotEmpty() && isMultiSelectActive,
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Deselect,
+                                            contentDescription = stringResource(R.string.cd_deselect),
+                                        )
+                                    }
                                 }
                             }
                         }

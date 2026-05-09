@@ -46,9 +46,14 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.PlainTooltip
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -210,6 +215,26 @@ fun MangaDetail(
         }
     }
 
+    @Composable
+    fun ToolbarTooltip(
+        label: String,
+        content: @Composable () -> Unit,
+    ) {
+        TooltipBox(
+            positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+                positioning = TooltipAnchorPosition.Above
+            ),
+            tooltip = {
+                PlainTooltip {
+                    Text(label)
+                }
+            },
+            state = rememberTooltipState(),
+        ) {
+            content()
+        }
+    }
+
     Scaffold(
         snackbarHost = {
             SnackbarHost(
@@ -244,61 +269,81 @@ fun MangaDetail(
                     colors = FloatingToolbarDefaults.vibrantFloatingToolbarColors(),
                     expanded = true
                 ) {
-                    IconButton(
-                        onClick = {
-                            viewModel.markSelectedListAsOwned(true)
-                            viewModel.finishMultiSelect()
-                        },
-                        enabled = viewModel.selectedIds.value.isNotEmpty(),
+                    ToolbarTooltip(
+                        label = stringResource(R.string.cd_mark_as_owned),
                     ) {
-                        Icon(
-                            imageVector = Icons.Outlined.CheckCircle,
-                            contentDescription = stringResource(R.string.cd_mark_as_owned),
-                        )
+                        IconButton(
+                            onClick = {
+                                viewModel.markSelectedListAsOwned(true)
+                                viewModel.finishMultiSelect()
+                            },
+                            enabled = viewModel.selectedIds.value.isNotEmpty(),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.CheckCircle,
+                                contentDescription = stringResource(R.string.cd_mark_as_owned),
+                            )
+                        }
                     }
-                    IconButton(
-                        onClick = {
-                            viewModel.markSelectedListAsOwned(false)
-                            viewModel.finishMultiSelect()
-                        },
-                        enabled = viewModel.selectedIds.value.isNotEmpty(),
+                    ToolbarTooltip(
+                        label = stringResource(R.string.cd_unmark_as_owned),
                     ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Cancel,
-                            contentDescription = stringResource(R.string.cd_unmark_as_owned),
-                        )
+                        IconButton(
+                            onClick = {
+                                viewModel.markSelectedListAsOwned(false)
+                                viewModel.finishMultiSelect()
+                            },
+                            enabled = viewModel.selectedIds.value.isNotEmpty(),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Cancel,
+                                contentDescription = stringResource(R.string.cd_unmark_as_owned),
+                            )
+                        }
                     }
-                    FilledIconButton(
-                        onClick = {
-                            viewModel.finishMultiSelect()
-                        },
+                    ToolbarTooltip(
+                        label = stringResource(R.string.cd_stop_multi_select),
                     ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Undo,
-                            contentDescription = stringResource(R.string.cd_stop_multi_select),
-                        )
+                        FilledIconButton(
+                            onClick = {
+                                viewModel.finishMultiSelect()
+                            },
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Undo,
+                                contentDescription = stringResource(R.string.cd_stop_multi_select),
+                            )
+                        }
                     }
-                    IconButton(
-                        onClick = {
-                            viewModel.selectAllVolumes(filteredVolumeList.map { it.id }.toSet())
-                        },
-                        enabled = viewModel.selectedIds.value.size < filteredVolumeList.size && isMultiSelectActive,
+                    ToolbarTooltip(
+                        label = stringResource(R.string.cd_select_all),
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.SelectAll,
-                            contentDescription = stringResource(R.string.cd_select_all),
-                        )
+                        IconButton(
+                            onClick = {
+                                viewModel.selectAllVolumes(filteredVolumeList.map { it.id }.toSet())
+                            },
+                            enabled = viewModel.selectedIds.value.size < filteredVolumeList.size && isMultiSelectActive,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.SelectAll,
+                                contentDescription = stringResource(R.string.cd_select_all),
+                            )
+                        }
                     }
-                    IconButton(
-                        onClick = {
-                            viewModel.clearSelection()
-                        },
-                        enabled = viewModel.selectedIds.value.isNotEmpty() && isMultiSelectActive,
+                    ToolbarTooltip(
+                        label = stringResource(R.string.cd_deselect),
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Deselect,
-                            contentDescription = stringResource(R.string.cd_deselect),
-                        )
+                        IconButton(
+                            onClick = {
+                                viewModel.clearSelection()
+                            },
+                            enabled = viewModel.selectedIds.value.isNotEmpty() && isMultiSelectActive,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Deselect,
+                                contentDescription = stringResource(R.string.cd_deselect),
+                            )
+                        }
                     }
                 }
             }

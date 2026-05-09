@@ -11,6 +11,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+enum class MangaCollectionSortOption {
+    TITLE_ASC,
+    TITLE_DESC,
+    PROGRESS_DESC,
+    PROGRESS_ASC
+}
+
 class MangaCollectionViewModel (
         private val repository: LibraryRepository,
         private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
@@ -30,6 +37,9 @@ class MangaCollectionViewModel (
 
     private val _showSpecialEditionsOnly = mutableStateOf(false)
     val showSpecialEditionsOnly: State<Boolean> = _showSpecialEditionsOnly
+
+    private val _sortOption = mutableStateOf(MangaCollectionSortOption.TITLE_ASC)
+    val sortOption: State<MangaCollectionSortOption> = _sortOption
 
     private var mangaIdsWithSpecialEditions: Set<String> = emptySet()
 
@@ -115,6 +125,11 @@ class MangaCollectionViewModel (
         applyFilters()
     }
 
+    fun setSortOption(option: MangaCollectionSortOption) {
+        _sortOption.value = option
+        applyFilters()
+    }
+
     private fun applyFilters() {
         var filtered = _fullMangaCollection.value
 
@@ -140,7 +155,27 @@ class MangaCollectionViewModel (
             }
         }
 
-        _mangaCollection.value = filtered
+        _mangaCollection.value = filtered.sortedWith(sortComparator())
+    }
+
+    private fun sortComparator(): Comparator<MangaWithOwned> {
+        val titleComparator = compareBy<MangaWithOwned> { it.title.lowercase() }
+            .thenBy { it.title }
+        return when (_sortOption.value) {
+            MangaCollectionSortOption.TITLE_ASC -> titleComparator
+            MangaCollectionSortOption.TITLE_DESC -> titleComparator.reversed()
+            MangaCollectionSortOption.PROGRESS_DESC -> compareByDescending<MangaWithOwned> {
+                it.completionProgress()
+            }.then(titleComparator)
+            MangaCollectionSortOption.PROGRESS_ASC -> compareBy<MangaWithOwned> {
+                it.completionProgress()
+            }.then(titleComparator)
+        }
+    }
+
+    private fun MangaWithOwned.completionProgress(): Float {
+        if (volumeCount <= 0) return 0f
+        return volumeOwned.toFloat() / volumeCount.toFloat()
     }
 
     init {
