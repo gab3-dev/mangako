@@ -60,6 +60,7 @@ import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -82,6 +83,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
@@ -93,6 +95,8 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gabedev.mangako.R
+import com.gabedev.mangako.data.local.getCollectionDensity
+import com.gabedev.mangako.data.local.saveCollectionDensity
 import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.model.toManga
 import com.gabedev.mangako.data.repository.LibraryRepository
@@ -122,6 +126,8 @@ fun MangaCollection(
     val isMultiSelectActive by viewModel.isMultiSelectActive
     val sortOption by viewModel.sortOption
 
+    val context = LocalContext.current
+    val savedGridColumns by remember { context.getCollectionDensity() }.collectAsState(initial = 2)
     val lifecycleOwner = LocalLifecycleOwner.current
     val density = LocalDensity.current
     val focusRequester = remember { FocusRequester() }
@@ -283,6 +289,10 @@ fun MangaCollection(
     LaunchedEffect(searchQuery) {
         delay(600)
         debouncedSearchQuery = searchQuery.trim()
+    }
+
+    LaunchedEffect(savedGridColumns) {
+        gridColumns = savedGridColumns.coerceIn(1, 5)
     }
 
     LaunchedEffect(debouncedSearchQuery) {
@@ -475,7 +485,11 @@ fun MangaCollection(
                     Slider(
                         value = gridColumns.toFloat(),
                         onValueChange = { value ->
-                            gridColumns = value.roundToInt().coerceIn(1, 5)
+                            val newDensity = value.roundToInt().coerceIn(1, 5)
+                            gridColumns = newDensity
+                            coroutineScope.launch {
+                                context.saveCollectionDensity(newDensity)
+                            }
                         },
                         valueRange = 1f..5f,
                         steps = 3
