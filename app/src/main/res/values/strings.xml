@@ -54,6 +54,8 @@
     <string name="header_status_unknown">Status: Unknown</string>
     <string name="header_volumes">Volumes: %1$s</string>
     <string name="header_volumes_na">Volumes: N/A</string>
+    <string name="button_show_more">Show more</string>
+    <string name="button_show_less">Show less</string>
 
     <!-- Search -->
     <string name="search_placeholder">Search mangas</string>

@@ -49,6 +49,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
@@ -316,350 +317,354 @@ fun MangaDetail(
                     },
                     modifier = Modifier.padding(contentPadding)
                 ) {
-            if (isMultiSelectActive) {
-                HorizontalFloatingToolbar(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .offset(y = -ScreenOffset)
-                        .zIndex(1f),
-                    colors = FloatingToolbarDefaults.vibrantFloatingToolbarColors(),
-                    expanded = true
-                ) {
-                    ToolbarTooltip(
-                        label = stringResource(R.string.cd_mark_as_owned),
-                    ) {
-                        IconButton(
-                            onClick = {
-                                viewModel.markSelectedListAsOwned(true)
-                                viewModel.finishMultiSelect()
-                            },
-                            enabled = viewModel.selectedIds.value.isNotEmpty(),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.CheckCircle,
-                                contentDescription = stringResource(R.string.cd_mark_as_owned),
-                            )
-                        }
-                    }
-                    ToolbarTooltip(
-                        label = stringResource(R.string.cd_unmark_as_owned),
-                    ) {
-                        IconButton(
-                            onClick = {
-                                viewModel.markSelectedListAsOwned(false)
-                                viewModel.finishMultiSelect()
-                            },
-                            enabled = viewModel.selectedIds.value.isNotEmpty(),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Cancel,
-                                contentDescription = stringResource(R.string.cd_unmark_as_owned),
-                            )
-                        }
-                    }
-                    ToolbarTooltip(
-                        label = stringResource(R.string.cd_stop_multi_select),
-                    ) {
-                        FilledIconButton(
-                            onClick = {
-                                viewModel.finishMultiSelect()
-                            },
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.Undo,
-                                contentDescription = stringResource(R.string.cd_stop_multi_select),
-                            )
-                        }
-                    }
-                    ToolbarTooltip(
-                        label = stringResource(R.string.cd_select_all),
-                    ) {
-                        IconButton(
-                            onClick = {
-                                viewModel.selectAllVolumes(filteredVolumeList.map { it.id }.toSet())
-                            },
-                            enabled = viewModel.selectedIds.value.size < filteredVolumeList.size && isMultiSelectActive,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.SelectAll,
-                                contentDescription = stringResource(R.string.cd_select_all),
-                            )
-                        }
-                    }
-                    ToolbarTooltip(
-                        label = stringResource(R.string.cd_deselect),
-                    ) {
-                        IconButton(
-                            onClick = {
-                                viewModel.clearSelection()
-                            },
-                            enabled = viewModel.selectedIds.value.isNotEmpty() && isMultiSelectActive,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Deselect,
-                                contentDescription = stringResource(R.string.cd_deselect),
-                            )
-                        }
-                    }
-                }
-            }
-
-            LazyVerticalGrid(
-                modifier = modifier
-                    .fillMaxWidth()
-                    .padding(contentPadding)
-                    .padding(horizontal = 16.dp),
-                state = listState,
-                columns = GridCells.Fixed(if (viewMode == "grid") 3 else 1),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                item(
-                    key = mangaState.id,
-                    span = { GridItemSpan(maxLineSpan) }
-                ) {
-                    MangaHeader(
-                        title = mangaState.title,
-                        enTitle = mangaState.altTitle,
-                        author = mangaState.author,
-                        description = mangaState.description,
-                        situation = mangaState.status,
-                        coverUrl = mangaState.coverUrl,
-                        volume = mangaState.volumeCount,
-                    )
-                }
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    if (isMangaInLibrary) {
-                        OutlinedButton(
-                            shape = RoundedCornerShape(16.dp),
-                            colors = themedAccentColor?.let {
-                                ButtonDefaults.outlinedButtonColors(contentColor = it)
-                            } ?: ButtonDefaults.outlinedButtonColors(),
-                            border = BorderStroke(1.dp, themedAccentColor ?: MaterialTheme.colorScheme.outline),
-                            onClick = {
-                                showDialogMangaNotInLibrary = true
-                            }
-                        ) {
-                            Icon(
-                                modifier = Modifier.padding(8.dp),
-                                imageVector = Icons.Default.Close,
-                                contentDescription = stringResource(R.string.button_remove_from_collection),
-                            )
-                            Text(
-                                modifier = Modifier.padding(8.dp),
-                                text = stringResource(R.string.button_remove_from_collection),
-                                fontSize = 18.sp,
-                            )
-                        }
-                    } else {
-                        Button(
-                            shape = RoundedCornerShape(16.dp),
-                            colors = if (themedAccentColor != null && themedOnAccentColor != null) {
-                                ButtonDefaults.buttonColors(
-                                    containerColor = themedAccentColor,
-                                    contentColor = themedOnAccentColor,
-                                )
-                            } else {
-                                ButtonDefaults.buttonColors()
-                            },
-                            onClick = {
-                                viewModel.addMangaToLibrary(
-                                    mangaState
-                                )
-                            }
-                        ) {
-                            Icon(
-                                modifier = Modifier.padding(8.dp),
-                                imageVector = Icons.Default.Add,
-                                contentDescription = stringResource(R.string.button_add_to_collection)
-                            )
-                            Text(
-                                modifier = Modifier.padding(8.dp),
-                                text = stringResource(R.string.button_add_to_collection),
-                                fontSize = 18.sp,
-                            )
-                        }
-                    }
-                }
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilterChip(
-                            onClick = { specialCoverFilter = !specialCoverFilter },
-                            colors = themedFilterChipColors,
-                            label = {
-                                Text(stringResource(R.string.label_special_editions))
-                            },
-                            selected = specialCoverFilter,
-                            leadingIcon = if (specialCoverFilter) {
-                                {
-                                    Icon(
-                                        imageVector = Icons.Filled.Done,
-                                        contentDescription = stringResource(R.string.cd_done_icon),
-                                        modifier = Modifier.size(FilterChipDefaults.IconSize)
-                                    )
-                                }
-                            } else {
-                                null
-                            },
-                        )
-                        FilterChip(
-                            onClick = { notOwnedFilter = !notOwnedFilter },
-                            colors = themedFilterChipColors,
-                            label = {
-                                Text(stringResource(R.string.label_not_owned))
-                            },
-                            selected = notOwnedFilter,
-                            leadingIcon = if (notOwnedFilter) {
-                                {
-                                    Icon(
-                                        imageVector = Icons.Filled.Done,
-                                        contentDescription = stringResource(R.string.cd_done_icon),
-                                        modifier = Modifier.size(FilterChipDefaults.IconSize)
-                                    )
-                                }
-                            } else {
-                                null
-                            },
-                        )
-                    }
-                }
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .fillMaxHeight(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = stringResource(R.string.label_volumes)
-                        )
-                        Box {
-                            ListGridSwitch(
-                                initialMode = viewMode.ifEmpty { "list" },
-                                onChange = { selectedMode ->
-                                    CoroutineScope(Dispatchers.IO).launch {
-                                        context.saveConfigText(selectedMode)
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }
-                if (volumeList.isEmpty() && !isCoverLoading) {
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = stringResource(R.string.label_no_volumes_found),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                    return@LazyVerticalGrid
-                } else {
-                    items(items = filteredVolumeList, key = { it.id }) { volume ->
-                        if (viewMode == "grid") {
-                            MangaCard(
-                                modifier = Modifier
-                                    .combinedClickable(
-                                        onClick = {
-                                            if (!isMultiSelectActive) {
-                                                if (!isMangaInLibrary) {
-                                                    callBackFunction = {
-                                                        viewModel.toggleVolumeOwned(volume)
-                                                        showDialogMangaInLibrary = false
-                                                    }
-                                                    showDialogMangaInLibrary = true
-                                                    return@combinedClickable
-                                                }
-                                                viewModel.toggleVolumeOwned(volume)
-                                            } else {
-                                                viewModel.toggleSelection(volume.id)
-                                            }
-                                        },
-                                        onLongClick = {
-                                            if (!isMultiSelectActive) {
-                                                viewModel.toggleSelection(volume.id)
-                                            }
-                                        }
-                                    ),
-                                title = mangaState.title,
-                                coverUrl = volume.coverUrl,
-                                owned = volume.owned,
-                                isVolumeCard = true,
-                                selected = viewModel.selectedIds.value.contains(volume.id),
-                                volume = volume.volume,
-                                volumeLocale = volume.locale,
-                                isSpecialEdition = volume.isSpecialEdition,
-                            )
-                        } else {
-                            MangaListItem(
-                                modifier = Modifier
-                                    .combinedClickable(
-                                        onClick = {
-                                            if (!isMultiSelectActive) {
-                                                if (!isMangaInLibrary) {
-                                                    callBackFunction = {
-                                                        viewModel.toggleVolumeOwned(volume)
-                                                        showDialogMangaInLibrary = false
-                                                    }
-                                                    showDialogMangaInLibrary = true
-                                                    return@combinedClickable
-                                                }
-                                                viewModel.toggleVolumeOwned(volume)
-                                            } else {
-                                                viewModel.toggleSelection(volume.id)
-                                            }
-                                        },
-                                        onLongClick = {
-                                            if (!isMultiSelectActive) {
-                                                viewModel.toggleSelection(volume.id)
-                                            }
-                                        }
-                                    ),
-                                coverUrl = volume.coverUrl,
-                                title = stringResource(
-                                    R.string.label_volume_format,
-                                    Utils.handleVolumeLabel(
-                                        volume.volume,
-                                        volume.locale,
-                                        volume.isSpecialEdition
-                                    )
-                                ),
-                                selected = viewModel.selectedIds.value.contains(volume.id),
-                                owned = volume.owned,
-                            )
-                        }
-                    }
-                }
-                if (isCoverLoading) {
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        Row(
+                    if (isMultiSelectActive) {
+                        HorizontalFloatingToolbar(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .fillMaxHeight(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
+                                .align(Alignment.BottomCenter)
+                                .offset(y = -ScreenOffset)
+                                .zIndex(1f),
+                            colors = FloatingToolbarDefaults.vibrantFloatingToolbarColors(),
+                            expanded = true
                         ) {
-                            CustomLoadingIndicator(
-                                Modifier
-                                    .width(50.dp)
-                                    .height(50.dp)
-                            )
-                            Text(
-                                text = stringResource(R.string.label_loading_covers),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            ToolbarTooltip(
+                                label = stringResource(R.string.cd_mark_as_owned),
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        viewModel.markSelectedListAsOwned(true)
+                                        viewModel.finishMultiSelect()
+                                    },
+                                    enabled = viewModel.selectedIds.value.isNotEmpty(),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.CheckCircle,
+                                        contentDescription = stringResource(R.string.cd_mark_as_owned),
+                                    )
+                                }
+                            }
+                            ToolbarTooltip(
+                                label = stringResource(R.string.cd_unmark_as_owned),
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        viewModel.markSelectedListAsOwned(false)
+                                        viewModel.finishMultiSelect()
+                                    },
+                                    enabled = viewModel.selectedIds.value.isNotEmpty(),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Cancel,
+                                        contentDescription = stringResource(R.string.cd_unmark_as_owned),
+                                    )
+                                }
+                            }
+                            ToolbarTooltip(
+                                label = stringResource(R.string.cd_stop_multi_select),
+                            ) {
+                                FilledIconButton(
+                                    onClick = {
+                                        viewModel.finishMultiSelect()
+                                    },
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.Undo,
+                                        contentDescription = stringResource(R.string.cd_stop_multi_select),
+                                    )
+                                }
+                            }
+                            ToolbarTooltip(
+                                label = stringResource(R.string.cd_select_all),
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        viewModel.selectAllVolumes(filteredVolumeList.map { it.id }
+                                            .toSet())
+                                    },
+                                    enabled = viewModel.selectedIds.value.size < filteredVolumeList.size && isMultiSelectActive,
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.SelectAll,
+                                        contentDescription = stringResource(R.string.cd_select_all),
+                                    )
+                                }
+                            }
+                            ToolbarTooltip(
+                                label = stringResource(R.string.cd_deselect),
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        viewModel.clearSelection()
+                                    },
+                                    enabled = viewModel.selectedIds.value.isNotEmpty() && isMultiSelectActive,
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Deselect,
+                                        contentDescription = stringResource(R.string.cd_deselect),
+                                    )
+                                }
+                            }
                         }
                     }
-                }
-            }
+
+                    LazyVerticalGrid(
+                        modifier = modifier
+                            .fillMaxWidth()
+                            .padding(contentPadding)
+                            .padding(horizontal = 16.dp),
+                        state = listState,
+                        columns = GridCells.Fixed(if (viewMode == "grid") 3 else 1),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        item(
+                            key = mangaState.id,
+                            span = { GridItemSpan(maxLineSpan) }
+                        ) {
+                            MangaHeader(
+                                title = mangaState.title,
+                                enTitle = mangaState.altTitle,
+                                author = mangaState.author,
+                                description = mangaState.description,
+                                situation = mangaState.status,
+                                coverUrl = mangaState.coverUrl,
+                                volume = mangaState.volumeCount,
+                            )
+                        }
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            if (isMangaInLibrary) {
+                                OutlinedButton(
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = themedAccentColor?.let {
+                                        ButtonDefaults.outlinedButtonColors(contentColor = it)
+                                    } ?: ButtonDefaults.outlinedButtonColors(),
+                                    border = BorderStroke(
+                                        1.dp,
+                                        themedAccentColor ?: MaterialTheme.colorScheme.outline
+                                    ),
+                                    onClick = {
+                                        showDialogMangaNotInLibrary = true
+                                    }
+                                ) {
+                                    Icon(
+                                        modifier = Modifier.padding(8.dp),
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = stringResource(R.string.button_remove_from_collection),
+                                    )
+                                    Text(
+                                        modifier = Modifier.padding(8.dp),
+                                        text = stringResource(R.string.button_remove_from_collection),
+                                        fontSize = 18.sp,
+                                    )
+                                }
+                            } else {
+                                Button(
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = if (themedAccentColor != null && themedOnAccentColor != null) {
+                                        ButtonDefaults.buttonColors(
+                                            containerColor = themedAccentColor,
+                                            contentColor = themedOnAccentColor,
+                                        )
+                                    } else {
+                                        ButtonDefaults.buttonColors()
+                                    },
+                                    onClick = {
+                                        viewModel.addMangaToLibrary(
+                                            mangaState
+                                        )
+                                    }
+                                ) {
+                                    Icon(
+                                        modifier = Modifier.padding(8.dp),
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = stringResource(R.string.button_add_to_collection)
+                                    )
+                                    Text(
+                                        modifier = Modifier.padding(8.dp),
+                                        text = stringResource(R.string.button_add_to_collection),
+                                        fontSize = 18.sp,
+                                    )
+                                }
+                            }
+                        }
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                FilterChip(
+                                    onClick = { specialCoverFilter = !specialCoverFilter },
+                                    colors = themedFilterChipColors,
+                                    label = {
+                                        Text(stringResource(R.string.label_special_editions))
+                                    },
+                                    selected = specialCoverFilter,
+                                    leadingIcon = if (specialCoverFilter) {
+                                        {
+                                            Icon(
+                                                imageVector = Icons.Filled.Done,
+                                                contentDescription = stringResource(R.string.cd_done_icon),
+                                                modifier = Modifier.size(FilterChipDefaults.IconSize)
+                                            )
+                                        }
+                                    } else {
+                                        null
+                                    },
+                                )
+                                FilterChip(
+                                    onClick = { notOwnedFilter = !notOwnedFilter },
+                                    colors = themedFilterChipColors,
+                                    label = {
+                                        Text(stringResource(R.string.label_not_owned))
+                                    },
+                                    selected = notOwnedFilter,
+                                    leadingIcon = if (notOwnedFilter) {
+                                        {
+                                            Icon(
+                                                imageVector = Icons.Filled.Done,
+                                                contentDescription = stringResource(R.string.cd_done_icon),
+                                                modifier = Modifier.size(FilterChipDefaults.IconSize)
+                                            )
+                                        }
+                                    } else {
+                                        null
+                                    },
+                                )
+                            }
+                        }
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .fillMaxHeight(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.label_volumes)
+                                )
+                                Box {
+                                    ListGridSwitch(
+                                        initialMode = viewMode.ifEmpty { "list" },
+                                        onChange = { selectedMode ->
+                                            CoroutineScope(Dispatchers.IO).launch {
+                                                context.saveConfigText(selectedMode)
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                        if (volumeList.isEmpty() && !isCoverLoading) {
+                            item(span = { GridItemSpan(maxLineSpan) }) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.label_no_volumes_found),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                            return@LazyVerticalGrid
+                        } else {
+                            items(items = filteredVolumeList, key = { it.id }) { volume ->
+                                if (viewMode == "grid") {
+                                    MangaCard(
+                                        modifier = Modifier
+                                            .combinedClickable(
+                                                onClick = {
+                                                    if (!isMultiSelectActive) {
+                                                        if (!isMangaInLibrary) {
+                                                            callBackFunction = {
+                                                                viewModel.toggleVolumeOwned(volume)
+                                                                showDialogMangaInLibrary = false
+                                                            }
+                                                            showDialogMangaInLibrary = true
+                                                            return@combinedClickable
+                                                        }
+                                                        viewModel.toggleVolumeOwned(volume)
+                                                    } else {
+                                                        viewModel.toggleSelection(volume.id)
+                                                    }
+                                                },
+                                                onLongClick = {
+                                                    if (!isMultiSelectActive) {
+                                                        viewModel.toggleSelection(volume.id)
+                                                    }
+                                                }
+                                            ),
+                                        title = mangaState.title,
+                                        coverUrl = volume.coverUrl,
+                                        owned = volume.owned,
+                                        isVolumeCard = true,
+                                        selected = viewModel.selectedIds.value.contains(volume.id),
+                                        volume = volume.volume,
+                                        volumeLocale = volume.locale,
+                                        isSpecialEdition = volume.isSpecialEdition,
+                                    )
+                                } else {
+                                    MangaListItem(
+                                        modifier = Modifier
+                                            .combinedClickable(
+                                                onClick = {
+                                                    if (!isMultiSelectActive) {
+                                                        if (!isMangaInLibrary) {
+                                                            callBackFunction = {
+                                                                viewModel.toggleVolumeOwned(volume)
+                                                                showDialogMangaInLibrary = false
+                                                            }
+                                                            showDialogMangaInLibrary = true
+                                                            return@combinedClickable
+                                                        }
+                                                        viewModel.toggleVolumeOwned(volume)
+                                                    } else {
+                                                        viewModel.toggleSelection(volume.id)
+                                                    }
+                                                },
+                                                onLongClick = {
+                                                    if (!isMultiSelectActive) {
+                                                        viewModel.toggleSelection(volume.id)
+                                                    }
+                                                }
+                                            ),
+                                        coverUrl = volume.coverUrl,
+                                        title = stringResource(
+                                            R.string.label_volume_format,
+                                            Utils.handleVolumeLabel(
+                                                volume.volume,
+                                                volume.locale,
+                                                volume.isSpecialEdition
+                                            )
+                                        ),
+                                        selected = viewModel.selectedIds.value.contains(volume.id),
+                                        owned = volume.owned,
+                                    )
+                                }
+                            }
+                        }
+                        if (isCoverLoading) {
+                            item(span = { GridItemSpan(maxLineSpan) }) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .fillMaxHeight(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    CustomLoadingIndicator(
+                                        Modifier
+                                            .width(50.dp)
+                                            .height(50.dp)
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.label_loading_covers),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -679,15 +684,14 @@ fun MangaHeader(
 ) {
     Surface(
         modifier = modifier
-            .padding(8.dp)
+            .padding(horizontal = 8.dp)
             .fillMaxWidth(),
         color = Color.Transparent,
         shape = RoundedCornerShape(24.dp),
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
+                .fillMaxWidth(),
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -713,21 +717,67 @@ fun MangaHeader(
                     }
                     Column {
                         SimpleText(
-                            text = if (author != null) stringResource(R.string.header_author, author) else stringResource(R.string.header_author_unknown),
+                            text = if (author != null) stringResource(
+                                R.string.header_author,
+                                author
+                            ) else stringResource(R.string.header_author_unknown),
                         )
                         SimpleText(
-                            text = if (situation != null) stringResource(R.string.header_status, situation) else stringResource(R.string.header_status_unknown),
+                            text = if (situation != null) stringResource(
+                                R.string.header_status,
+                                situation
+                            ) else stringResource(R.string.header_status_unknown),
                         )
                         SimpleText(
-                            text = if (volume != null) stringResource(R.string.header_volumes, volume.toString()) else stringResource(R.string.header_volumes_na),
+                            text = if (volume != null) stringResource(
+                                R.string.header_volumes,
+                                volume.toString()
+                            ) else stringResource(R.string.header_volumes_na),
                         )
                     }
                 }
             }
-            SimpleText(
+            ExpandableDescription(
                 text = description,
-                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp, end = 16.dp)
+                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
             )
+        }
+    }
+}
+
+@Composable
+fun ExpandableDescription(
+    modifier: Modifier = Modifier,
+    text: String,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var canExpand by remember(text) { mutableStateOf(false) }
+
+    Column(modifier = modifier) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = if (expanded) Int.MAX_VALUE else 3,
+            overflow = TextOverflow.Ellipsis,
+            onTextLayout = { textLayoutResult ->
+                if (!expanded) {
+                    canExpand = textLayoutResult.hasVisualOverflow
+                }
+            },
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+        if (canExpand || expanded) {
+            TextButton(
+                onClick = { expanded = !expanded },
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Text(
+                    text = stringResource(
+                        if (expanded) R.string.button_show_less else R.string.button_show_more
+                    )
+                )
+            }
         }
     }
 }

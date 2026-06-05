@@ -49,6 +49,8 @@
     <string name="header_status_unknown">ステータス：不明</string>
     <string name="header_volumes">巻数：%1$s</string>
     <string name="header_volumes_na">巻数：N/A</string>
+    <string name="button_show_more">もっと見る</string>
+    <string name="button_show_less">閉じる</string>
 
     <!-- Search -->
     <string name="search_placeholder">マンガを検索</string>
