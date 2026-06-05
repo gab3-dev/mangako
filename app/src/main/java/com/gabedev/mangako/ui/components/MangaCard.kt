@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gabedev.mangako.R
 import com.gabedev.mangako.core.Utils
+import com.gabedev.mangako.ui.screens.detail.covertheme.LocalCoverTheme
 
 const val MANGA_COVER_PLACEHOLDER = "https://uploads.mangadex.org/covers/d65c0332-3764-4c89-84bd-b1a4e7278ad7/8e8a3e18-948d-402a-a9ea-f62366486771.jpg"
 
@@ -46,6 +48,9 @@ fun MangaCard(
     volumeLocale: String = "ja",
     isSpecialEdition: Boolean = false,
 ) {
+    val coverTheme = LocalCoverTheme.current
+    val cardContainerColor = coverTheme?.backdropColor?.let(::Color) ?: MaterialTheme.colorScheme.surface
+
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val titleFontSize = when {
             maxWidth < 96.dp -> 10.sp
@@ -80,6 +85,10 @@ fun MangaCard(
                 .padding(if (selected) 4.dp else 0.dp)
                 .heightIn(min = 200.dp),
             shape = RoundedCornerShape(8.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = cardContainerColor,
+                contentColor = MaterialTheme.colorScheme.onSurface,
+            ),
         ) {
             Box(
                 modifier = Modifier
@@ -110,13 +119,13 @@ fun MangaCard(
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = stringResource(R.string.cd_completed),
-                                tint = Color.White,
+                                tint = MaterialTheme.colorScheme.onTertiaryContainer,
                                 modifier = Modifier.size(checkIconSize)
                             )
                         } else {
                             Text(
                                 text = "$volumesOwned/$volumeTotal",
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer,
                                 fontSize = badgeFontSize,
                                 lineHeight = badgeFontSize
                             )

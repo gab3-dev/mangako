@@ -55,8 +55,8 @@ fun ListGridSwitch(
                 colors = ToggleButtonDefaults.toggleButtonColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,   // cor do botão desmarcado
                     contentColor = MaterialTheme.colorScheme.onSurface,          // cor do ícone desmarcado
-                    checkedContainerColor = MaterialTheme.colorScheme.primary,   // cor do botão marcado
-                    checkedContentColor = MaterialTheme.colorScheme.onPrimary,   // cor do ícone marcado
+                    checkedContainerColor = MaterialTheme.colorScheme.primary,
+                    checkedContentColor = MaterialTheme.colorScheme.onPrimary,
                 ),
                 shapes =
                     when (index) {

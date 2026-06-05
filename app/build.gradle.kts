@@ -116,6 +116,9 @@ dependencies {
     // Coil for image loading
     implementation(libs.coil.compose)
 
+    // Extract colors from manga covers
+    implementation(libs.palette)
+
     // Retrofit
     implementation(libs.retrofit)
 

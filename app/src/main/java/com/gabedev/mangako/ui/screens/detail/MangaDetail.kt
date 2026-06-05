@@ -1,6 +1,8 @@
 package com.gabedev.mangako.ui.screens.detail
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +31,7 @@ import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
@@ -38,13 +41,13 @@ import androidx.compose.material3.FloatingToolbarDefaults.ScreenOffset
 import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LoadingIndicatorDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.TooltipAnchorPosition
@@ -55,6 +58,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -65,6 +69,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -88,6 +93,9 @@ import com.gabedev.mangako.ui.components.ListGridSwitch
 import com.gabedev.mangako.ui.components.MangaCard
 import com.gabedev.mangako.ui.components.MangaCoverImage
 import com.gabedev.mangako.ui.components.MangaListItem
+import com.gabedev.mangako.ui.screens.detail.covertheme.CoverTheme
+import com.gabedev.mangako.ui.screens.detail.covertheme.LocalCoverTheme
+import com.gabedev.mangako.ui.screens.detail.covertheme.generateCoverTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -136,6 +144,51 @@ fun MangaDetail(
     var callBackFunction by remember { mutableStateOf({}) }
     var showDialogMangaInLibrary by remember { mutableStateOf(false) }
     val isMultiSelectActive by viewModel.isMultiSelectActive
+    val isDarkMode = isSystemInDarkTheme()
+    val screenBackgroundColor = MaterialTheme.colorScheme.background.toArgb()
+    val toolbarBaseColor = MaterialTheme.colorScheme.surfaceVariant.toArgb()
+    var coverTheme by remember { mutableStateOf<CoverTheme?>(null) }
+    val themedAccentColor = coverTheme?.accentColor?.let(::Color)
+    val themedOnAccentColor = coverTheme?.onAccentColor?.let(::Color)
+    val detailColorScheme = coverTheme?.let { theme ->
+        MaterialTheme.colorScheme.copy(
+            primary = Color(theme.accentColor),
+            onPrimary = Color(theme.onAccentColor),
+            primaryContainer = Color(theme.backdropColor),
+            onPrimaryContainer = MaterialTheme.colorScheme.onSurface,
+            secondaryContainer = Color(theme.accentColor),
+            onSecondaryContainer = Color(theme.onAccentColor),
+            tertiaryContainer = Color(theme.accentColor),
+            onTertiaryContainer = Color(theme.onAccentColor),
+            surfaceVariant = Color(theme.backdropColor),
+        )
+    } ?: MaterialTheme.colorScheme
+    val themedFilterChipColors = if (themedAccentColor != null && themedOnAccentColor != null) {
+        FilterChipDefaults.filterChipColors(
+            selectedContainerColor = themedAccentColor,
+            selectedLabelColor = themedOnAccentColor,
+            selectedLeadingIconColor = themedOnAccentColor,
+        )
+    } else {
+        FilterChipDefaults.filterChipColors()
+    }
+
+    LaunchedEffect(mangaState.coverUrl, isDarkMode, screenBackgroundColor, toolbarBaseColor) {
+        val coverUrl = mangaState.coverUrl?.takeIf { it.isNotBlank() }
+        coverTheme = null
+        if (coverUrl != null) {
+            coverTheme = runCatching {
+                generateCoverTheme(
+                    context = context.applicationContext,
+                    coverData = coverUrl,
+                    isDarkMode = isDarkMode,
+                    backgroundColor = screenBackgroundColor,
+                    toolbarBaseColor = toolbarBaseColor,
+                )
+            }.getOrNull()
+        }
+    }
+
     if (showDialogMangaInLibrary) {
         ConfirmDialog(
             title = stringResource(R.string.dialog_manga_not_in_library_title),
@@ -235,31 +288,34 @@ fun MangaDetail(
         }
     }
 
-    Scaffold(
-        snackbarHost = {
-            SnackbarHost(
-                hostState = snackbarHostState,
-            )
-        }
-    ) { contentPadding ->
+    CompositionLocalProvider(LocalCoverTheme provides coverTheme) {
+        MaterialTheme(colorScheme = detailColorScheme) {
+            Scaffold(
+                snackbarHost = {
+                    SnackbarHost(
+                        hostState = snackbarHostState,
+                    )
+                }
+            ) { contentPadding ->
 
-        PullToRefreshBox(
-            isRefreshing = isCoverLoading,
-            onRefresh = {
-                viewModel.refreshManga()
-            },
-            state = state,
-            indicator = {
-                PullToRefreshDefaults.LoadingIndicator(
+                PullToRefreshBox(
                     isRefreshing = isCoverLoading,
-                    containerColor = LoadingIndicatorDefaults.containedContainerColor,
+                    onRefresh = {
+                        viewModel.refreshManga()
+                    },
                     state = state,
-                    modifier = Modifier
-                        .align(Alignment.TopCenter),
-                )
-            },
-            modifier = Modifier.padding(contentPadding)
-        ) {
+                    indicator = {
+                        PullToRefreshDefaults.LoadingIndicator(
+                            isRefreshing = isCoverLoading,
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            color = MaterialTheme.colorScheme.primary,
+                            state = state,
+                            modifier = Modifier
+                                .align(Alignment.TopCenter),
+                        )
+                    },
+                    modifier = Modifier.padding(contentPadding)
+                ) {
             if (isMultiSelectActive) {
                 HorizontalFloatingToolbar(
                     modifier = Modifier
@@ -369,13 +425,17 @@ fun MangaDetail(
                         description = mangaState.description,
                         situation = mangaState.status,
                         coverUrl = mangaState.coverUrl,
-                        volume = mangaState.volumeCount
+                        volume = mangaState.volumeCount,
                     )
                 }
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     if (isMangaInLibrary) {
                         OutlinedButton(
                             shape = RoundedCornerShape(16.dp),
+                            colors = themedAccentColor?.let {
+                                ButtonDefaults.outlinedButtonColors(contentColor = it)
+                            } ?: ButtonDefaults.outlinedButtonColors(),
+                            border = BorderStroke(1.dp, themedAccentColor ?: MaterialTheme.colorScheme.outline),
                             onClick = {
                                 showDialogMangaNotInLibrary = true
                             }
@@ -394,6 +454,14 @@ fun MangaDetail(
                     } else {
                         Button(
                             shape = RoundedCornerShape(16.dp),
+                            colors = if (themedAccentColor != null && themedOnAccentColor != null) {
+                                ButtonDefaults.buttonColors(
+                                    containerColor = themedAccentColor,
+                                    contentColor = themedOnAccentColor,
+                                )
+                            } else {
+                                ButtonDefaults.buttonColors()
+                            },
                             onClick = {
                                 viewModel.addMangaToLibrary(
                                     mangaState
@@ -417,6 +485,7 @@ fun MangaDetail(
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilterChip(
                             onClick = { specialCoverFilter = !specialCoverFilter },
+                            colors = themedFilterChipColors,
                             label = {
                                 Text(stringResource(R.string.label_special_editions))
                             },
@@ -435,6 +504,7 @@ fun MangaDetail(
                         )
                         FilterChip(
                             onClick = { notOwnedFilter = !notOwnedFilter },
+                            colors = themedFilterChipColors,
                             label = {
                                 Text(stringResource(R.string.label_not_owned))
                             },
@@ -590,6 +660,8 @@ fun MangaDetail(
                     }
                 }
             }
+                }
+            }
         }
     }
 }
@@ -603,60 +675,60 @@ fun MangaHeader(
     description: String,
     situation: String? = null,
     coverUrl: String? = null,
-    volume: Int? = null
+    volume: Int? = null,
 ) {
-    Column(
+    Surface(
         modifier = modifier
             .padding(8.dp)
             .fillMaxWidth(),
+        color = Color.Transparent,
+        shape = RoundedCornerShape(24.dp),
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
         ) {
-            if (coverUrl != null) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 MangaCoverImage(
                     imageUrl = coverUrl,
                     modifier = Modifier.height(190.dp),
                     contentDescription = title
                 )
-            } else {
-                MangaCoverImage(
-                    imageUrl = null,
-                    modifier = Modifier.height(190.dp),
-                    contentDescription = title
-                )
-            }
-            Column {
                 Column {
-                    SimpleText(
-                        text = title,
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    if (enTitle != null) {
+                    Column {
                         SimpleText(
-                            text = enTitle,
+                            text = title,
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        if (enTitle != null) {
+                            SimpleText(
+                                text = enTitle,
+                            )
+                        }
+                    }
+                    Column {
+                        SimpleText(
+                            text = if (author != null) stringResource(R.string.header_author, author) else stringResource(R.string.header_author_unknown),
+                        )
+                        SimpleText(
+                            text = if (situation != null) stringResource(R.string.header_status, situation) else stringResource(R.string.header_status_unknown),
+                        )
+                        SimpleText(
+                            text = if (volume != null) stringResource(R.string.header_volumes, volume.toString()) else stringResource(R.string.header_volumes_na),
                         )
                     }
                 }
-                Column {
-                    SimpleText(
-                        text = if (author != null) stringResource(R.string.header_author, author) else stringResource(R.string.header_author_unknown),
-                    )
-                    SimpleText(
-                        text = if (situation != null) stringResource(R.string.header_status, situation) else stringResource(R.string.header_status_unknown),
-                    )
-                    SimpleText(
-                        text = if (volume != null) stringResource(R.string.header_volumes, volume.toString()) else stringResource(R.string.header_volumes_na),
-                    )
-                }
             }
+            SimpleText(
+                text = description,
+                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp, end = 16.dp)
+            )
         }
-        SimpleText(
-            text = description,
-            modifier = Modifier.padding(top = 8.dp, bottom = 16.dp, end = 16.dp)
-        )
     }
 }
 

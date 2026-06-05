@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -24,9 +25,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.gabedev.mangako.R
+import com.gabedev.mangako.ui.screens.detail.covertheme.LocalCoverTheme
 
 @Composable
 fun MangaListItem(
@@ -37,12 +40,18 @@ fun MangaListItem(
     owned: Boolean,
 ) {
     val isLoading by remember { mutableStateOf(false) }
+    val coverTheme = LocalCoverTheme.current
+    val cardContainerColor = coverTheme?.backdropColor?.let(::Color) ?: MaterialTheme.colorScheme.surface
 
     Card(
         modifier = modifier
             .alpha(if (owned) 0.5f else 1f)
             .fillMaxWidth()
             .fillMaxHeight(0.2f),
+        colors = CardDefaults.cardColors(
+            containerColor = cardContainerColor,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
     ) {
         Row (
             modifier = Modifier
