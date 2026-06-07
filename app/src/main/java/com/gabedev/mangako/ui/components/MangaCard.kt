@@ -4,10 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -82,8 +79,7 @@ fun MangaCard(
             modifier = Modifier
                 .alpha(if (owned) 0.5f else 1f)
                 .fillMaxWidth()
-                .padding(if (selected) 4.dp else 0.dp)
-                .heightIn(min = 200.dp),
+                .padding(if (selected) 4.dp else 0.dp),
             shape = RoundedCornerShape(8.dp),
             colors = CardDefaults.cardColors(
                 containerColor = cardContainerColor,
@@ -93,13 +89,12 @@ fun MangaCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight()
             ) {
                 MangaCoverImage(
                     imageUrl = coverUrl,
                     contentDescription = title,
                     modifier = Modifier
-                        .fillMaxSize()
+                        .fillMaxWidth()
                 )
                 if (!isVolumeCard) {
                     Box(
