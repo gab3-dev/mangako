@@ -409,7 +409,6 @@ fun MangaDetail(
                     LazyVerticalGrid(
                         modifier = modifier
                             .fillMaxWidth()
-                            .padding(contentPadding)
                             .padding(horizontal = 16.dp),
                         state = listState,
                         columns = GridCells.Fixed(if (viewMode == "grid") 3 else 1),

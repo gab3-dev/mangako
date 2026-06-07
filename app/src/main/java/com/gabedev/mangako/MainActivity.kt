@@ -176,9 +176,7 @@ fun MainAppNavHost(
                 // Não exibe a barra de navegação na tela de detalhes
                 return@Scaffold
             }
-            NavigationBar(
-                windowInsets = androidx.compose.foundation.layout.WindowInsets(0.dp),
-            ) {
+            NavigationBar {
                 itemsNavBar.forEach { screen ->
                     NavigationBarItem(
                         selected = currentRoute == screen.route,

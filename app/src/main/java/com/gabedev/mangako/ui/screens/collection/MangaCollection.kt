@@ -1,8 +1,8 @@
 package com.gabedev.mangako.ui.screens.collection
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,13 +44,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
@@ -81,9 +81,9 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
@@ -102,8 +102,8 @@ import com.gabedev.mangako.data.model.toManga
 import com.gabedev.mangako.data.repository.LibraryRepository
 import com.gabedev.mangako.ui.components.ConfirmDialog
 import com.gabedev.mangako.ui.components.MangaCard
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -164,7 +164,7 @@ fun MangaCollection(
         0f
     }
     val shouldDockSearchAboveKeyboard = collectionSearchDockedAboveKeyboard &&
-        collectionSearchBarOpen
+            collectionSearchBarOpen
     val focusedSearchBottomPadding = if (imeBottomPadding > 0.dp) {
         imeBottomPadding + 32.dp
     } else {
@@ -213,11 +213,11 @@ fun MangaCollection(
 
         val isRevealed = collectionSearchHeightPx > 0f
         val isNotSettled = collectionSearchHeightPx != 0f &&
-            collectionSearchHeightPx != targetCollectionSearchHeightPx
+                collectionSearchHeightPx != targetCollectionSearchHeightPx
 
         if (isRevealed && isNotSettled) {
             val shouldOpen = collectionSearchHeightPx >=
-                targetCollectionSearchHeightPx * searchCommitThresholdFraction
+                    targetCollectionSearchHeightPx * searchCommitThresholdFraction
             val targetHeight = if (shouldOpen) targetCollectionSearchHeightPx else 0f
 
             animate(
@@ -251,7 +251,7 @@ fun MangaCollection(
                 }
 
                 val isGridAtTop = gridState.firstVisibleItemIndex == 0 &&
-                    gridState.firstVisibleItemScrollOffset == 0
+                        gridState.firstVisibleItemScrollOffset == 0
 
                 if (available.y > 0f && isGridAtTop) {
                     searchSnapJob?.cancel()
@@ -366,7 +366,7 @@ fun MangaCollection(
                                 collectionSearchBarOpen = true
                                 collectionSearchDockedAboveKeyboard = true
                             }
-                    },
+                        },
                     leadingIcon = {
                         IconButton(onClick = { closeCollectionSearch(clearQuery = false) }) {
                             Icon(
@@ -428,7 +428,10 @@ fun MangaCollection(
     if (showRemoveDialog) {
         ConfirmDialog(
             title = stringResource(R.string.dialog_remove_selected_title),
-            text = stringResource(R.string.dialog_remove_selected_text, viewModel.selectedIds.value.size),
+            text = stringResource(
+                R.string.dialog_remove_selected_text,
+                viewModel.selectedIds.value.size
+            ),
             onConfirm = {
                 viewModel.removeSelectedFromLibrary()
                 showRemoveDialog = false
@@ -515,245 +518,249 @@ fun MangaCollection(
                     .fillMaxSize()
                     .blur(if (shouldDockSearchAboveKeyboard) 18.dp else 0.dp)
             ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(with(density) { targetCollectionSearchHeightPx.toDp() })
-                    .clipToBounds()
-            ) {
-                TopAppBar(
-                    scrollBehavior = scrollBehavior,
-                    modifier = Modifier
-                        .nestedScroll(scrollBehavior.nestedScrollConnection)
-                        .alpha(if (shouldDockSearchAboveKeyboard) 0f else 1f - collectionSearchHeightFraction),
-                    title = {
-                        Text(
-                            text = stringResource(R.string.nav_library),
-                            fontWeight = FontWeight.Bold,
-                        )
-                    },
-                    navigationIcon = {
-                        Icon(
-                            imageVector = Icons.Outlined.Book,
-                            contentDescription = stringResource(R.string.nav_library)
-                        )
-                    },
-                    actions = {
-                        IconButton(onClick = { openCollectionSearch() }) {
-                            Icon(
-                                Icons.Default.Search,
-                                contentDescription = stringResource(R.string.cd_search)
-                            )
-                        }
-                    },
-                )
-
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(with(density) { collectionSearchHeightPx.toDp() })
+                        .height(with(density) { targetCollectionSearchHeightPx.toDp() })
                         .clipToBounds()
                 ) {
-                    if (!shouldDockSearchAboveKeyboard) {
-                        CollectionSearchBar(
-                            searchModifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 20.dp, vertical = 10.dp)
-                                .alpha(collectionSearchHeightFraction),
-                            measureHeight = true,
-                        )
-                    }
-                }
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box {
-                    TextButton(onClick = { sortMenuExpanded = true }) {
-                        Text(stringResource(R.string.sort_by, sortOptionLabel(sortOption)))
-                    }
-                    DropdownMenu(
-                        expanded = sortMenuExpanded,
-                        onDismissRequest = { sortMenuExpanded = false }
-                    ) {
-                        MangaCollectionSortOption.entries.forEach { option ->
-                            DropdownMenuItem(
-                                text = { Text(sortOptionLabel(option)) },
-                                onClick = {
-                                    viewModel.setSortOption(option)
-                                    sortMenuExpanded = false
-                                }
-                            )
-                        }
-                    }
-                }
-                IconButton(onClick = { filterSheetOpen = true }) {
-                    Icon(
-                        imageVector = Icons.Default.FilterList,
-                        contentDescription = stringResource(R.string.cd_filter_options)
-                    )
-                }
-            }
-
-            if (isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            } else {
-                if (mangaCollection.isEmpty()) {
-                    Box(
-                        contentAlignment = Alignment.Center,
+                    TopAppBar(
+                        scrollBehavior = scrollBehavior,
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(bottom = animatedImeBottomPadding)
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
+                            .nestedScroll(scrollBehavior.nestedScrollConnection)
+                            .alpha(if (shouldDockSearchAboveKeyboard) 0f else 1f - collectionSearchHeightFraction),
+                        title = {
                             Text(
-                                text = if (searchQuery.isNotBlank() || showIncompleteOnly || showSpecialEditionsOnly) {
-                                    stringResource(R.string.no_results_found)
-                                } else {
-                                    stringResource(R.string.welcome_message)
-                                }
+                                text = stringResource(R.string.nav_library),
+                                fontWeight = FontWeight.Bold,
                             )
-                            if (searchQuery.isNotBlank()) {
-                                TextButton(
-                                    onClick = {
-                                        val query = searchQuery.trim()
-                                        searchQuery = ""
-                                        debouncedSearchQuery = ""
-                                        viewModel.clearSearchQuery()
-                                        closeCollectionSearch(clearQuery = false)
-                                        onExploreSearch(query)
-                                    }
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.search_on_explore, searchQuery.trim()),
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                }
+                        },
+                        navigationIcon = {
+                            Icon(
+                                imageVector = Icons.Outlined.Book,
+                                contentDescription = stringResource(R.string.nav_library)
+                            )
+                        },
+                        actions = {
+                            IconButton(onClick = { openCollectionSearch() }) {
+                                Icon(
+                                    Icons.Default.Search,
+                                    contentDescription = stringResource(R.string.cd_search)
+                                )
                             }
+                        },
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(with(density) { collectionSearchHeightPx.toDp() })
+                            .clipToBounds()
+                    ) {
+                        if (!shouldDockSearchAboveKeyboard) {
+                            CollectionSearchBar(
+                                searchModifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 20.dp, vertical = 10.dp)
+                                    .alpha(collectionSearchHeightFraction),
+                                measureHeight = true,
+                            )
                         }
                     }
-                } else {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(gridColumns),
-                            state = gridState,
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .nestedScroll(searchRevealNestedScrollConnection)
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box {
+                        TextButton(onClick = { sortMenuExpanded = true }) {
+                            Text(stringResource(R.string.sort_by, sortOptionLabel(sortOption)))
+                        }
+                        DropdownMenu(
+                            expanded = sortMenuExpanded,
+                            onDismissRequest = { sortMenuExpanded = false }
                         ) {
-                            items(mangaCollection.size) { index ->
-                                val manga = mangaCollection[index]
-                                MangaCard(
-                                    modifier = Modifier
-                                        .combinedClickable(
-                                            onClick = {
-                                                if (!isMultiSelectActive) {
-                                                    onMangaClick(manga.toManga())
-                                                } else {
-                                                    viewModel.toggleSelection(manga.id)
-                                                }
-                                            },
-                                            onLongClick = {
-                                                if (!isMultiSelectActive) {
-                                                    viewModel.toggleSelection(manga.id)
-                                                }
-                                            }
-                                        ),
-                                    title = manga.title,
-                                    coverUrl = manga.coverUrl,
-                                    volumeTotal = manga.volumeCount,
-                                    volumesOwned = manga.volumeOwned,
-                                    selected = viewModel.selectedIds.value.contains(manga.id),
+                            MangaCollectionSortOption.entries.forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text(sortOptionLabel(option)) },
+                                    onClick = {
+                                        viewModel.setSortOption(option)
+                                        sortMenuExpanded = false
+                                    }
                                 )
                             }
                         }
+                    }
+                    IconButton(onClick = { filterSheetOpen = true }) {
+                        Icon(
+                            imageVector = Icons.Default.FilterList,
+                            contentDescription = stringResource(R.string.cd_filter_options)
+                        )
+                    }
+                }
 
-                        if (isMultiSelectActive) {
-                            HorizontalFloatingToolbar(
-                                modifier = Modifier
-                                    .align(Alignment.BottomCenter)
-                                    .offset(y = -ScreenOffset)
-                                    .zIndex(1f),
-                                colors = FloatingToolbarDefaults.vibrantFloatingToolbarColors(),
-                                expanded = true
+                if (isLoading) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                } else {
+                    if (mangaCollection.isEmpty()) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(bottom = animatedImeBottomPadding)
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
                             ) {
-                                ToolbarTooltip(
-                                    label = stringResource(R.string.cd_remove_selected),
-                                ) {
-                                    IconButton(
+                                Text(
+                                    text = if (searchQuery.isNotBlank() || showIncompleteOnly || showSpecialEditionsOnly) {
+                                        stringResource(R.string.no_results_found)
+                                    } else {
+                                        stringResource(R.string.welcome_message)
+                                    }
+                                )
+                                if (searchQuery.isNotBlank()) {
+                                    TextButton(
                                         onClick = {
-                                            showRemoveDialog = true
-                                        },
-                                        enabled = viewModel.selectedIds.value.isNotEmpty(),
+                                            val query = searchQuery.trim()
+                                            searchQuery = ""
+                                            debouncedSearchQuery = ""
+                                            viewModel.clearSearchQuery()
+                                            closeCollectionSearch(clearQuery = false)
+                                            onExploreSearch(query)
+                                        }
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Delete,
-                                            contentDescription = stringResource(R.string.cd_remove_selected),
+                                        Text(
+                                            text = stringResource(
+                                                R.string.search_on_explore,
+                                                searchQuery.trim()
+                                            ),
+                                            color = MaterialTheme.colorScheme.primary
                                         )
                                     }
                                 }
-                                ToolbarTooltip(
-                                    label = stringResource(R.string.cd_stop_multi_select),
-                                ) {
-                                    FilledIconButton(
-                                        onClick = {
-                                            viewModel.finishMultiSelect()
-                                        },
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.AutoMirrored.Filled.Undo,
-                                            contentDescription = stringResource(R.string.cd_stop_multi_select),
-                                        )
-                                    }
+                            }
+                        }
+                    } else {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(gridColumns),
+                                state = gridState,
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .nestedScroll(searchRevealNestedScrollConnection)
+                                    .padding(horizontal = 16.dp)
+                            ) {
+                                items(mangaCollection.size) { index ->
+                                    val manga = mangaCollection[index]
+                                    MangaCard(
+                                        modifier = Modifier
+                                            .combinedClickable(
+                                                onClick = {
+                                                    if (!isMultiSelectActive) {
+                                                        onMangaClick(manga.toManga())
+                                                    } else {
+                                                        viewModel.toggleSelection(manga.id)
+                                                    }
+                                                },
+                                                onLongClick = {
+                                                    if (!isMultiSelectActive) {
+                                                        viewModel.toggleSelection(manga.id)
+                                                    }
+                                                }
+                                            ),
+                                        title = manga.title,
+                                        coverUrl = manga.coverUrl,
+                                        volumeTotal = manga.volumeCount,
+                                        volumesOwned = manga.volumeOwned,
+                                        selected = viewModel.selectedIds.value.contains(manga.id),
+                                    )
                                 }
-                                ToolbarTooltip(
-                                    label = stringResource(R.string.cd_select_all),
+                            }
+
+                            if (isMultiSelectActive) {
+                                HorizontalFloatingToolbar(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomCenter)
+                                        .offset(y = -ScreenOffset)
+                                        .zIndex(1f),
+                                    colors = FloatingToolbarDefaults.vibrantFloatingToolbarColors(),
+                                    expanded = true
                                 ) {
-                                    IconButton(
-                                        onClick = {
-                                            viewModel.selectAll(mangaCollection.map { it.id }.toSet())
-                                        },
-                                        enabled = viewModel.selectedIds.value.size < mangaCollection.size && isMultiSelectActive,
+                                    ToolbarTooltip(
+                                        label = stringResource(R.string.cd_remove_selected),
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Default.SelectAll,
-                                            contentDescription = stringResource(R.string.cd_select_all),
-                                        )
+                                        IconButton(
+                                            onClick = {
+                                                showRemoveDialog = true
+                                            },
+                                            enabled = viewModel.selectedIds.value.isNotEmpty(),
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = stringResource(R.string.cd_remove_selected),
+                                            )
+                                        }
                                     }
-                                }
-                                ToolbarTooltip(
-                                    label = stringResource(R.string.cd_deselect),
-                                ) {
-                                    IconButton(
-                                        onClick = {
-                                            viewModel.clearSelection()
-                                        },
-                                        enabled = viewModel.selectedIds.value.isNotEmpty() && isMultiSelectActive,
+                                    ToolbarTooltip(
+                                        label = stringResource(R.string.cd_stop_multi_select),
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Deselect,
-                                            contentDescription = stringResource(R.string.cd_deselect),
-                                        )
+                                        FilledIconButton(
+                                            onClick = {
+                                                viewModel.finishMultiSelect()
+                                            },
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.AutoMirrored.Filled.Undo,
+                                                contentDescription = stringResource(R.string.cd_stop_multi_select),
+                                            )
+                                        }
+                                    }
+                                    ToolbarTooltip(
+                                        label = stringResource(R.string.cd_select_all),
+                                    ) {
+                                        IconButton(
+                                            onClick = {
+                                                viewModel.selectAll(mangaCollection.map { it.id }
+                                                    .toSet())
+                                            },
+                                            enabled = viewModel.selectedIds.value.size < mangaCollection.size && isMultiSelectActive,
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.SelectAll,
+                                                contentDescription = stringResource(R.string.cd_select_all),
+                                            )
+                                        }
+                                    }
+                                    ToolbarTooltip(
+                                        label = stringResource(R.string.cd_deselect),
+                                    ) {
+                                        IconButton(
+                                            onClick = {
+                                                viewModel.clearSelection()
+                                            },
+                                            enabled = viewModel.selectedIds.value.isNotEmpty() && isMultiSelectActive,
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Deselect,
+                                                contentDescription = stringResource(R.string.cd_deselect),
+                                            )
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                 }
-            }
             }
 
             if (shouldDockSearchAboveKeyboard) {
