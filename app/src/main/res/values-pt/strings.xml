@@ -79,6 +79,14 @@
     <string name="no_results_found">Nenhum resultado encontrado</string>
     <string name="search_on_explore">Pesquisar \"%1$s\" em Explorar</string>
 
+    <!-- Library Sync -->
+    <string name="sync_started">Sincronização iniciada.</string>
+    <string name="sync_completed_no_updates">Sincronização concluída. Nenhuma atualização encontrada.</string>
+    <string name="sync_completed_with_updates">Sincronização concluída. %1$d atualizações encontradas.</string>
+    <string name="sync_completed_no_updates_with_failures">Sincronização concluída. Nenhuma atualização encontrada. %1$d mangás falharam.</string>
+    <string name="sync_completed_with_updates_and_failures">Sincronização concluída. %1$d atualizações encontradas. %2$d mangás falharam.</string>
+    <string name="sync_failed">Não foi possível sincronizar a biblioteca.</string>
+
     <!-- Components -->
     <string name="no_cover">Sem cover</string>
     <string name="cd_completed">Completo</string>

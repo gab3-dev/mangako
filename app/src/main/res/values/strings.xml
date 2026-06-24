@@ -84,6 +84,14 @@
     <string name="no_results_found">No results found</string>
     <string name="search_on_explore">Search \"%1$s\" on Explore</string>
 
+    <!-- Library Sync -->
+    <string name="sync_started">Sync started.</string>
+    <string name="sync_completed_no_updates">Sync complete. No updates found.</string>
+    <string name="sync_completed_with_updates">Sync complete. %1$d updates found.</string>
+    <string name="sync_completed_no_updates_with_failures">Sync complete. No updates found. %1$d manga failed.</string>
+    <string name="sync_completed_with_updates_and_failures">Sync complete. %1$d updates found. %2$d manga failed.</string>
+    <string name="sync_failed">Could not sync library.</string>
+
     <!-- Components -->
     <string name="no_cover">No cover</string>
     <string name="cd_completed">Completed</string>

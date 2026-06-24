@@ -2,6 +2,7 @@ package com.gabedev.mangako
 
 import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -35,6 +36,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
+import com.gabedev.mangako.background.LibraryVolumeRefreshScheduler
+import com.gabedev.mangako.background.RefreshLibraryVolumesWorker
 import com.gabedev.mangako.core.FileLogger
 import com.gabedev.mangako.data.local.LocalDatabase
 import com.gabedev.mangako.data.local.MangaKoDatabase
@@ -62,6 +67,7 @@ class MainActivity : ComponentActivity() {
 
         // Instancia do FileLogger
         val fileLogger = FileLogger(applicationContext)
+        enqueueLibraryVolumeRefresh()
 
         enableEdgeToEdge()
         setContent {
@@ -74,6 +80,51 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    private fun enqueueLibraryVolumeRefresh() {
+        val request = LibraryVolumeRefreshScheduler.enqueue(applicationContext)
+        Toast.makeText(
+            this,
+            getString(R.string.sync_started),
+            Toast.LENGTH_SHORT,
+        ).show()
+        WorkManager.getInstance(applicationContext)
+            .getWorkInfoByIdLiveData(request.id)
+            .observe(this) { workInfo ->
+                when (workInfo?.state) {
+                    WorkInfo.State.SUCCEEDED -> showLibraryVolumeRefreshResult(workInfo)
+                    WorkInfo.State.FAILED -> Toast.makeText(
+                        this,
+                        getString(R.string.sync_failed),
+                        Toast.LENGTH_LONG,
+                    ).show()
+                    else -> Unit
+                }
+            }
+    }
+
+    private fun showLibraryVolumeRefreshResult(workInfo: WorkInfo) {
+        val updatedCount = workInfo.outputData.getInt(
+            RefreshLibraryVolumesWorker.KEY_UPDATED_COUNT,
+            0,
+        )
+        val failedCount = workInfo.outputData.getInt(
+            RefreshLibraryVolumesWorker.KEY_FAILED_COUNT,
+            0,
+        )
+        val message = when {
+            updatedCount > 0 && failedCount > 0 -> getString(
+                R.string.sync_completed_with_updates_and_failures,
+                updatedCount,
+                failedCount,
+            )
+            updatedCount > 0 -> getString(R.string.sync_completed_with_updates, updatedCount)
+            failedCount > 0 -> getString(R.string.sync_completed_no_updates_with_failures, failedCount)
+            else -> getString(R.string.sync_completed_no_updates)
+        }
+
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
 }
 

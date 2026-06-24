@@ -79,6 +79,14 @@
     <string name="no_results_found">結果が見つかりませんでした</string>
     <string name="search_on_explore">「%1$s」を探すで検索</string>
 
+    <!-- Library Sync -->
+    <string name="sync_started">同期を開始しました。</string>
+    <string name="sync_completed_no_updates">同期が完了しました。更新は見つかりませんでした。</string>
+    <string name="sync_completed_with_updates">同期が完了しました。%1$d件の更新が見つかりました。</string>
+    <string name="sync_completed_no_updates_with_failures">同期が完了しました。更新は見つかりませんでした。%1$d件のマンガで失敗しました。</string>
+    <string name="sync_completed_with_updates_and_failures">同期が完了しました。%1$d件の更新が見つかりました。%2$d件のマンガで失敗しました。</string>
+    <string name="sync_failed">ライブラリを同期できませんでした。</string>
+
     <!-- Components -->
     <string name="no_cover">表紙なし</string>
     <string name="cd_completed">完了</string>

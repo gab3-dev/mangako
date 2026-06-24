@@ -160,6 +160,9 @@ dependencies {
     // DataStore for preferences
     implementation(libs.androidx.datastore.preferences)
 
+    // Background work
+    implementation(libs.androidx.work.runtime.ktx)
+
     // Icons
     implementation(libs.androidx.material.icons.extended)
 }
