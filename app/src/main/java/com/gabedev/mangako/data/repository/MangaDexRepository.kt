@@ -7,9 +7,14 @@ interface MangaDexRepository {
     suspend fun searchManga(title: String, offset: Int? = null): List<Manga>
     suspend fun searchMangaPage(title: String, offset: Int? = null, limit: Int = 6): List<Manga>
     suspend fun enrichManga(manga: Manga): Manga
-    suspend fun getManga(id: String): Manga
+    suspend fun getManga(id: String, refresh: Boolean = false): Manga
     suspend fun getMangaCoverFileName(id: String): String
     suspend fun getAuthorNameById(id: String): String
-    suspend fun getCoverListByManga(manga: Manga, offset: Int? = null, limit: Int = 50): List<Volume>
+    suspend fun getCoverListByManga(
+        manga: Manga,
+        offset: Int? = null,
+        limit: Int = 50,
+        refresh: Boolean = false,
+    ): List<Volume>
     fun log(message: Exception)
 }

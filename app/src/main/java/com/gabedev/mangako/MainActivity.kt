@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Book
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -27,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -45,15 +48,20 @@ import com.gabedev.mangako.data.local.LocalDatabase
 import com.gabedev.mangako.data.local.MangaKoDatabase
 import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.remote.api.MangaDexAPI
+import com.gabedev.mangako.data.remote.api.MangaKoAPI
+import com.gabedev.mangako.data.repository.ConfigurableMangaRepository
 import com.gabedev.mangako.data.repository.LibraryRepositoryImpl
 import com.gabedev.mangako.data.repository.MangaDexRepositoryImpl
+import com.gabedev.mangako.data.repository.MangaKoRepositoryImpl
 import com.gabedev.mangako.ui.components.AnimatedIcon
 import com.gabedev.mangako.ui.components.DynamicTopBar
 import com.gabedev.mangako.ui.screens.collection.MangaCollection
 import com.gabedev.mangako.ui.screens.detail.MangaDetail
 import com.gabedev.mangako.ui.screens.search_list.MangaSearchScreen
+import com.gabedev.mangako.ui.screens.settings.IntegrationSettingsScreen
 import com.gabedev.mangako.ui.theme.MangaKōTheme
 import kotlinx.serialization.json.Json
+import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -156,6 +164,12 @@ sealed class Screen(
             return "detail/$encodedManga"
         }
     }
+
+    data object Settings : Screen(
+        "settings",
+        R.string.nav_settings,
+        Icons.Outlined.Settings,
+    )
 }
 
 @Composable
@@ -167,12 +181,13 @@ fun MainAppNavHost(
 ) {
     // Per-screen search query states
     var exploreSearchQuery by remember { mutableStateOf("") }
+    val context = LocalContext.current
 
-    val items = listOf(Screen.UserCollection, Screen.Explore, Screen.MangaDetail)
+    val items = listOf(Screen.UserCollection, Screen.Explore, Screen.Settings, Screen.MangaDetail)
     val itemsNavBar = items.filter { it != Screen.MangaDetail }
 
     val db: LocalDatabase = database.getDatabase()
-    val api: MangaDexAPI by lazy {
+    val mangaDexApi: MangaDexAPI by lazy {
         Retrofit.Builder()
             .baseUrl("https://api.mangadex.org/")
             .addConverterFactory(GsonConverterFactory.create())
@@ -180,7 +195,32 @@ fun MainAppNavHost(
             .create(MangaDexAPI::class.java)
     }
 
-    val mangaRepository = MangaDexRepositoryImpl(api, logger)
+    val mangaDexRepository = MangaDexRepositoryImpl(mangaDexApi, logger)
+    val mangaKoRepository = BuildConfig.MANGAKO_API_TOKEN
+        .takeIf { it.isNotBlank() }
+        ?.let { token ->
+            val client = OkHttpClient.Builder()
+                .addInterceptor { chain ->
+                    chain.proceed(
+                        chain.request().newBuilder()
+                            .header("Authorization", "Bearer $token")
+                            .build()
+                    )
+                }
+                .build()
+            val mangaKoApi = Retrofit.Builder()
+                .baseUrl(BuildConfig.MANGAKO_API_BASE_URL)
+                .client(client)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build()
+                .create(MangaKoAPI::class.java)
+            MangaKoRepositoryImpl(mangaKoApi)
+        }
+    val mangaRepository = ConfigurableMangaRepository(
+        context = context.applicationContext,
+        mangaDexRepository = mangaDexRepository,
+        mangaKoRepository = mangaKoRepository,
+    )
     val localRepository = LibraryRepositoryImpl(db, logger)
     val screenTransitionDuration = 300
     val detailRoute = Screen.MangaDetail.route
@@ -241,16 +281,16 @@ fun MainAppNavHost(
                             }
                         },
                         icon = {
-                            if (screen == Screen.UserCollection) {
-                                AnimatedIcon(
+                            when (screen) {
+                                Screen.UserCollection -> AnimatedIcon(
                                     isSelected = currentRoute == screen.route,
                                     animatedIconRes = R.drawable.ic_library_selector,
                                 )
-                            } else {
-                                AnimatedIcon(
+                                Screen.Explore -> AnimatedIcon(
                                     isSelected = currentRoute == screen.route,
                                     animatedIconRes = R.drawable.ic_explore_selector,
                                 )
+                                else -> Icon(screen.icon, contentDescription = null)
                             }
                         },
                         label = { Text(stringResource(screen.titleRes)) }
@@ -405,6 +445,10 @@ fun MainAppNavHost(
                         }
                     },
                 )
+            }
+
+            composable(Screen.Settings.route) {
+                IntegrationSettingsScreen()
             }
 
             // 2.2 DetailScreen (recebe o ID via argumento)

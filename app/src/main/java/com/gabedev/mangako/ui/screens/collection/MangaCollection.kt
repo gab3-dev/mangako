@@ -3,7 +3,9 @@ package com.gabedev.mangako.ui.screens.collection
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -764,6 +766,17 @@ fun MangaCollection(
             }
 
             if (shouldDockSearchAboveKeyboard) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .zIndex(1f)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = { closeCollectionSearch(clearQuery = false) },
+                        )
+                )
+
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)

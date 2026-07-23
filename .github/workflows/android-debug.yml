@@ -26,6 +26,8 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build debug with Gradle
+        env:
+          MANGAKO_API_TOKEN: ${{ secrets.MANGAKO_API_TOKEN }}
         run: ./gradlew assembleDebug
 
       - name: Upload debug APK

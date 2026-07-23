@@ -3,6 +3,16 @@
     <string name="nav_library">Biblioteca</string>
     <string name="nav_explore">Explorar</string>
     <string name="nav_details">Detalhes</string>
+    <string name="nav_settings">Configurações</string>
+
+    <!-- Integration Settings -->
+    <string name="integration_settings_title">Integração de catálogo</string>
+    <string name="integration_settings_description">Escolha a fonte de catálogo usada pela busca, detalhes e sincronização da biblioteca.</string>
+    <string name="integration_mangadex">MangaDex</string>
+    <string name="integration_mangadex_description">Usar o MangaDex diretamente.</string>
+    <string name="integration_mangako">API MangaKo</string>
+    <string name="integration_mangako_description">Usar a API de catálogo MangaKo.</string>
+    <string name="integration_fallback_description">Se a API MangaKo estiver indisponível, o app usa o MangaDex automaticamente.</string>
 
     <!-- Collection Screen -->
     <string name="welcome_message">Bem-vindo ao MangaKō!</string>

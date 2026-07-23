@@ -10,14 +10,14 @@ class RefreshMangaVolumesUseCase(
     private val apiRepository: MangaDexRepository,
     private val localRepository: LibraryRepository,
 ) {
-    suspend fun refreshLibrary(): LibrarySyncResult {
+    suspend fun refreshLibrary(forceRefresh: Boolean = false): LibrarySyncResult {
         val libraryManga = localRepository.getMangaOnLibrary().map { it.toManga() }
         var updatedCount = 0
         var failedCount = 0
 
         libraryManga.forEach { manga ->
             try {
-                updatedCount += refreshManga(manga)
+                updatedCount += refreshManga(manga, forceRefresh)
             } catch (e: Exception) {
                 failedCount++
                 localRepository.log(e)
@@ -31,11 +31,11 @@ class RefreshMangaVolumesUseCase(
         )
     }
 
-    private suspend fun refreshManga(manga: Manga): Int {
-        val updatedManga = apiRepository.getManga(manga.id)
+    private suspend fun refreshManga(manga: Manga, forceRefresh: Boolean): Int {
+        val updatedManga = apiRepository.getManga(manga.id, forceRefresh)
         val finalManga = localRepository.updateManga(updatedManga) ?: manga
         val localVolumes = localRepository.getMangaWithVolume(manga.id)?.volumes.orEmpty()
-        val remoteVolumes = fetchAllVolumes(finalManga).deduplicateVolumes()
+        val remoteVolumes = fetchAllVolumes(finalManga, forceRefresh).deduplicateVolumes()
         val updateCount = remoteVolumes.countUpdatesComparedTo(localVolumes)
 
         localRepository.updateOrInsertVolumeList(remoteVolumes)
@@ -43,7 +43,7 @@ class RefreshMangaVolumesUseCase(
         return updateCount
     }
 
-    private suspend fun fetchAllVolumes(manga: Manga): List<Volume> {
+    private suspend fun fetchAllVolumes(manga: Manga, forceRefresh: Boolean): List<Volume> {
         val volumes = mutableListOf<Volume>()
         val limit = 50
         var offset = 0
@@ -53,6 +53,7 @@ class RefreshMangaVolumesUseCase(
                 manga = manga,
                 offset = offset,
                 limit = limit,
+                refresh = forceRefresh,
             )
             if (page.isEmpty()) break
 

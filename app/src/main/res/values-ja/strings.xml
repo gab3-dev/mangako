@@ -3,6 +3,16 @@
     <string name="nav_library">ライブラリ</string>
     <string name="nav_explore">探す</string>
     <string name="nav_details">詳細</string>
+    <string name="nav_settings">設定</string>
+
+    <!-- Integration Settings -->
+    <string name="integration_settings_title">カタログ連携</string>
+    <string name="integration_settings_description">検索、詳細、ライブラリ同期で使用するカタログの取得元を選択します。</string>
+    <string name="integration_mangadex">MangaDex</string>
+    <string name="integration_mangadex_description">MangaDexを直接使用します。</string>
+    <string name="integration_mangako">MangaKo API</string>
+    <string name="integration_mangako_description">MangaKoカタログAPIを使用します。</string>
+    <string name="integration_fallback_description">MangaKo APIが利用できない場合、アプリは自動的にMangaDexを使用します。</string>
 
     <!-- Collection Screen -->
     <string name="welcome_message">MangaKōへようこそ！</string>

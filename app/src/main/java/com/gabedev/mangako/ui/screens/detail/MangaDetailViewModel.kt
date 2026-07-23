@@ -15,7 +15,7 @@ class MangaDetailViewModel(
     private val apiRepository: MangaDexRepository,
     private val localRepository: LibraryRepository,
     private var manga: Manga,
-    private val autoLoad: Boolean = true
+    autoLoad: Boolean = true
 ) : ViewModel() {
     val mangaState = MutableStateFlow(manga)
     private val idManga = mangaState.value.id
@@ -166,13 +166,12 @@ class MangaDetailViewModel(
                     loadCoverList()
                 } else {
                     volumeList.value = tmpData.volumes.map { it.copy() }
-                    isVolumeLoading.value = false
                 }
             } catch (_: Exception) {
                 volumeList.value = emptyList()
+            } finally {
                 isVolumeLoading.value = false
             }
-            isVolumeLoading.value = false
         }
     }
 
@@ -185,7 +184,7 @@ class MangaDetailViewModel(
                 noMoreVolume.value = false
 
                 // Fetch updated manga info from the API
-                val updatedManga: Manga = apiRepository.getManga(idManga)
+                val updatedManga: Manga = apiRepository.getManga(idManga, refresh = true)
                 val finalLocalManga = localRepository.updateManga(updatedManga)
                 if (finalLocalManga != null) {
                     mangaState.value = finalLocalManga
@@ -193,7 +192,8 @@ class MangaDetailViewModel(
 
                 // Fetch cover list from the API
                 val coverList: List<Volume> = apiRepository.getCoverListByManga(
-                    manga = mangaState.value
+                    manga = mangaState.value,
+                    refresh = true,
                 )
 
                 // Filter duplicated covers by volume number, keeping the most recently updated
@@ -226,26 +226,14 @@ class MangaDetailViewModel(
         }
     }
 
-    private fun loadCoverList() {
-        isVolumeLoading.value = true
-        viewModelScope.launch {
-            try {
-                // Fetch cover list from the API
-                val coverList: List<Volume> = apiRepository.getCoverListByManga(
-                    manga = mangaState.value
-                )
-                // Insert the cover list into the local database
-                // Filter duplicated covers by volume number, keeping the most recently updated
-                val distinctCoverList = deduplicateVolumes(coverList)
+    private suspend fun loadCoverList() {
+        val coverList: List<Volume> = apiRepository.getCoverListByManga(
+            manga = mangaState.value
+        )
+        val distinctCoverList = deduplicateVolumes(coverList)
 
-                localRepository.insertVolumeList(distinctCoverList)
-                volumeList.value = distinctCoverList.map { it.copy() }
-                isVolumeLoading.value = false
-            } catch (e: Exception) {
-                localRepository.log(e)
-                isVolumeLoading.value = false
-            }
-        }
+        localRepository.insertVolumeList(distinctCoverList)
+        volumeList.value = distinctCoverList.map { it.copy() }
     }
 
     fun loadMoreVolumes() {

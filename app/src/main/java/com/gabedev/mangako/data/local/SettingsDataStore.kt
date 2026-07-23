@@ -14,6 +14,12 @@ val Context.dataStore by preferencesDataStore(name = "settings")
 object SettingsKeys {
     val VIEW_MODE = stringPreferencesKey("view_mode")
     val COLLECTION_DENSITY = intPreferencesKey("collection_density")
+    val CATALOG_INTEGRATION = stringPreferencesKey("catalog_integration")
+}
+
+enum class CatalogIntegration {
+    MANGADEX,
+    MANGAKO,
 }
 
 // Função para salvar texto
@@ -39,5 +45,19 @@ suspend fun Context.saveCollectionDensity(density: Int) {
 fun Context.getCollectionDensity(): Flow<Int> {
     return dataStore.data.map { preferences ->
         preferences[SettingsKeys.COLLECTION_DENSITY]?.coerceIn(1, 5) ?: 2
+    }
+}
+
+suspend fun Context.saveCatalogIntegration(integration: CatalogIntegration) {
+    dataStore.edit { preferences ->
+        preferences[SettingsKeys.CATALOG_INTEGRATION] = integration.name
+    }
+}
+
+fun Context.getCatalogIntegration(): Flow<CatalogIntegration> {
+    return dataStore.data.map { preferences ->
+        preferences[SettingsKeys.CATALOG_INTEGRATION]
+            ?.let { value -> runCatching { CatalogIntegration.valueOf(value) }.getOrNull() }
+            ?: CatalogIntegration.MANGADEX
     }
 }

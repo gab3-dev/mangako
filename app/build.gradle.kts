@@ -2,6 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 
 val keystoreProperties = Properties()
+val localProperties = Properties()
 
 // Tenta carregar as propriedades das variáveis de ambiente primeiro
 val storeFileEnv = System.getenv("KEYSTORE_PATH")
@@ -32,6 +33,27 @@ if (!isEnvConfigured) {
     }
 }
 
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use { localProperties.load(it) }
+}
+
+fun localPropertyOrEnv(name: String, defaultValue: String): String {
+    return localProperties.getProperty(name)
+        ?: System.getenv(name)
+        ?: defaultValue
+}
+
+fun mangaKoApiToken(): String {
+    return localProperties.getProperty("MANGAKO_API_TOKEN")
+        ?: System.getenv("MANGAKO_API_TOKEN")
+        ?: ""
+}
+
+fun String.toBuildConfigString(): String {
+    return "\"${replace("\\", "\\\\").replace("\"", "\\\"")}\""
+}
+
 android {
     signingConfigs {
         create("release") {
@@ -56,6 +78,19 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField(
+            "String",
+            "MANGAKO_API_BASE_URL",
+            localPropertyOrEnv(
+                "MANGAKO_API_BASE_URL",
+                "https://mangako-api.kostudio.io/"
+            ).toBuildConfigString()
+        )
+        buildConfigField(
+            "String",
+            "MANGAKO_API_TOKEN",
+            mangaKoApiToken().toBuildConfigString()
+        )
     }
 
     buildTypes {
@@ -86,6 +121,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

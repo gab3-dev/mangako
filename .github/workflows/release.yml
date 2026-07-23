@@ -40,6 +40,7 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          MANGAKO_API_TOKEN: ${{ secrets.MANGAKO_API_TOKEN }}
         run: ./gradlew assembleRelease bundleRelease
 
       - name: Prepare release artifacts

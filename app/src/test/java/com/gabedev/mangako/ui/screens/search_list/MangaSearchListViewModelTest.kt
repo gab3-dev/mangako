@@ -50,7 +50,7 @@ class MangaSearchListViewModelTest {
             return enrichResult(manga)
         }
 
-        override suspend fun getManga(id: String): Manga {
+        override suspend fun getManga(id: String, refresh: Boolean): Manga {
             error("Not used")
         }
 
@@ -65,7 +65,8 @@ class MangaSearchListViewModelTest {
         override suspend fun getCoverListByManga(
             manga: Manga,
             offset: Int?,
-            limit: Int
+            limit: Int,
+            refresh: Boolean,
         ) = emptyList<com.gabedev.mangako.data.model.Volume>()
 
         override fun log(message: Exception) = Unit

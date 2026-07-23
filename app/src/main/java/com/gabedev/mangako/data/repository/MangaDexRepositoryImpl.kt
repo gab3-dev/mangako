@@ -86,7 +86,7 @@ class MangaDexRepositoryImpl(
         return enriched
     }
 
-    override suspend fun getManga(id: String): Manga {
+    override suspend fun getManga(id: String, refresh: Boolean): Manga {
         val dto = api.getManga(id).data
         val author = api.getAuthorById(dto.relationships.find {
             it.type == "author"
@@ -110,7 +110,12 @@ class MangaDexRepositoryImpl(
         )
     }
 
-    override suspend fun getCoverListByManga(manga: Manga, offset: Int?, limit: Int): List<Volume> {
+    override suspend fun getCoverListByManga(
+        manga: Manga,
+        offset: Int?,
+        limit: Int,
+        refresh: Boolean,
+    ): List<Volume> {
         try {
             val coverResponse =
                 api.getCover(manga = listOf(manga.id), offset = offset ?: 0, limit = limit)

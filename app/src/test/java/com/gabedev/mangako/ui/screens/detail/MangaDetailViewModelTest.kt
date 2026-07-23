@@ -470,9 +470,9 @@ class MangaDetailViewModelTest {
         advanceUntilIdle()
 
         // Setup mock for refresh
-        coEvery { apiRepository.getManga(any()) } returns manga
+        coEvery { apiRepository.getManga(any(), refresh = true) } returns manga
         coEvery { localRepository.updateManga(any()) } returns manga
-        coEvery { apiRepository.getCoverListByManga(any(), any(), any()) } returns duplicateVolumes
+        coEvery { apiRepository.getCoverListByManga(any(), any(), any(), refresh = true) } returns duplicateVolumes
         coEvery { localRepository.updateOrInsertVolumeList(any()) } just Runs
         coEvery { localRepository.getMangaWithVolume(any()) } returns null
 
@@ -564,9 +564,9 @@ class MangaDetailViewModelTest {
         vm.noMoreVolume.value = true
 
         // Setup mock for refresh
-        coEvery { apiRepository.getManga(any()) } returns manga
+        coEvery { apiRepository.getManga(any(), refresh = true) } returns manga
         coEvery { localRepository.updateManga(any()) } returns manga
-        coEvery { apiRepository.getCoverListByManga(any(), any(), any()) } returns volumes
+        coEvery { apiRepository.getCoverListByManga(any(), any(), any(), refresh = true) } returns volumes
         coEvery { localRepository.updateOrInsertVolumeList(any()) } just Runs
         coEvery { localRepository.getMangaWithVolume(any()) } returns null
 
@@ -587,9 +587,9 @@ class MangaDetailViewModelTest {
 
         assertEquals(0, vm.mangaState.value.volumeCount)
 
-        coEvery { apiRepository.getManga(any()) } returns updatedManga
+        coEvery { apiRepository.getManga(any(), refresh = true) } returns updatedManga
         coEvery { localRepository.updateManga(any()) } returns updatedManga
-        coEvery { apiRepository.getCoverListByManga(any(), any(), any()) } returns emptyList()
+        coEvery { apiRepository.getCoverListByManga(any(), any(), any(), refresh = true) } returns emptyList()
         coEvery { localRepository.updateOrInsertVolumeList(any()) } just Runs
         coEvery { localRepository.getMangaWithVolume(any()) } returns null
 
