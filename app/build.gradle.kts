@@ -137,6 +137,7 @@ dependencies {
     implementation(libs.androidx.ui.text.google.fonts)
     implementation(libs.androidx.compose.runtime.saveable)
     testImplementation(libs.junit)
+    testImplementation(kotlin("test"))
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)

@@ -6,6 +6,7 @@ import com.gabedev.mangako.data.local.getCatalogIntegration
 import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.model.Volume
 import kotlinx.coroutines.flow.first
+import kotlin.coroutines.cancellation.CancellationException
 
 class ConfigurableMangaRepository(
     private val context: Context,
@@ -80,6 +81,8 @@ class ConfigurableMangaRepository(
 
         return try {
             mangaKo(repository)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             mangaDexRepository.log(e)
             mangaDex()
