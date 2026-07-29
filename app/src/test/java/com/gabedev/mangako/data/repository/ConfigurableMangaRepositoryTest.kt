@@ -52,6 +52,37 @@ class ConfigurableMangaRepositoryTest {
     }
 
     @Test
+    fun `searchMangaPage uses MangaDex directly when MangaKo integration is disabled`() = runTest {
+        val mangaDexResult = listOf(
+            createManga(
+                id = "mangadex-1",
+                title = "MangaDex result",
+            ),
+        )
+
+        every { context.getCatalogIntegration() } returns flowOf(CatalogIntegration.MANGADEX)
+        coEvery {
+            mangaDexRepository.searchMangaPage("one piece", 0, 6)
+        } returns mangaDexResult
+
+        val result = repository.searchMangaPage("one piece", 0, 6)
+
+        assertEquals(mangaDexResult, result)
+
+        coVerify(exactly = 1) {
+            mangaDexRepository.searchMangaPage("one piece", 0, 6)
+        }
+        coVerify(exactly = 0) {
+            mangaKoRepository.searchMangaPage(any(), any(), any())
+        }
+        verify(exactly = 0) {
+            mangaDexRepository.log(any())
+        }
+
+        confirmVerified(mangaKoRepository, mangaDexRepository)
+    }
+
+    @Test
     fun `searchMangaPage does not call MangaDex when MangaKo succeeds`() = runTest {
         val mangaKoResult = listOf(
             createManga(
