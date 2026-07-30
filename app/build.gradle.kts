@@ -126,6 +126,43 @@ android {
     }
 }
 
+kover {
+    reports {
+        filters {
+            excludes {
+                classes(
+                    "*.BuildConfig",
+                    "*.Manifest",
+                    "*.Manifest.*",
+                    "*.R",
+                    "*.R.*",
+                    "*.*_Impl",
+                    "*.*_Impl*",
+                    "*.ComposableSingletons*",
+                    "com.gabedev.mangako.MainActivity*",
+                    "com.gabedev.mangako.MangaKoApplication",
+                    "com.gabedev.mangako.Screen*",
+                    "com.gabedev.mangako.core.CrashHandler",
+                    "com.gabedev.mangako.core.FileLogger",
+                    "com.gabedev.mangako.ui.screens.collection.MangaCollectionKt*",
+                    "com.gabedev.mangako.ui.screens.detail.MangaDetailKt*",
+                    "com.gabedev.mangako.ui.screens.search_list.MangaSearchListKt*",
+                    "com.gabedev.mangako.ui.screens.settings.*",
+                )
+                packages(
+                    "com.gabedev.mangako.background",
+                    "com.gabedev.mangako.data.dao",
+                    "com.gabedev.mangako.data.local",
+                    "com.gabedev.mangako.data.remote.api",
+                    "com.gabedev.mangako.ui.components",
+                    "com.gabedev.mangako.ui.screens.detail.covertheme",
+                    "com.gabedev.mangako.ui.theme",
+                )
+            }
+        }
+    }
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

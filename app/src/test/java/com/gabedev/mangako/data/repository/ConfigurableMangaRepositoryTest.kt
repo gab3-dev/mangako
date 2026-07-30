@@ -16,11 +16,14 @@ import io.mockk.verify
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Before
 import org.junit.Test
+import retrofit2.HttpException
+import retrofit2.Response
 import kotlin.test.assertFailsWith
 
 class ConfigurableMangaRepositoryTest {
@@ -126,6 +129,51 @@ class ConfigurableMangaRepositoryTest {
         coVerify(exactly = 1) { mangaKoRepository.searchMangaPage("one piece", 0, 6) }
         coVerify(exactly = 1) { mangaDexRepository.searchMangaPage("one piece", 0, 6) }
         verify(exactly = 1) { mangaDexRepository.log(exception) }
+
+        confirmVerified(mangaKoRepository, mangaDexRepository)
+    }
+
+    @Test
+    fun `searchMangaPage falls back to MangaDex when MangaKo throws HttpException`() = runTest {
+        val exception = HttpException(
+            Response.error<String>(
+                503,
+                "Service unavailable".toResponseBody(),
+            )
+        )
+        val fallbackManga = listOf(createManga(id = "mangadex-1", title = "MangaDex result"))
+
+        coEvery { mangaKoRepository.searchMangaPage("one piece", 0, 6) } throws exception
+        coEvery { mangaDexRepository.searchMangaPage("one piece", 0, 6) } returns fallbackManga
+
+        val result = repository.searchMangaPage("one piece", 0, 6)
+
+        assertEquals(fallbackManga, result)
+        coVerify(exactly = 1) { mangaKoRepository.searchMangaPage("one piece", 0, 6) }
+        coVerify(exactly = 1) { mangaDexRepository.searchMangaPage("one piece", 0, 6) }
+        verify(exactly = 1) { mangaDexRepository.log(exception) }
+
+        confirmVerified(mangaKoRepository, mangaDexRepository)
+    }
+
+    @Test
+    fun `searchMangaPage propagates MangaDex exception when fallback also fails`() {
+        val mangaKoException = RuntimeException("MangaKo API failed")
+        val mangaDexException = RuntimeException("MangaDex API failed")
+
+        coEvery { mangaKoRepository.searchMangaPage("one piece", 0, 6) } throws mangaKoException
+        coEvery { mangaDexRepository.searchMangaPage("one piece", 0, 6) } throws mangaDexException
+
+        val exception = assertFailsWith<RuntimeException> {
+            runTest {
+                repository.searchMangaPage("one piece", 0, 6)
+            }
+        }
+
+        assertSame(mangaDexException, exception)
+        coVerify(exactly = 1) { mangaKoRepository.searchMangaPage("one piece", 0, 6) }
+        coVerify(exactly = 1) { mangaDexRepository.searchMangaPage("one piece", 0, 6) }
+        verify(exactly = 1) { mangaDexRepository.log(mangaKoException) }
 
         confirmVerified(mangaKoRepository, mangaDexRepository)
     }
