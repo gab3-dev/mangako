@@ -101,6 +101,14 @@
     <string name="sync_completed_no_updates_with_failures">Sync complete. No updates found. %1$d manga failed.</string>
     <string name="sync_completed_with_updates_and_failures">Sync complete. %1$d updates found. %2$d manga failed.</string>
     <string name="sync_failed">Could not sync library.</string>
+    <string name="notification_new_volumes_channel_name">New volumes</string>
+    <string name="notification_new_volumes_channel_description">Notifications when new volumes are found in your library.</string>
+    <string name="notification_volume_label">Volume %1$s</string>
+    <string name="notification_new_volumes_unknown_volume">New volume available</string>
+    <plurals name="notification_new_volumes_title">
+        <item quantity="one">%1$d new volume for %2$s</item>
+        <item quantity="other">%1$d new volumes for %2$s</item>
+    </plurals>
 
     <!-- Components -->
     <string name="no_cover">No cover</string>

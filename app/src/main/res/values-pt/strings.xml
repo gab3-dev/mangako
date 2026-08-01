@@ -96,6 +96,14 @@
     <string name="sync_completed_no_updates_with_failures">Sincronização concluída. Nenhuma atualização encontrada. %1$d mangás falharam.</string>
     <string name="sync_completed_with_updates_and_failures">Sincronização concluída. %1$d atualizações encontradas. %2$d mangás falharam.</string>
     <string name="sync_failed">Não foi possível sincronizar a biblioteca.</string>
+    <string name="notification_new_volumes_channel_name">Novos volumes</string>
+    <string name="notification_new_volumes_channel_description">Notificações quando novos volumes forem encontrados na sua biblioteca.</string>
+    <string name="notification_volume_label">Volume %1$s</string>
+    <string name="notification_new_volumes_unknown_volume">Novo volume disponível</string>
+    <plurals name="notification_new_volumes_title">
+        <item quantity="one">%1$d novo volume para %2$s</item>
+        <item quantity="other">%1$d novos volumes para %2$s</item>
+    </plurals>
 
     <!-- Components -->
     <string name="no_cover">Sem cover</string>

@@ -1,6 +1,7 @@
 package com.gabedev.mangako.data.local
 
 import android.content.Context
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -15,6 +16,10 @@ object SettingsKeys {
     val VIEW_MODE = stringPreferencesKey("view_mode")
     val COLLECTION_DENSITY = intPreferencesKey("collection_density")
     val CATALOG_INTEGRATION = stringPreferencesKey("catalog_integration")
+    val CATALOG_INTEGRATION_MIGRATED_TO_MANGAKO = booleanPreferencesKey(
+        "catalog_integration_migrated_to_mangako"
+    )
+    val NOTIFICATION_PERMISSION_REQUESTED = booleanPreferencesKey("notification_permission_requested")
 }
 
 enum class CatalogIntegration {
@@ -58,6 +63,27 @@ fun Context.getCatalogIntegration(): Flow<CatalogIntegration> {
     return dataStore.data.map { preferences ->
         preferences[SettingsKeys.CATALOG_INTEGRATION]
             ?.let { value -> runCatching { CatalogIntegration.valueOf(value) }.getOrNull() }
-            ?: CatalogIntegration.MANGADEX
+            ?: CatalogIntegration.MANGAKO
+    }
+}
+
+suspend fun Context.migrateCatalogIntegrationDefaultToMangaKo() {
+    dataStore.edit { preferences ->
+        if (preferences[SettingsKeys.CATALOG_INTEGRATION_MIGRATED_TO_MANGAKO] != true) {
+            preferences[SettingsKeys.CATALOG_INTEGRATION] = CatalogIntegration.MANGAKO.name
+            preferences[SettingsKeys.CATALOG_INTEGRATION_MIGRATED_TO_MANGAKO] = true
+        }
+    }
+}
+
+fun Context.getNotificationPermissionRequested(): Flow<Boolean> {
+    return dataStore.data.map { preferences ->
+        preferences[SettingsKeys.NOTIFICATION_PERMISSION_REQUESTED] ?: false
+    }
+}
+
+suspend fun Context.saveNotificationPermissionRequested(requested: Boolean) {
+    dataStore.edit { preferences ->
+        preferences[SettingsKeys.NOTIFICATION_PERMISSION_REQUESTED] = requested
     }
 }

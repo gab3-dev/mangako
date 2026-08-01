@@ -5,6 +5,7 @@ import com.gabedev.mangako.data.model.Volume
 import com.gabedev.mangako.data.model.toManga
 import com.gabedev.mangako.data.repository.LibraryRepository
 import com.gabedev.mangako.data.repository.MangaDexRepository
+import kotlin.coroutines.cancellation.CancellationException
 
 class RefreshMangaVolumesUseCase(
     private val apiRepository: MangaDexRepository,
@@ -14,10 +15,20 @@ class RefreshMangaVolumesUseCase(
         val libraryManga = localRepository.getMangaOnLibrary().map { it.toManga() }
         var updatedCount = 0
         var failedCount = 0
+        val newVolumesByManga = mutableListOf<MangaNewVolumes>()
 
         libraryManga.forEach { manga ->
             try {
-                updatedCount += refreshManga(manga, forceRefresh)
+                val result = refreshManga(manga, forceRefresh)
+                updatedCount += result.updateCount
+                if (result.newVolumes.isNotEmpty()) {
+                    newVolumesByManga += MangaNewVolumes(
+                        manga = result.manga,
+                        volumes = result.newVolumes,
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 failedCount++
                 localRepository.log(e)
@@ -28,19 +39,25 @@ class RefreshMangaVolumesUseCase(
             updatedCount = updatedCount,
             mangaCount = libraryManga.size,
             failedCount = failedCount,
+            newVolumesByManga = newVolumesByManga,
         )
     }
 
-    private suspend fun refreshManga(manga: Manga, forceRefresh: Boolean): Int {
+    private suspend fun refreshManga(manga: Manga, forceRefresh: Boolean): RefreshMangaResult {
         val updatedManga = apiRepository.getManga(manga.id, forceRefresh)
         val finalManga = localRepository.updateManga(updatedManga) ?: manga
         val localVolumes = localRepository.getMangaWithVolume(manga.id)?.volumes.orEmpty()
         val remoteVolumes = fetchAllVolumes(finalManga, forceRefresh).deduplicateVolumes()
         val updateCount = remoteVolumes.countUpdatesComparedTo(localVolumes)
+        val newVolumes = remoteVolumes.filterNewComparedTo(localVolumes)
 
         localRepository.updateOrInsertVolumeList(remoteVolumes)
 
-        return updateCount
+        return RefreshMangaResult(
+            manga = finalManga,
+            updateCount = updateCount,
+            newVolumes = newVolumes,
+        )
     }
 
     private suspend fun fetchAllVolumes(manga: Manga, forceRefresh: Boolean): List<Volume> {
@@ -90,6 +107,14 @@ class RefreshMangaVolumesUseCase(
         }
     }
 
+    private fun List<Volume>.filterNewComparedTo(localVolumes: List<Volume>): List<Volume> {
+        return filter { remoteVolume ->
+            localVolumes.none { localVolume ->
+                localVolume.id == remoteVolume.id || localVolume.hasSameNumberedIdentity(remoteVolume)
+            }
+        }
+    }
+
     private fun Volume.hasSameNumberedIdentity(other: Volume): Boolean {
         return volume != null &&
             other.volume != null &&
@@ -97,4 +122,10 @@ class RefreshMangaVolumesUseCase(
             volume == other.volume &&
             locale == other.locale
     }
+
+    private data class RefreshMangaResult(
+        val manga: Manga,
+        val updateCount: Int,
+        val newVolumes: List<Volume>,
+    )
 }

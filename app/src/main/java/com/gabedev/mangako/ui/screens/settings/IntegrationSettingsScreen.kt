@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
 fun IntegrationSettingsScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val selectedIntegration by context.getCatalogIntegration()
-        .collectAsState(initial = CatalogIntegration.MANGADEX)
+        .collectAsState(initial = CatalogIntegration.MANGAKO)
     val scope = rememberCoroutineScope()
 
     Column(

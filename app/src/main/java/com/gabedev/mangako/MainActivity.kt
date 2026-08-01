@@ -1,8 +1,12 @@
 package com.gabedev.mangako
 
+import android.Manifest
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.content.pm.PackageManager
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -39,6 +43,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.gabedev.mangako.background.LibraryVolumeRefreshScheduler
@@ -46,6 +52,9 @@ import com.gabedev.mangako.background.RefreshLibraryVolumesWorker
 import com.gabedev.mangako.core.FileLogger
 import com.gabedev.mangako.data.local.LocalDatabase
 import com.gabedev.mangako.data.local.MangaKoDatabase
+import com.gabedev.mangako.data.local.getNotificationPermissionRequested
+import com.gabedev.mangako.data.local.migrateCatalogIntegrationDefaultToMangaKo
+import com.gabedev.mangako.data.local.saveNotificationPermissionRequested
 import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.remote.api.MangaDexAPI
 import com.gabedev.mangako.data.remote.api.MangaKoAPI
@@ -60,22 +69,31 @@ import com.gabedev.mangako.ui.screens.detail.MangaDetail
 import com.gabedev.mangako.ui.screens.search_list.MangaSearchScreen
 import com.gabedev.mangako.ui.screens.settings.IntegrationSettingsScreen
 import com.gabedev.mangako.ui.theme.MangaKōTheme
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 class MainActivity : ComponentActivity() {
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestNotificationPermissionIfNeeded()
 
         // Cria uma instância do banco de dados local
         val database = MangaKoDatabase(applicationContext)
 
         // Instancia do FileLogger
         val fileLogger = FileLogger(applicationContext)
-        enqueueLibraryVolumeRefresh()
+        lifecycleScope.launch {
+            applicationContext.migrateCatalogIntegrationDefaultToMangaKo()
+            enqueueLibraryVolumeRefresh()
+        }
 
         enableEdgeToEdge()
         setContent {
@@ -134,6 +152,27 @@ class MainActivity : ComponentActivity() {
 
         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS,
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+
+        lifecycleScope.launch {
+            val alreadyRequested = applicationContext
+                .getNotificationPermissionRequested()
+                .first()
+            if (!alreadyRequested) {
+                applicationContext.saveNotificationPermissionRequested(true)
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
 }
 
 sealed class Screen(
@@ -183,8 +222,7 @@ fun MainAppNavHost(
     var exploreSearchQuery by remember { mutableStateOf("") }
     val context = LocalContext.current
 
-    val items = listOf(Screen.UserCollection, Screen.Explore, Screen.Settings, Screen.MangaDetail)
-    val itemsNavBar = items.filter { it != Screen.MangaDetail }
+    val itemsNavBar = listOf(Screen.UserCollection, Screen.Explore)
 
     val db: LocalDatabase = database.getDatabase()
     val mangaDexApi: MangaDexAPI by lazy {

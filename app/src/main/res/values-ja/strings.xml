@@ -96,6 +96,13 @@
     <string name="sync_completed_no_updates_with_failures">同期が完了しました。更新は見つかりませんでした。%1$d件のマンガで失敗しました。</string>
     <string name="sync_completed_with_updates_and_failures">同期が完了しました。%1$d件の更新が見つかりました。%2$d件のマンガで失敗しました。</string>
     <string name="sync_failed">ライブラリを同期できませんでした。</string>
+    <string name="notification_new_volumes_channel_name">新しい巻</string>
+    <string name="notification_new_volumes_channel_description">ライブラリで新しい巻が見つかったときに通知します。</string>
+    <string name="notification_volume_label">巻 %1$s</string>
+    <string name="notification_new_volumes_unknown_volume">新しい巻があります</string>
+    <plurals name="notification_new_volumes_title">
+        <item quantity="other">%2$s に %1$d 件の新しい巻があります</item>
+    </plurals>
 
     <!-- Components -->
     <string name="no_cover">表紙なし</string>

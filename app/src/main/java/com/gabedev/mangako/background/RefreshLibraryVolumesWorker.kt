@@ -17,6 +17,7 @@ import com.gabedev.mangako.domain.RefreshMangaVolumesUseCase
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import kotlin.coroutines.cancellation.CancellationException
 
 class RefreshLibraryVolumesWorker(
     appContext: Context,
@@ -60,14 +61,23 @@ class RefreshLibraryVolumesWorker(
                 ),
                 localRepository = LibraryRepositoryImpl(database, logger),
             ).refreshLibrary(forceRefresh = true)
+            if (inputData.getBoolean(KEY_SHOULD_NOTIFY, false)) {
+                NewVolumeNotificationHelper.notifyNewVolumes(
+                    context = applicationContext,
+                    newVolumesByManga = syncResult.newVolumesByManga,
+                )
+            }
 
             Result.success(
                 workDataOf(
                     KEY_UPDATED_COUNT to syncResult.updatedCount,
+                    KEY_NEW_VOLUME_COUNT to syncResult.newVolumesByManga.sumOf { it.volumes.size },
                     KEY_MANGA_COUNT to syncResult.mangaCount,
                     KEY_FAILED_COUNT to syncResult.failedCount,
                 )
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             FileLogger(applicationContext).logError(e)
             Result.failure()
@@ -76,7 +86,9 @@ class RefreshLibraryVolumesWorker(
 
     companion object {
         const val KEY_UPDATED_COUNT = "updated_count"
+        const val KEY_NEW_VOLUME_COUNT = "new_volume_count"
         const val KEY_MANGA_COUNT = "manga_count"
         const val KEY_FAILED_COUNT = "failed_count"
+        const val KEY_SHOULD_NOTIFY = "should_notify"
     }
 }
