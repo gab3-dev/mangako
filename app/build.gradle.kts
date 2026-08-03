@@ -1,3 +1,4 @@
+import org.gradle.api.GradleException
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 
@@ -53,6 +54,26 @@ fun mangaKoApiToken(): String {
 
 fun String.toBuildConfigString(): String {
     return "\"${replace("\\", "\\\\").replace("\"", "\\\"")}\""
+}
+
+gradle.taskGraph.whenReady {
+    val releaseAppBuildRequested = allTasks.any { task ->
+        task.project == project && task.name in setOf(
+            "assemble",
+            "assembleRelease",
+            "build",
+            "bundle",
+            "bundleRelease",
+            "installRelease",
+            "packageRelease",
+            "packageReleaseBundle",
+            "packageReleaseUniversalApk",
+        )
+    }
+
+    if (releaseAppBuildRequested && mangaKoApiToken().isBlank()) {
+        throw GradleException("MANGAKO_API_TOKEN is required to build a release APK or bundle.")
+    }
 }
 
 android {
