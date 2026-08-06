@@ -45,9 +45,19 @@ class RefreshMangaVolumesUseCase(
 
     private suspend fun refreshManga(manga: Manga, forceRefresh: Boolean): RefreshMangaResult {
         val updatedManga = apiRepository.getManga(manga.id, forceRefresh)
-        val finalManga = localRepository.updateManga(updatedManga) ?: manga
         val localVolumes = localRepository.getMangaWithVolume(manga.id)?.volumes.orEmpty()
-        val remoteVolumes = fetchAllVolumes(finalManga, forceRefresh).deduplicateVolumes()
+        val remoteVolumes = fetchAllVolumes(updatedManga, forceRefresh).deduplicateVolumes()
+        val latestVolumeNumber = remoteVolumes
+            .asSequence()
+            .filter { it.locale.equals("ja", ignoreCase = true) }
+            .mapNotNull { it.volume }
+            .maxOrNull()
+            ?.toInt()
+        val mangaWithLatestVolume = latestVolumeNumber
+            ?.takeIf { it > updatedManga.volumeCount }
+            ?.let { updatedManga.copy(volumeCount = it) }
+            ?: updatedManga
+        val finalManga = localRepository.updateManga(mangaWithLatestVolume) ?: manga
         val updateCount = remoteVolumes.countUpdatesComparedTo(localVolumes)
         val newVolumes = remoteVolumes.filterNewComparedTo(localVolumes)
 

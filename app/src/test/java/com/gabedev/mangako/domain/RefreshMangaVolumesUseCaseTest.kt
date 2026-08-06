@@ -30,7 +30,7 @@ class RefreshMangaVolumesUseCaseTest {
 
         assertEquals(1, result.updatedCount)
         assertEquals(1, result.newVolumesByManga.size)
-        assertEquals(manga, result.newVolumesByManga.single().manga)
+        assertEquals(manga.copy(volumeCount = 1), result.newVolumesByManga.single().manga)
         assertEquals(listOf(remoteVolume), result.newVolumesByManga.single().volumes)
         assertEquals(listOf(remoteVolume), localRepository.persistedVolumes.single())
     }
@@ -78,9 +78,34 @@ class RefreshMangaVolumesUseCaseTest {
         assertEquals(2, result.mangaCount)
         assertEquals(1, result.failedCount)
         assertEquals(1, result.updatedCount)
-        assertEquals(successfulManga, result.newVolumesByManga.single().manga)
+        assertEquals(
+            successfulManga.copy(volumeCount = 2),
+            result.newVolumesByManga.single().manga,
+        )
         assertEquals(listOf(remoteVolume), result.newVolumesByManga.single().volumes)
         assertEquals(1, localRepository.loggedExceptions.size)
+    }
+
+    @Test
+    fun `refreshLibrary updates manga volume count from newly discovered volume`() = runTest {
+        val manga = createManga("manga-1", "One Piece", volumeCount = 15)
+        val existingVolume = createVolume("cover-15", manga.id, 15f)
+        val newVolume = createVolume("cover-16", manga.id, 16f)
+        val apiRepository = FakeMangaRepository(
+            mangaResults = mapOf(manga.id to manga),
+            volumeResults = mapOf(manga.id to listOf(existingVolume, newVolume)),
+        )
+        val localRepository = FakeLibraryRepository(
+            library = listOf(manga),
+            localVolumes = mapOf(manga.id to listOf(existingVolume)),
+        )
+
+        val result = RefreshMangaVolumesUseCase(apiRepository, localRepository)
+            .refreshLibrary(forceRefresh = true)
+
+        assertEquals(16, localRepository.persistedManga.single().volumeCount)
+        assertEquals(16, result.newVolumesByManga.single().manga.volumeCount)
+        assertEquals(listOf(newVolume), result.newVolumesByManga.single().volumes)
     }
 
     private class FakeMangaRepository(
@@ -120,6 +145,7 @@ class RefreshMangaVolumesUseCaseTest {
         private val localVolumes: Map<String, List<Volume>>,
     ) : LibraryRepository {
         val persistedVolumes = mutableListOf<List<Volume>>()
+        val persistedManga = mutableListOf<Manga>()
         val loggedExceptions = mutableListOf<Exception>()
 
         override suspend fun getManga(mangaId: String): Manga? = library.firstOrNull { it.id == mangaId }
@@ -137,7 +163,10 @@ class RefreshMangaVolumesUseCaseTest {
 
         override suspend fun insertManga(manga: Manga) = Unit
 
-        override suspend fun updateManga(manga: Manga): Manga = manga
+        override suspend fun updateManga(manga: Manga): Manga {
+            persistedManga += manga
+            return manga
+        }
 
         override suspend fun addMangaToLibrary(manga: Manga) = Unit
 
@@ -181,11 +210,12 @@ class RefreshMangaVolumesUseCaseTest {
         )
     }
 
-    private fun createManga(id: String, title: String) = Manga(
+    private fun createManga(id: String, title: String, volumeCount: Int = 0) = Manga(
         id = id,
         title = title,
         coverUrl = "https://example.com/$id.jpg",
         description = "Description for $title",
+        volumeCount = volumeCount,
         isOnUserLibrary = true,
     )
 
