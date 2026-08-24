@@ -350,9 +350,7 @@ fun MainAppNavHost(
             NavHost(
                 navController = navController,
                 startDestination = Screen.UserCollection.route,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(bottom = floatingNavigationBottomPadding),
+                modifier = Modifier.fillMaxSize(),
                 enterTransition = {
                 val initialRoute = initialState.destination.route
                 val targetRoute = targetState.destination.route
@@ -466,6 +464,7 @@ fun MainAppNavHost(
             composable(Screen.UserCollection.route) {
                 MangaCollection(
                     repository = localRepository,
+                    contentBottomPadding = floatingNavigationBottomPadding,
                     onMangaClick = { manga ->
                         navController.navigate(
                             Screen.MangaDetail.createRoute(
@@ -493,6 +492,7 @@ fun MainAppNavHost(
                 MangaSearchScreen(
                     apiRepository = mangaRepository,
                     searchQuery = exploreSearchQuery,
+                    contentBottomPadding = floatingNavigationBottomPadding,
                     onResultClick = { manga ->
                         navController.navigate(
                             Screen.MangaDetail.createRoute(
@@ -506,7 +506,7 @@ fun MainAppNavHost(
             }
 
             composable(Screen.Settings.route) {
-                IntegrationSettingsScreen()
+                IntegrationSettingsScreen(contentBottomPadding = floatingNavigationBottomPadding)
             }
 
             // 2.2 DetailScreen (recebe o ID via argumento)

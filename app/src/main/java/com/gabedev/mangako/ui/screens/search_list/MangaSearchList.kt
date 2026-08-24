@@ -22,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gabedev.mangako.data.model.Manga
@@ -35,7 +36,8 @@ fun MangaSearchScreen(
     modifier: Modifier = Modifier,
     apiRepository: MangaDexRepository,
     searchQuery: String,
-    onResultClick: (manga: Manga) -> Unit
+    onResultClick: (manga: Manga) -> Unit,
+    contentBottomPadding: Dp = 0.dp,
 ) {
     val viewModel: MangaSearchListViewModel = viewModel(
         factory = MangaSearchListViewModelFactory(apiRepository)
@@ -79,7 +81,12 @@ fun MangaSearchScreen(
                     modifier = Modifier.fillMaxSize(),
                     state = listState,
                     verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(16.dp),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        top = 16.dp,
+                        end = 16.dp,
+                        bottom = 16.dp + contentBottomPadding,
+                    ),
                 ) {
                     items(mangaList, key = { it.id }) { manga: Manga ->
                         MangaSearchItem(

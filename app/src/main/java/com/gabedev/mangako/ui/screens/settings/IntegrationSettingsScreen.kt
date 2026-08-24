@@ -15,6 +15,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.gabedev.mangako.R
 import com.gabedev.mangako.data.local.CatalogIntegration
@@ -26,7 +27,10 @@ import com.gabedev.mangako.data.local.saveNavigationBarStyle
 import kotlinx.coroutines.launch
 
 @Composable
-fun IntegrationSettingsScreen(modifier: Modifier = Modifier) {
+fun IntegrationSettingsScreen(
+    modifier: Modifier = Modifier,
+    contentBottomPadding: Dp = 0.dp,
+) {
     val context = LocalContext.current
     val selectedIntegration by context.getCatalogIntegration()
         .collectAsState(initial = CatalogIntegration.MANGAKO)
@@ -38,7 +42,7 @@ fun IntegrationSettingsScreen(modifier: Modifier = Modifier) {
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(24.dp),
+            .padding(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 24.dp + contentBottomPadding),
     ) {
         Text(
             text = stringResource(R.string.integration_settings_title),

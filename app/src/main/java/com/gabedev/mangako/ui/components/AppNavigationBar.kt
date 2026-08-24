@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
@@ -111,6 +112,7 @@ private fun FloatingNavigationItem(
     selected: Boolean,
     onClick: () -> Unit,
 ) {
+    val itemShape = MaterialTheme.shapes.extraLarge
     val itemElevation by animateDpAsState(
         targetValue = if (selected) 2.dp else 0.dp,
         animationSpec = spring(),
@@ -136,12 +138,13 @@ private fun FloatingNavigationItem(
     Surface(
         modifier = Modifier
             .width(76.dp)
+            .clip(itemShape)
             .clickable(onClick = onClick)
             .semantics {
                 role = Role.Tab
                 this.selected = selected
             },
-        shape = MaterialTheme.shapes.extraLarge,
+        shape = itemShape,
         color = containerColor,
         contentColor = contentColor,
         tonalElevation = itemElevation,
