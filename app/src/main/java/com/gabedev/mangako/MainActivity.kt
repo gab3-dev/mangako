@@ -15,8 +15,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Book
@@ -33,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -238,6 +241,17 @@ fun MainAppNavHost(
             restoreState = false
         }
     }
+    val navigationBarBottomInset = with(LocalDensity.current) {
+        WindowInsets.navigationBars.getBottom(this).toDp()
+    }
+    val floatingNavigationBottomPadding = if (
+        navigationBarStyle == NavigationBarStyle.FLOATING &&
+        currentRoute != Screen.MangaDetail.route
+    ) {
+        96.dp + navigationBarBottomInset
+    } else {
+        0.dp
+    }
 
     val db: LocalDatabase = database.getDatabase()
     val mangaDexApi: MangaDexAPI by lazy {
@@ -336,7 +350,9 @@ fun MainAppNavHost(
             NavHost(
                 navController = navController,
                 startDestination = Screen.UserCollection.route,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = floatingNavigationBottomPadding),
                 enterTransition = {
                 val initialRoute = initialState.destination.route
                 val targetRoute = targetState.destination.route
