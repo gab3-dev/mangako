@@ -14,6 +14,8 @@ import androidx.compose.animation.core.tween
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -29,6 +31,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -224,6 +227,17 @@ fun MainAppNavHost(
     val itemsNavBar = listOf(Screen.UserCollection, Screen.Explore, Screen.Settings)
     val navigationBarStyle by context.getNavigationBarStyle()
         .collectAsState(initial = NavigationBarStyle.CLASSIC)
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    val onNavigate: (Screen) -> Unit = { screen ->
+        navController.navigate(screen.route) {
+            popUpTo(navController.graph.startDestinationId) {
+                saveState = false
+            }
+            launchSingleTop = true
+            restoreState = false
+        }
+    }
 
     val db: LocalDatabase = database.getDatabase()
     val mangaDexApi: MangaDexAPI by lazy {
@@ -300,33 +314,30 @@ fun MainAppNavHost(
             }
         },
         bottomBar = {
-            val navBackStackEntry by navController.currentBackStackEntryAsState()
-            val currentRoute = navBackStackEntry?.destination?.route
-            if (currentRoute == Screen.MangaDetail.route) {
-                // Não exibe a barra de navegação na tela de detalhes
+            if (
+                navigationBarStyle != NavigationBarStyle.CLASSIC ||
+                currentRoute == Screen.MangaDetail.route
+            ) {
                 return@Scaffold
             }
             AppNavigationBar(
                 style = navigationBarStyle,
                 currentRoute = currentRoute,
                 items = itemsNavBar,
-                onNavigate = { screen ->
-                    navController.navigate(screen.route) {
-                        popUpTo(navController.graph.startDestinationId) {
-                            saveState = false
-                        }
-                        launchSingleTop = true
-                        restoreState = false
-                    }
-                },
+                onNavigate = onNavigate,
             )
         }
     ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = Screen.UserCollection.route,
-            modifier = Modifier.padding(innerPadding),
-            enterTransition = {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+        ) {
+            NavHost(
+                navController = navController,
+                startDestination = Screen.UserCollection.route,
+                modifier = Modifier.fillMaxSize(),
+                enterTransition = {
                 val initialRoute = initialState.destination.route
                 val targetRoute = targetState.destination.route
                 val initialIndex = itemsNavBar.indexOfFirst { it.route == initialRoute }
@@ -433,8 +444,8 @@ fun MainAppNavHost(
 
                     else -> ExitTransition.None
                 }
-            },
-        ) {
+                },
+            ) {
             // 2.0 HomeScreen
             composable(Screen.UserCollection.route) {
                 MangaCollection(
@@ -497,6 +508,20 @@ fun MainAppNavHost(
                     apiRepository = mangaRepository,
                     localRepository = localRepository,
                     backStackEntry = backStackEntry
+                )
+            }
+            }
+
+            if (
+                navigationBarStyle == NavigationBarStyle.FLOATING &&
+                currentRoute != Screen.MangaDetail.route
+            ) {
+                AppNavigationBar(
+                    style = navigationBarStyle,
+                    currentRoute = currentRoute,
+                    items = itemsNavBar,
+                    onNavigate = onNavigate,
+                    modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
         }

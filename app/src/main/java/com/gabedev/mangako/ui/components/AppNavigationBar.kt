@@ -1,22 +1,17 @@
 package com.gabedev.mangako.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.expandHorizontally
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -28,7 +23,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
@@ -46,10 +40,11 @@ fun AppNavigationBar(
     currentRoute: String?,
     items: List<Screen>,
     onNavigate: (Screen) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     when (style) {
-        NavigationBarStyle.CLASSIC -> ClassicNavigationBar(currentRoute, items, onNavigate)
-        NavigationBarStyle.FLOATING -> FloatingNavigationBar(currentRoute, items, onNavigate)
+        NavigationBarStyle.CLASSIC -> ClassicNavigationBar(currentRoute, items, onNavigate, modifier)
+        NavigationBarStyle.FLOATING -> FloatingNavigationBar(currentRoute, items, onNavigate, modifier)
     }
 }
 
@@ -58,8 +53,9 @@ private fun ClassicNavigationBar(
     currentRoute: String?,
     items: List<Screen>,
     onNavigate: (Screen) -> Unit,
+    modifier: Modifier,
 ) {
-    NavigationBar {
+    NavigationBar(modifier = modifier) {
         items.forEach { screen ->
             val selected = currentRoute == screen.route
             NavigationBarItem(
@@ -77,9 +73,10 @@ private fun FloatingNavigationBar(
     currentRoute: String?,
     items: List<Screen>,
     onNavigate: (Screen) -> Unit,
+    modifier: Modifier,
 ) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
             .padding(horizontal = 20.dp, vertical = 12.dp),
@@ -92,8 +89,8 @@ private fun FloatingNavigationBar(
             shadowElevation = 6.dp,
         ) {
             Row(
-                modifier = Modifier.padding(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.padding(6.dp),
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 items.forEach { screen ->
@@ -114,10 +111,10 @@ private fun FloatingNavigationItem(
     selected: Boolean,
     onClick: () -> Unit,
 ) {
-    val itemWidth by animateDpAsState(
-        targetValue = if (selected) 132.dp else 48.dp,
+    val itemElevation by animateDpAsState(
+        targetValue = if (selected) 2.dp else 0.dp,
         animationSpec = spring(),
-        label = "floatingNavigationItemWidth",
+        label = "floatingNavigationItemElevation",
     )
     val containerColor by animateColorAsState(
         targetValue = if (selected) {
@@ -138,8 +135,7 @@ private fun FloatingNavigationItem(
 
     Surface(
         modifier = Modifier
-            .width(itemWidth)
-            .clip(MaterialTheme.shapes.extraLarge)
+            .width(76.dp)
             .clickable(onClick = onClick)
             .semantics {
                 role = Role.Tab
@@ -148,29 +144,21 @@ private fun FloatingNavigationItem(
         shape = MaterialTheme.shapes.extraLarge,
         color = containerColor,
         contentColor = contentColor,
+        tonalElevation = itemElevation,
     ) {
-        Row(
+        Column(
             modifier = Modifier
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
+                .padding(vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             NavigationIcon(screen, selected)
-            AnimatedVisibility(
-                visible = selected,
-                enter = fadeIn() + expandHorizontally(expandFrom = Alignment.Start),
-                exit = fadeOut() + shrinkHorizontally(shrinkTowards = Alignment.Start),
-            ) {
-                Text(
-                    text = stringResource(screen.titleRes),
-                    modifier = Modifier
-                        .padding(start = 8.dp)
-                        .widthIn(max = 76.dp),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.labelLarge,
-                )
-            }
+            Text(
+                text = stringResource(screen.titleRes),
+                modifier = Modifier.padding(top = 4.dp),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.labelSmall,
+            )
         }
     }
 }
