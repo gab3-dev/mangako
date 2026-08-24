@@ -20,12 +20,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Book
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Star
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +49,8 @@ import com.gabedev.mangako.background.RefreshLibraryVolumesWorker
 import com.gabedev.mangako.core.FileLogger
 import com.gabedev.mangako.data.local.LocalDatabase
 import com.gabedev.mangako.data.local.MangaKoDatabase
+import com.gabedev.mangako.data.local.NavigationBarStyle
+import com.gabedev.mangako.data.local.getNavigationBarStyle
 import com.gabedev.mangako.data.local.getNotificationPermissionRequested
 import com.gabedev.mangako.data.local.migrateCatalogIntegrationDefaultToMangaKo
 import com.gabedev.mangako.data.local.saveNotificationPermissionRequested
@@ -62,7 +61,7 @@ import com.gabedev.mangako.data.repository.ConfigurableMangaRepository
 import com.gabedev.mangako.data.repository.LibraryRepositoryImpl
 import com.gabedev.mangako.data.repository.MangaDexRepositoryImpl
 import com.gabedev.mangako.data.repository.MangaKoRepositoryImpl
-import com.gabedev.mangako.ui.components.AnimatedIcon
+import com.gabedev.mangako.ui.components.AppNavigationBar
 import com.gabedev.mangako.ui.components.DynamicTopBar
 import com.gabedev.mangako.ui.screens.collection.MangaCollection
 import com.gabedev.mangako.ui.screens.detail.MangaDetail
@@ -222,7 +221,9 @@ fun MainAppNavHost(
     var exploreSearchQuery by remember { mutableStateOf("") }
     val context = LocalContext.current
 
-    val itemsNavBar = listOf(Screen.UserCollection, Screen.Explore)
+    val itemsNavBar = listOf(Screen.UserCollection, Screen.Explore, Screen.Settings)
+    val navigationBarStyle by context.getNavigationBarStyle()
+        .collectAsState(initial = NavigationBarStyle.CLASSIC)
 
     val db: LocalDatabase = database.getDatabase()
     val mangaDexApi: MangaDexAPI by lazy {
@@ -305,36 +306,20 @@ fun MainAppNavHost(
                 // Não exibe a barra de navegação na tela de detalhes
                 return@Scaffold
             }
-            NavigationBar {
-                itemsNavBar.forEach { screen ->
-                    NavigationBarItem(
-                        selected = currentRoute == screen.route,
-                        onClick = {
-                            navController.navigate(screen.route) {
-                                popUpTo(navController.graph.startDestinationId) {
-                                    saveState = false
-                                }
-                                launchSingleTop = true
-                                restoreState = false
-                            }
-                        },
-                        icon = {
-                            when (screen) {
-                                Screen.UserCollection -> AnimatedIcon(
-                                    isSelected = currentRoute == screen.route,
-                                    animatedIconRes = R.drawable.ic_library_selector,
-                                )
-                                Screen.Explore -> AnimatedIcon(
-                                    isSelected = currentRoute == screen.route,
-                                    animatedIconRes = R.drawable.ic_explore_selector,
-                                )
-                                else -> Icon(screen.icon, contentDescription = null)
-                            }
-                        },
-                        label = { Text(stringResource(screen.titleRes)) }
-                    )
-                }
-            }
+            AppNavigationBar(
+                style = navigationBarStyle,
+                currentRoute = currentRoute,
+                items = itemsNavBar,
+                onNavigate = { screen ->
+                    navController.navigate(screen.route) {
+                        popUpTo(navController.graph.startDestinationId) {
+                            saveState = false
+                        }
+                        launchSingleTop = true
+                        restoreState = false
+                    }
+                },
+            )
         }
     ) { innerPadding ->
         NavHost(
@@ -344,6 +329,8 @@ fun MainAppNavHost(
             enterTransition = {
                 val initialRoute = initialState.destination.route
                 val targetRoute = targetState.destination.route
+                val initialIndex = itemsNavBar.indexOfFirst { it.route == initialRoute }
+                val targetIndex = itemsNavBar.indexOfFirst { it.route == targetRoute }
 
                 when {
                     targetRoute == detailRoute -> slideIntoContainer(
@@ -351,13 +338,13 @@ fun MainAppNavHost(
                         animationSpec = tween(screenTransitionDuration),
                     )
 
-                    initialRoute == Screen.UserCollection.route && targetRoute == Screen.Explore.route ->
+                    initialIndex >= 0 && targetIndex > initialIndex ->
                         slideIntoContainer(
                             towards = AnimatedContentTransitionScope.SlideDirection.Left,
                             animationSpec = tween(screenTransitionDuration),
                         )
 
-                    initialRoute == Screen.Explore.route && targetRoute == Screen.UserCollection.route ->
+                    initialIndex >= 0 && targetIndex < initialIndex ->
                         slideIntoContainer(
                             towards = AnimatedContentTransitionScope.SlideDirection.Right,
                             animationSpec = tween(screenTransitionDuration),
@@ -369,6 +356,8 @@ fun MainAppNavHost(
             exitTransition = {
                 val initialRoute = initialState.destination.route
                 val targetRoute = targetState.destination.route
+                val initialIndex = itemsNavBar.indexOfFirst { it.route == initialRoute }
+                val targetIndex = itemsNavBar.indexOfFirst { it.route == targetRoute }
 
                 when {
                     targetRoute == detailRoute -> slideOutOfContainer(
@@ -376,13 +365,13 @@ fun MainAppNavHost(
                         animationSpec = tween(screenTransitionDuration),
                     )
 
-                    initialRoute == Screen.UserCollection.route && targetRoute == Screen.Explore.route ->
+                    initialIndex >= 0 && targetIndex > initialIndex ->
                         slideOutOfContainer(
                             towards = AnimatedContentTransitionScope.SlideDirection.Left,
                             animationSpec = tween(screenTransitionDuration),
                         )
 
-                    initialRoute == Screen.Explore.route && targetRoute == Screen.UserCollection.route ->
+                    initialIndex >= 0 && targetIndex < initialIndex ->
                         slideOutOfContainer(
                             towards = AnimatedContentTransitionScope.SlideDirection.Right,
                             animationSpec = tween(screenTransitionDuration),
@@ -394,6 +383,8 @@ fun MainAppNavHost(
             popEnterTransition = {
                 val initialRoute = initialState.destination.route
                 val targetRoute = targetState.destination.route
+                val initialIndex = itemsNavBar.indexOfFirst { it.route == initialRoute }
+                val targetIndex = itemsNavBar.indexOfFirst { it.route == targetRoute }
 
                 when {
                     initialRoute == detailRoute -> slideIntoContainer(
@@ -401,13 +392,13 @@ fun MainAppNavHost(
                         animationSpec = tween(screenTransitionDuration),
                     )
 
-                    initialRoute == Screen.Explore.route && targetRoute == Screen.UserCollection.route ->
+                    initialIndex >= 0 && targetIndex < initialIndex ->
                         slideIntoContainer(
                             towards = AnimatedContentTransitionScope.SlideDirection.Right,
                             animationSpec = tween(screenTransitionDuration),
                         )
 
-                    initialRoute == Screen.UserCollection.route && targetRoute == Screen.Explore.route ->
+                    initialIndex >= 0 && targetIndex > initialIndex ->
                         slideIntoContainer(
                             towards = AnimatedContentTransitionScope.SlideDirection.Left,
                             animationSpec = tween(screenTransitionDuration),
@@ -419,6 +410,8 @@ fun MainAppNavHost(
             popExitTransition = {
                 val initialRoute = initialState.destination.route
                 val targetRoute = targetState.destination.route
+                val initialIndex = itemsNavBar.indexOfFirst { it.route == initialRoute }
+                val targetIndex = itemsNavBar.indexOfFirst { it.route == targetRoute }
 
                 when {
                     initialRoute == detailRoute -> slideOutOfContainer(
@@ -426,13 +419,13 @@ fun MainAppNavHost(
                         animationSpec = tween(screenTransitionDuration),
                     )
 
-                    initialRoute == Screen.Explore.route && targetRoute == Screen.UserCollection.route ->
+                    initialIndex >= 0 && targetIndex < initialIndex ->
                         slideOutOfContainer(
                             towards = AnimatedContentTransitionScope.SlideDirection.Right,
                             animationSpec = tween(screenTransitionDuration),
                         )
 
-                    initialRoute == Screen.UserCollection.route && targetRoute == Screen.Explore.route ->
+                    initialIndex >= 0 && targetIndex > initialIndex ->
                         slideOutOfContainer(
                             towards = AnimatedContentTransitionScope.SlideDirection.Left,
                             animationSpec = tween(screenTransitionDuration),

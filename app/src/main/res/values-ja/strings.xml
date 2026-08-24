@@ -13,6 +13,12 @@
     <string name="integration_mangako">MangaKo API</string>
     <string name="integration_mangako_description">MangaKoカタログAPIを使用します。</string>
     <string name="integration_fallback_description">MangaKo APIが利用できない場合、アプリは自動的にMangaDexを使用します。</string>
+    <string name="navigation_settings_title">ナビゲーション</string>
+    <string name="navigation_settings_description">メインナビゲーションの表示方法を選択します。</string>
+    <string name="navigation_style_classic">標準</string>
+    <string name="navigation_style_classic_description">すべてのラベルを固定の下部バーに表示します。</string>
+    <string name="navigation_style_floating">フローティング</string>
+    <string name="navigation_style_floating_description">選択中のラベルをコンパクトなバーに表示します。</string>
 
     <!-- Collection Screen -->
     <string name="welcome_message">MangaKōへようこそ！</string>

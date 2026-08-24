@@ -20,11 +20,17 @@ object SettingsKeys {
         "catalog_integration_migrated_to_mangako"
     )
     val NOTIFICATION_PERMISSION_REQUESTED = booleanPreferencesKey("notification_permission_requested")
+    val NAVIGATION_BAR_STYLE = stringPreferencesKey("navigation_bar_style")
 }
 
 enum class CatalogIntegration {
     MANGADEX,
     MANGAKO,
+}
+
+enum class NavigationBarStyle {
+    CLASSIC,
+    FLOATING,
 }
 
 // Função para salvar texto
@@ -56,6 +62,20 @@ fun Context.getCollectionDensity(): Flow<Int> {
 suspend fun Context.saveCatalogIntegration(integration: CatalogIntegration) {
     dataStore.edit { preferences ->
         preferences[SettingsKeys.CATALOG_INTEGRATION] = integration.name
+    }
+}
+
+suspend fun Context.saveNavigationBarStyle(style: NavigationBarStyle) {
+    dataStore.edit { preferences ->
+        preferences[SettingsKeys.NAVIGATION_BAR_STYLE] = style.name
+    }
+}
+
+fun Context.getNavigationBarStyle(): Flow<NavigationBarStyle> {
+    return dataStore.data.map { preferences ->
+        preferences[SettingsKeys.NAVIGATION_BAR_STYLE]
+            ?.let { value -> runCatching { NavigationBarStyle.valueOf(value) }.getOrNull() }
+            ?: NavigationBarStyle.CLASSIC
     }
 }
 

@@ -3,7 +3,7 @@
     <string name="nav_library">Biblioteca</string>
     <string name="nav_explore">Explorar</string>
     <string name="nav_details">Detalhes</string>
-    <string name="nav_settings">Configurações</string>
+    <string name="nav_settings">Ajustes</string>
 
     <!-- Integration Settings -->
     <string name="integration_settings_title">Integração de catálogo</string>
@@ -13,6 +13,12 @@
     <string name="integration_mangako">API MangaKo</string>
     <string name="integration_mangako_description">Usar a API de catálogo MangaKo.</string>
     <string name="integration_fallback_description">Se a API MangaKo estiver indisponível, o app usa o MangaDex automaticamente.</string>
+    <string name="navigation_settings_title">Navegação</string>
+    <string name="navigation_settings_description">Escolha como a navegação principal é exibida.</string>
+    <string name="navigation_style_classic">Clássica</string>
+    <string name="navigation_style_classic_description">Exibe todos os rótulos em uma barra inferior fixa.</string>
+    <string name="navigation_style_floating">Flutuante</string>
+    <string name="navigation_style_floating_description">Exibe o rótulo selecionado em uma barra compacta.</string>
 
     <!-- Collection Screen -->
     <string name="welcome_message">Bem-vindo ao MangaKō!</string>

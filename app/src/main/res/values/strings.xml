@@ -18,6 +18,12 @@
     <string name="integration_mangako">MangaKo API</string>
     <string name="integration_mangako_description">Use the MangaKo catalog API.</string>
     <string name="integration_fallback_description">If MangaKo API is unavailable, the app automatically falls back to MangaDex.</string>
+    <string name="navigation_settings_title">Navigation</string>
+    <string name="navigation_settings_description">Choose how the main navigation is displayed.</string>
+    <string name="navigation_style_classic">Classic</string>
+    <string name="navigation_style_classic_description">Show all navigation labels in a fixed bottom bar.</string>
+    <string name="navigation_style_floating">Floating</string>
+    <string name="navigation_style_floating_description">Show the selected label in a compact floating bar.</string>
 
     <!-- Collection Screen -->
     <string name="welcome_message">Welcome to MangaKō!</string>
