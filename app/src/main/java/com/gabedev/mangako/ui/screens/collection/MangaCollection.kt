@@ -114,6 +114,7 @@ import kotlin.math.roundToInt
 fun MangaCollection(
     repository: LibraryRepository,
     onMangaClick: (Manga) -> Unit,
+    startupSyncRefreshVersion: Int = 0,
     modifier: Modifier = Modifier,
     onExploreSearch: (String) -> Unit = {},
 ) {
@@ -505,7 +506,7 @@ fun MangaCollection(
     }
 
     // Observa retorno à tela
-    LaunchedEffect(lifecycleOwner) {
+    LaunchedEffect(lifecycleOwner, startupSyncRefreshVersion) {
         viewModel.loadLibrary()
     }
 

@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -80,6 +81,7 @@ class MainActivity : ComponentActivity() {
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { }
+    private var startupSyncRefreshVersion by mutableIntStateOf(0)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -102,6 +104,7 @@ class MainActivity : ComponentActivity() {
                     navController = rememberNavController(),
                     database = database,
                     logger = fileLogger,
+                    startupSyncRefreshVersion = startupSyncRefreshVersion,
                     modifier = Modifier
                 )
             }
@@ -150,6 +153,9 @@ class MainActivity : ComponentActivity() {
             else -> getString(R.string.sync_completed_no_updates)
         }
 
+        if (updatedCount > 0) {
+            startupSyncRefreshVersion++
+        }
         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
 
@@ -216,6 +222,7 @@ fun MainAppNavHost(
     navController: NavHostController,
     database: MangaKoDatabase,
     logger: FileLogger,
+    startupSyncRefreshVersion: Int,
     modifier: Modifier
 ) {
     // Per-screen search query states
@@ -446,6 +453,7 @@ fun MainAppNavHost(
             composable(Screen.UserCollection.route) {
                 MangaCollection(
                     repository = localRepository,
+                    startupSyncRefreshVersion = startupSyncRefreshVersion,
                     onMangaClick = { manga ->
                         navController.navigate(
                             Screen.MangaDetail.createRoute(
