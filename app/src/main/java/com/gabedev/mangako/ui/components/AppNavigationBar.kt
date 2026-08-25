@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -84,13 +85,13 @@ private fun FloatingNavigationBar(
         contentAlignment = Alignment.Center,
     ) {
         Surface(
-            shape = MaterialTheme.shapes.extraLarge,
+            shape = RoundedCornerShape(36.dp),
             color = MaterialTheme.colorScheme.surfaceContainer,
             tonalElevation = 3.dp,
             shadowElevation = 6.dp,
         ) {
             Row(
-                modifier = Modifier.padding(6.dp),
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -112,7 +113,7 @@ private fun FloatingNavigationItem(
     selected: Boolean,
     onClick: () -> Unit,
 ) {
-    val itemShape = MaterialTheme.shapes.extraLarge
+    val itemShape = RoundedCornerShape(28.dp)
     val itemElevation by animateDpAsState(
         targetValue = if (selected) 2.dp else 0.dp,
         animationSpec = spring(),
@@ -151,13 +152,13 @@ private fun FloatingNavigationItem(
     ) {
         Column(
             modifier = Modifier
-                .padding(vertical = 8.dp),
+                .padding(vertical = 5.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             NavigationIcon(screen, selected)
             Text(
                 text = stringResource(screen.titleRes),
-                modifier = Modifier.padding(top = 4.dp),
+                modifier = Modifier.padding(top = 2.dp),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.labelSmall,
