@@ -30,9 +30,11 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import com.gabedev.mangako.R
 import com.gabedev.mangako.Screen
+import com.gabedev.mangako.ui.TestTags
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -84,6 +86,7 @@ fun DynamicTopBar(
                         },
                         expanded = expanded,
                         onExpandedChange = { expanded = it && hasExpandedContent },
+                        modifier = Modifier.testTag(TestTags.ExploreSearch),
                         leadingIcon = {
                             if (!alwaysShowSearchBar) {
                                 IconButton(onClick = {

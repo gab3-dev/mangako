@@ -72,6 +72,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
@@ -94,6 +95,7 @@ import com.gabedev.mangako.ui.components.ListGridSwitch
 import com.gabedev.mangako.ui.components.MangaCard
 import com.gabedev.mangako.ui.components.MangaCoverImage
 import com.gabedev.mangako.ui.components.MangaListItem
+import com.gabedev.mangako.ui.TestTags
 import com.gabedev.mangako.ui.screens.detail.covertheme.CoverTheme
 import com.gabedev.mangako.ui.screens.detail.covertheme.LocalCoverTheme
 import com.gabedev.mangako.ui.screens.detail.covertheme.generateCoverTheme
@@ -470,7 +472,8 @@ fun MangaDetail(
                                         viewModel.addMangaToLibrary(
                                             mangaState
                                         )
-                                    }
+                                    },
+                                    modifier = Modifier.testTag(TestTags.AddToLibrary),
                                 ) {
                                     Icon(
                                         modifier = Modifier.padding(8.dp),
@@ -570,6 +573,7 @@ fun MangaDetail(
                                 if (viewMode == "grid") {
                                     MangaCard(
                                         modifier = Modifier
+                                            .testTag(TestTags.volumeCard(volume.id))
                                             .combinedClickable(
                                                 onClick = {
                                                     if (!isMultiSelectActive) {
@@ -604,6 +608,7 @@ fun MangaDetail(
                                 } else {
                                     MangaListItem(
                                         modifier = Modifier
+                                            .testTag(TestTags.volumeCard(volume.id))
                                             .combinedClickable(
                                                 onClick = {
                                                     if (!isMultiSelectActive) {

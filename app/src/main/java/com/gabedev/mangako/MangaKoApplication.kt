@@ -9,15 +9,26 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
-class MangaKoApplication : Application() {
+open class MangaKoApplication : Application() {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    open val enableStartupWork = true
+    lateinit var appContainer: AppContainer
+        private set
 
     override fun onCreate() {
         super.onCreate()
         Thread.setDefaultUncaughtExceptionHandler(CrashHandler(this))
+        appContainer = createAppContainer()
+        if (!enableStartupWork) return
         applicationScope.launch {
             migrateCatalogIntegrationDefaultToMangaKo()
             LibraryVolumeRefreshScheduler.enqueuePeriodic(this@MangaKoApplication)
         }
+    }
+
+    open fun createAppContainer(): AppContainer = AppContainer.create(this)
+
+    fun replaceAppContainer(container: AppContainer) {
+        appContainer = container
     }
 }

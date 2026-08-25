@@ -90,6 +90,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
@@ -104,6 +105,7 @@ import com.gabedev.mangako.data.model.toManga
 import com.gabedev.mangako.data.repository.LibraryRepository
 import com.gabedev.mangako.ui.components.ConfirmDialog
 import com.gabedev.mangako.ui.components.MangaCard
+import com.gabedev.mangako.ui.TestTags
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -667,6 +669,7 @@ fun MangaCollection(
                                     val manga = mangaCollection[index]
                                     MangaCard(
                                         modifier = Modifier
+                                            .testTag(TestTags.mangaCard(manga.id))
                                             .combinedClickable(
                                                 onClick = {
                                                     if (!isMultiSelectActive) {
