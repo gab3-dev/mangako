@@ -15,13 +15,15 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 class E2ETestApplication : MangaKoApplication() {
     override val enableStartupWork = false
+    private lateinit var server: MockWebServer
+    private lateinit var database: LocalDatabase
 
     override fun createAppContainer(): AppContainer {
-        val server = MockWebServer().apply {
+        server = MockWebServer().apply {
             dispatcher = FixtureDispatcher()
             start()
         }
-        val database = Room.inMemoryDatabaseBuilder(this, LocalDatabase::class.java)
+        database = Room.inMemoryDatabaseBuilder(this, LocalDatabase::class.java)
             .allowMainThreadQueries()
             .build()
         val logger = FileLogger(this)
@@ -37,6 +39,11 @@ class E2ETestApplication : MangaKoApplication() {
             mangaRepository = MangaKoRepositoryImpl(api),
             localRepository = LibraryRepositoryImpl(database, logger),
         )
+    }
+
+    fun closeE2EResources() {
+        database.close()
+        server.shutdown()
     }
 }
 
