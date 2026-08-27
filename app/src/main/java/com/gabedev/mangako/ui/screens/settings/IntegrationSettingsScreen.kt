@@ -3,6 +3,8 @@ package com.gabedev.mangako.ui.screens.settings
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
@@ -13,24 +15,34 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.gabedev.mangako.R
 import com.gabedev.mangako.data.local.CatalogIntegration
+import com.gabedev.mangako.data.local.NavigationBarStyle
 import com.gabedev.mangako.data.local.getCatalogIntegration
+import com.gabedev.mangako.data.local.getNavigationBarStyle
 import com.gabedev.mangako.data.local.saveCatalogIntegration
+import com.gabedev.mangako.data.local.saveNavigationBarStyle
 import kotlinx.coroutines.launch
 
 @Composable
-fun IntegrationSettingsScreen(modifier: Modifier = Modifier) {
+fun IntegrationSettingsScreen(
+    modifier: Modifier = Modifier,
+    contentBottomPadding: Dp = 0.dp,
+) {
     val context = LocalContext.current
     val selectedIntegration by context.getCatalogIntegration()
         .collectAsState(initial = CatalogIntegration.MANGAKO)
+    val navigationBarStyle by context.getNavigationBarStyle()
+        .collectAsState(initial = NavigationBarStyle.CLASSIC)
     val scope = rememberCoroutineScope()
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .verticalScroll(rememberScrollState())
+            .padding(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 24.dp + contentBottomPadding),
     ) {
         Text(
             text = stringResource(R.string.integration_settings_title),
@@ -60,6 +72,29 @@ fun IntegrationSettingsScreen(modifier: Modifier = Modifier) {
             modifier = Modifier.padding(top = 16.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = stringResource(R.string.navigation_settings_title),
+            modifier = Modifier.padding(top = 32.dp),
+            style = MaterialTheme.typography.headlineSmall,
+        )
+        Text(
+            text = stringResource(R.string.navigation_settings_description),
+            modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        IntegrationOption(
+            title = stringResource(R.string.navigation_style_classic),
+            description = stringResource(R.string.navigation_style_classic_description),
+            selected = navigationBarStyle == NavigationBarStyle.CLASSIC,
+            onClick = { scope.launch { context.saveNavigationBarStyle(NavigationBarStyle.CLASSIC) } },
+        )
+        IntegrationOption(
+            title = stringResource(R.string.navigation_style_floating),
+            description = stringResource(R.string.navigation_style_floating_description),
+            selected = navigationBarStyle == NavigationBarStyle.FLOATING,
+            onClick = { scope.launch { context.saveNavigationBarStyle(NavigationBarStyle.FLOATING) } },
         )
     }
 }

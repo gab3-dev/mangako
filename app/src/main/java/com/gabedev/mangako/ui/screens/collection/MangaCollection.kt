@@ -9,6 +9,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -93,6 +94,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -122,6 +124,7 @@ fun MangaCollection(
     startupSyncRefreshVersion: Int = 0,
     modifier: Modifier = Modifier,
     onExploreSearch: (String) -> Unit = {},
+    contentBottomPadding: Dp = 0.dp,
 ) {
     val viewModel: MangaCollectionViewModel = viewModel(
         factory = MangaCollectionViewModelFactory(repository)
@@ -670,6 +673,7 @@ fun MangaCollection(
                             LazyVerticalGrid(
                                 columns = GridCells.Fixed(gridColumns),
                                 state = gridState,
+                                contentPadding = PaddingValues(bottom = contentBottomPadding),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 modifier = Modifier

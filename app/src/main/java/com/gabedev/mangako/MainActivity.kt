@@ -14,18 +14,19 @@ import androidx.compose.animation.core.tween
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Book
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Star
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -33,9 +34,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -50,15 +52,16 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.gabedev.mangako.background.LibraryVolumeRefreshScheduler
 import com.gabedev.mangako.background.RefreshLibraryVolumesWorker
+import com.gabedev.mangako.data.local.NavigationBarStyle
+import com.gabedev.mangako.data.local.getNavigationBarStyle
 import com.gabedev.mangako.data.local.getNotificationPermissionRequested
 import com.gabedev.mangako.data.local.migrateCatalogIntegrationDefaultToMangaKo
 import com.gabedev.mangako.data.local.saveNotificationPermissionRequested
 import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.repository.LibraryRepository
 import com.gabedev.mangako.data.repository.MangaDexRepository
-import com.gabedev.mangako.ui.components.AnimatedIcon
+import com.gabedev.mangako.ui.components.AppNavigationBar
 import com.gabedev.mangako.ui.components.DynamicTopBar
-import com.gabedev.mangako.ui.TestTags
 import com.gabedev.mangako.ui.screens.collection.MangaCollection
 import com.gabedev.mangako.ui.screens.detail.MangaDetail
 import com.gabedev.mangako.ui.screens.search_list.MangaSearchScreen
@@ -215,7 +218,33 @@ fun MainAppNavHost(
 ) {
     // Per-screen search query states
     var exploreSearchQuery by remember { mutableStateOf("") }
-    val itemsNavBar = listOf(Screen.UserCollection, Screen.Explore)
+    val context = LocalContext.current
+
+    val itemsNavBar = listOf(Screen.UserCollection, Screen.Explore, Screen.Settings)
+    val navigationBarStyle by context.getNavigationBarStyle()
+        .collectAsState(initial = NavigationBarStyle.CLASSIC)
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    val onNavigate: (Screen) -> Unit = { screen ->
+        navController.navigate(screen.route) {
+            popUpTo(navController.graph.startDestinationId) {
+                saveState = false
+            }
+            launchSingleTop = true
+            restoreState = false
+        }
+    }
+    val navigationBarBottomInset = with(LocalDensity.current) {
+        WindowInsets.navigationBars.getBottom(this).toDp()
+    }
+    val floatingNavigationBottomPadding = if (
+        navigationBarStyle == NavigationBarStyle.FLOATING &&
+        currentRoute != Screen.MangaDetail.route
+    ) {
+        96.dp + navigationBarBottomInset
+    } else {
+        0.dp
+    }
     val screenTransitionDuration = 300
     val detailRoute = Screen.MangaDetail.route
 
@@ -255,58 +284,34 @@ fun MainAppNavHost(
             }
         },
         bottomBar = {
-            val navBackStackEntry by navController.currentBackStackEntryAsState()
-            val currentRoute = navBackStackEntry?.destination?.route
-            if (currentRoute == Screen.MangaDetail.route) {
-                // Não exibe a barra de navegação na tela de detalhes
+            if (
+                navigationBarStyle != NavigationBarStyle.CLASSIC ||
+                currentRoute == Screen.MangaDetail.route
+            ) {
                 return@Scaffold
             }
-            NavigationBar {
-                itemsNavBar.forEach { screen ->
-                    NavigationBarItem(
-                        modifier = Modifier.testTag(
-                            if (screen == Screen.Explore) {
-                                TestTags.ExploreNavigation
-                            } else {
-                                TestTags.LibraryNavigation
-                            },
-                        ),
-                        selected = currentRoute == screen.route,
-                        onClick = {
-                            navController.navigate(screen.route) {
-                                popUpTo(navController.graph.startDestinationId) {
-                                    saveState = false
-                                }
-                                launchSingleTop = true
-                                restoreState = false
-                            }
-                        },
-                        icon = {
-                            when (screen) {
-                                Screen.UserCollection -> AnimatedIcon(
-                                    isSelected = currentRoute == screen.route,
-                                    animatedIconRes = R.drawable.ic_library_selector,
-                                )
-                                Screen.Explore -> AnimatedIcon(
-                                    isSelected = currentRoute == screen.route,
-                                    animatedIconRes = R.drawable.ic_explore_selector,
-                                )
-                                else -> Icon(screen.icon, contentDescription = null)
-                            }
-                        },
-                        label = { Text(stringResource(screen.titleRes)) }
-                    )
-                }
-            }
+            AppNavigationBar(
+                style = navigationBarStyle,
+                currentRoute = currentRoute,
+                items = itemsNavBar,
+                onNavigate = onNavigate,
+            )
         }
     ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = Screen.UserCollection.route,
-            modifier = Modifier.padding(innerPadding),
-            enterTransition = {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+        ) {
+            NavHost(
+                navController = navController,
+                startDestination = Screen.UserCollection.route,
+                modifier = Modifier.fillMaxSize(),
+                enterTransition = {
                 val initialRoute = initialState.destination.route
                 val targetRoute = targetState.destination.route
+                val initialIndex = itemsNavBar.indexOfFirst { it.route == initialRoute }
+                val targetIndex = itemsNavBar.indexOfFirst { it.route == targetRoute }
 
                 when {
                     targetRoute == detailRoute -> slideIntoContainer(
@@ -314,13 +319,13 @@ fun MainAppNavHost(
                         animationSpec = tween(screenTransitionDuration),
                     )
 
-                    initialRoute == Screen.UserCollection.route && targetRoute == Screen.Explore.route ->
+                    initialIndex >= 0 && targetIndex > initialIndex ->
                         slideIntoContainer(
                             towards = AnimatedContentTransitionScope.SlideDirection.Left,
                             animationSpec = tween(screenTransitionDuration),
                         )
 
-                    initialRoute == Screen.Explore.route && targetRoute == Screen.UserCollection.route ->
+                    initialIndex >= 0 && targetIndex < initialIndex ->
                         slideIntoContainer(
                             towards = AnimatedContentTransitionScope.SlideDirection.Right,
                             animationSpec = tween(screenTransitionDuration),
@@ -332,6 +337,8 @@ fun MainAppNavHost(
             exitTransition = {
                 val initialRoute = initialState.destination.route
                 val targetRoute = targetState.destination.route
+                val initialIndex = itemsNavBar.indexOfFirst { it.route == initialRoute }
+                val targetIndex = itemsNavBar.indexOfFirst { it.route == targetRoute }
 
                 when {
                     targetRoute == detailRoute -> slideOutOfContainer(
@@ -339,13 +346,13 @@ fun MainAppNavHost(
                         animationSpec = tween(screenTransitionDuration),
                     )
 
-                    initialRoute == Screen.UserCollection.route && targetRoute == Screen.Explore.route ->
+                    initialIndex >= 0 && targetIndex > initialIndex ->
                         slideOutOfContainer(
                             towards = AnimatedContentTransitionScope.SlideDirection.Left,
                             animationSpec = tween(screenTransitionDuration),
                         )
 
-                    initialRoute == Screen.Explore.route && targetRoute == Screen.UserCollection.route ->
+                    initialIndex >= 0 && targetIndex < initialIndex ->
                         slideOutOfContainer(
                             towards = AnimatedContentTransitionScope.SlideDirection.Right,
                             animationSpec = tween(screenTransitionDuration),
@@ -357,6 +364,8 @@ fun MainAppNavHost(
             popEnterTransition = {
                 val initialRoute = initialState.destination.route
                 val targetRoute = targetState.destination.route
+                val initialIndex = itemsNavBar.indexOfFirst { it.route == initialRoute }
+                val targetIndex = itemsNavBar.indexOfFirst { it.route == targetRoute }
 
                 when {
                     initialRoute == detailRoute -> slideIntoContainer(
@@ -364,13 +373,13 @@ fun MainAppNavHost(
                         animationSpec = tween(screenTransitionDuration),
                     )
 
-                    initialRoute == Screen.Explore.route && targetRoute == Screen.UserCollection.route ->
+                    initialIndex >= 0 && targetIndex < initialIndex ->
                         slideIntoContainer(
                             towards = AnimatedContentTransitionScope.SlideDirection.Right,
                             animationSpec = tween(screenTransitionDuration),
                         )
 
-                    initialRoute == Screen.UserCollection.route && targetRoute == Screen.Explore.route ->
+                    initialIndex >= 0 && targetIndex > initialIndex ->
                         slideIntoContainer(
                             towards = AnimatedContentTransitionScope.SlideDirection.Left,
                             animationSpec = tween(screenTransitionDuration),
@@ -382,6 +391,8 @@ fun MainAppNavHost(
             popExitTransition = {
                 val initialRoute = initialState.destination.route
                 val targetRoute = targetState.destination.route
+                val initialIndex = itemsNavBar.indexOfFirst { it.route == initialRoute }
+                val targetIndex = itemsNavBar.indexOfFirst { it.route == targetRoute }
 
                 when {
                     initialRoute == detailRoute -> slideOutOfContainer(
@@ -389,13 +400,13 @@ fun MainAppNavHost(
                         animationSpec = tween(screenTransitionDuration),
                     )
 
-                    initialRoute == Screen.Explore.route && targetRoute == Screen.UserCollection.route ->
+                    initialIndex >= 0 && targetIndex < initialIndex ->
                         slideOutOfContainer(
                             towards = AnimatedContentTransitionScope.SlideDirection.Right,
                             animationSpec = tween(screenTransitionDuration),
                         )
 
-                    initialRoute == Screen.UserCollection.route && targetRoute == Screen.Explore.route ->
+                    initialIndex >= 0 && targetIndex > initialIndex ->
                         slideOutOfContainer(
                             towards = AnimatedContentTransitionScope.SlideDirection.Left,
                             animationSpec = tween(screenTransitionDuration),
@@ -403,12 +414,13 @@ fun MainAppNavHost(
 
                     else -> ExitTransition.None
                 }
-            },
-        ) {
+                },
+            ) {
             // 2.0 HomeScreen
             composable(Screen.UserCollection.route) {
                 MangaCollection(
                     repository = localRepository,
+                    contentBottomPadding = floatingNavigationBottomPadding,
                     startupSyncRefreshVersion = startupSyncRefreshVersion,
                     onMangaClick = { manga ->
                         navController.navigate(
@@ -437,6 +449,7 @@ fun MainAppNavHost(
                 MangaSearchScreen(
                     apiRepository = mangaRepository,
                     searchQuery = exploreSearchQuery,
+                    contentBottomPadding = floatingNavigationBottomPadding,
                     onResultClick = { manga ->
                         navController.navigate(
                             Screen.MangaDetail.createRoute(
@@ -450,7 +463,7 @@ fun MainAppNavHost(
             }
 
             composable(Screen.Settings.route) {
-                IntegrationSettingsScreen()
+                IntegrationSettingsScreen(contentBottomPadding = floatingNavigationBottomPadding)
             }
 
             // 2.2 DetailScreen (recebe o ID via argumento)
@@ -468,6 +481,20 @@ fun MainAppNavHost(
                     apiRepository = mangaRepository,
                     localRepository = localRepository,
                     backStackEntry = backStackEntry
+                )
+            }
+            }
+
+            if (
+                navigationBarStyle == NavigationBarStyle.FLOATING &&
+                currentRoute != Screen.MangaDetail.route
+            ) {
+                AppNavigationBar(
+                    style = navigationBarStyle,
+                    currentRoute = currentRoute,
+                    items = itemsNavBar,
+                    onNavigate = onNavigate,
+                    modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
         }
