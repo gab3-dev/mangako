@@ -12,6 +12,7 @@ import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.net.InetAddress
 
 class E2ETestApplication : MangaKoApplication() {
     override val enableStartupWork = false
@@ -21,7 +22,7 @@ class E2ETestApplication : MangaKoApplication() {
     override fun createAppContainer(): AppContainer {
         server = MockWebServer().apply {
             dispatcher = FixtureDispatcher()
-            start()
+            start(InetAddress.getLoopbackAddress(), 0)
         }
         database = Room.inMemoryDatabaseBuilder(this, LocalDatabase::class.java)
             .allowMainThreadQueries()
