@@ -55,6 +55,10 @@ class LibraryJourneyTest {
             composeRule.activity.onBackPressedDispatcher.onBackPressed()
         }
         composeRule.onNodeWithTag(TestTags.LibraryNavigation).performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithTag(TestTags.mangaCard("manga-1"))
+                .fetchSemanticsNodes().isNotEmpty()
+        }
         composeRule.onNodeWithTag(TestTags.mangaCard("manga-1")).assertIsDisplayed()
     }
 }
