@@ -29,15 +29,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -52,21 +52,14 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.gabedev.mangako.background.LibraryVolumeRefreshScheduler
 import com.gabedev.mangako.background.RefreshLibraryVolumesWorker
-import com.gabedev.mangako.core.FileLogger
-import com.gabedev.mangako.data.local.LocalDatabase
-import com.gabedev.mangako.data.local.MangaKoDatabase
 import com.gabedev.mangako.data.local.NavigationBarStyle
 import com.gabedev.mangako.data.local.getNavigationBarStyle
 import com.gabedev.mangako.data.local.getNotificationPermissionRequested
 import com.gabedev.mangako.data.local.migrateCatalogIntegrationDefaultToMangaKo
 import com.gabedev.mangako.data.local.saveNotificationPermissionRequested
 import com.gabedev.mangako.data.model.Manga
-import com.gabedev.mangako.data.remote.api.MangaDexAPI
-import com.gabedev.mangako.data.remote.api.MangaKoAPI
-import com.gabedev.mangako.data.repository.ConfigurableMangaRepository
-import com.gabedev.mangako.data.repository.LibraryRepositoryImpl
-import com.gabedev.mangako.data.repository.MangaDexRepositoryImpl
-import com.gabedev.mangako.data.repository.MangaKoRepositoryImpl
+import com.gabedev.mangako.data.repository.LibraryRepository
+import com.gabedev.mangako.data.repository.MangaDexRepository
 import com.gabedev.mangako.ui.components.AppNavigationBar
 import com.gabedev.mangako.ui.components.DynamicTopBar
 import com.gabedev.mangako.ui.screens.collection.MangaCollection
@@ -77,27 +70,22 @@ import com.gabedev.mangako.ui.theme.MangaKōTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
-import okhttp3.OkHttpClient
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 
 class MainActivity : ComponentActivity() {
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { }
+    private var startupSyncRefreshVersion by mutableIntStateOf(0)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        requestNotificationPermissionIfNeeded()
-
-        // Cria uma instância do banco de dados local
-        val database = MangaKoDatabase(applicationContext)
-
-        // Instancia do FileLogger
-        val fileLogger = FileLogger(applicationContext)
-        lifecycleScope.launch {
-            applicationContext.migrateCatalogIntegrationDefaultToMangaKo()
-            enqueueLibraryVolumeRefresh()
+        val app = application as MangaKoApplication
+        if (app.enableStartupWork) {
+            requestNotificationPermissionIfNeeded()
+            lifecycleScope.launch {
+                applicationContext.migrateCatalogIntegrationDefaultToMangaKo()
+                enqueueLibraryVolumeRefresh()
+            }
         }
 
         enableEdgeToEdge()
@@ -105,8 +93,9 @@ class MainActivity : ComponentActivity() {
             MangaKōTheme {
                 MainAppNavHost(
                     navController = rememberNavController(),
-                    database = database,
-                    logger = fileLogger,
+                    mangaRepository = app.appContainer.mangaRepository,
+                    localRepository = app.appContainer.localRepository,
+                    startupSyncRefreshVersion = startupSyncRefreshVersion,
                     modifier = Modifier
                 )
             }
@@ -155,6 +144,9 @@ class MainActivity : ComponentActivity() {
             else -> getString(R.string.sync_completed_no_updates)
         }
 
+        if (updatedCount > 0) {
+            startupSyncRefreshVersion++
+        }
         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
 
@@ -219,8 +211,9 @@ sealed class Screen(
 @Composable
 fun MainAppNavHost(
     navController: NavHostController,
-    database: MangaKoDatabase,
-    logger: FileLogger,
+    mangaRepository: MangaDexRepository,
+    localRepository: LibraryRepository,
+    startupSyncRefreshVersion: Int,
     modifier: Modifier
 ) {
     // Per-screen search query states
@@ -252,43 +245,6 @@ fun MainAppNavHost(
     } else {
         0.dp
     }
-
-    val db: LocalDatabase = database.getDatabase()
-    val mangaDexApi: MangaDexAPI by lazy {
-        Retrofit.Builder()
-            .baseUrl("https://api.mangadex.org/")
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(MangaDexAPI::class.java)
-    }
-
-    val mangaDexRepository = MangaDexRepositoryImpl(mangaDexApi, logger)
-    val mangaKoRepository = BuildConfig.MANGAKO_API_TOKEN
-        .takeIf { it.isNotBlank() }
-        ?.let { token ->
-            val client = OkHttpClient.Builder()
-                .addInterceptor { chain ->
-                    chain.proceed(
-                        chain.request().newBuilder()
-                            .header("Authorization", "Bearer $token")
-                            .build()
-                    )
-                }
-                .build()
-            val mangaKoApi = Retrofit.Builder()
-                .baseUrl(BuildConfig.MANGAKO_API_BASE_URL)
-                .client(client)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build()
-                .create(MangaKoAPI::class.java)
-            MangaKoRepositoryImpl(mangaKoApi)
-        }
-    val mangaRepository = ConfigurableMangaRepository(
-        context = context.applicationContext,
-        mangaDexRepository = mangaDexRepository,
-        mangaKoRepository = mangaKoRepository,
-    )
-    val localRepository = LibraryRepositoryImpl(db, logger)
     val screenTransitionDuration = 300
     val detailRoute = Screen.MangaDetail.route
 
@@ -465,6 +421,7 @@ fun MainAppNavHost(
                 MangaCollection(
                     repository = localRepository,
                     contentBottomPadding = floatingNavigationBottomPadding,
+                    startupSyncRefreshVersion = startupSyncRefreshVersion,
                     onMangaClick = { manga ->
                         navController.navigate(
                             Screen.MangaDetail.createRoute(

@@ -20,6 +20,7 @@ loggingInterceptor = "5.3.2"
 material = "1.11.1"
 materialVersion = "1.13.0"
 mockk = "1.14.9"
+mockWebServer = "5.3.2"
 navigationCompose = "2.9.8"
 navigationDynamicFeaturesFragment = "2.9.8"
 navigationFragment = "2.9.8"
@@ -66,6 +67,7 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 logging-interceptor = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "loggingInterceptor" }
 material = { module = "com.google.android.material:material", version.ref = "materialVersion" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+mockwebserver = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "mockWebServer" }
 palette = { module = "androidx.palette:palette", version.ref = "palette" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "converterGson" }
 androidx-ui-text-google-fonts = { group = "androidx.compose.ui", name = "ui-text-google-fonts", version.ref = "uiTextGoogleFonts" }

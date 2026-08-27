@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
@@ -35,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import com.gabedev.mangako.R
 import com.gabedev.mangako.Screen
 import com.gabedev.mangako.data.local.NavigationBarStyle
+import com.gabedev.mangako.ui.TestTags
 
 @Composable
 fun AppNavigationBar(
@@ -61,6 +63,7 @@ private fun ClassicNavigationBar(
         items.forEach { screen ->
             val selected = currentRoute == screen.route
             NavigationBarItem(
+                modifier = screen.navigationTestTag(),
                 selected = selected,
                 onClick = { onNavigate(screen) },
                 icon = { NavigationIcon(screen, selected) },
@@ -141,6 +144,7 @@ private fun FloatingNavigationItem(
             .width(76.dp)
             .clip(itemShape)
             .clickable(onClick = onClick)
+            .then(screen.navigationTestTag())
             .semantics {
                 role = Role.Tab
                 this.selected = selected
@@ -164,6 +168,14 @@ private fun FloatingNavigationItem(
                 style = MaterialTheme.typography.labelSmall,
             )
         }
+    }
+}
+
+private fun Screen.navigationTestTag(): Modifier {
+    return when (this) {
+        Screen.UserCollection -> Modifier.testTag(TestTags.LibraryNavigation)
+        Screen.Explore -> Modifier.testTag(TestTags.ExploreNavigation)
+        else -> Modifier
     }
 }
 

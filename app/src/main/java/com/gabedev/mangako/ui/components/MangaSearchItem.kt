@@ -23,10 +23,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.gabedev.mangako.R
 import com.gabedev.mangako.data.model.Manga
+import com.gabedev.mangako.ui.TestTags
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -40,7 +42,8 @@ fun MangaSearchItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .fillMaxHeight(0.2f),
+            .fillMaxHeight(0.2f)
+            .testTag(TestTags.mangaSearchResult(manga.id)),
         onClick = {
             navigate()
         }
