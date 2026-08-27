@@ -33,6 +33,10 @@ class LibraryJourneyTest {
                 .fetchSemanticsNodes().isNotEmpty()
         }
         composeRule.onNodeWithTag(TestTags.AddToLibrary).performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithTag(TestTags.volumeCard("volume-1"))
+                .fetchSemanticsNodes().isNotEmpty()
+        }
         composeRule.onNodeWithTag(TestTags.volumeCard("volume-1")).performClick()
         composeRule.waitUntil(timeoutMillis = 5_000) {
             val app = composeRule.activity.application as MangaKoApplication
