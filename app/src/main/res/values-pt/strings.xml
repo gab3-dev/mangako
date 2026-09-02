@@ -19,6 +19,22 @@
     <string name="navigation_style_classic_description">Exibe todos os rótulos em uma barra inferior fixa.</string>
     <string name="navigation_style_floating">Flutuante</string>
     <string name="navigation_style_floating_description">Exibe o rótulo selecionado em uma barra compacta.</string>
+    <string name="cover_settings_title">Idioma das capas</string>
+    <string name="cover_settings_description">Escolha o idioma preferido para capas de volumes. Se não houver, a capa no idioma original será usada.</string>
+    <string name="cover_language_japanese">Japonês</string>
+    <string name="cover_language_japanese_description">Usa capas japonesas quando disponíveis.</string>
+    <string name="cover_language_original">Idioma original</string>
+    <string name="cover_language_original_description">Usa capas no idioma original da obra.</string>
+    <string name="cover_language_portuguese">Português</string>
+    <string name="cover_language_portuguese_description">Usa capas em português quando disponíveis.</string>
+    <string name="cover_language_english">Inglês</string>
+    <string name="cover_language_english_description">Usa capas em inglês quando disponíveis.</string>
+    <string name="cover_language_korean">Coreano</string>
+    <string name="cover_language_korean_description">Usa capas coreanas quando disponíveis.</string>
+    <string name="cover_language_chinese">Chinês</string>
+    <string name="cover_language_chinese_description">Usa capas chinesas quando disponíveis.</string>
+    <string name="cover_language_all">Todos os idiomas</string>
+    <string name="cover_language_all_description">Exibe todas as capas disponíveis.</string>
 
     <!-- Collection Screen -->
     <string name="welcome_message">Bem-vindo ao MangaKō!</string>

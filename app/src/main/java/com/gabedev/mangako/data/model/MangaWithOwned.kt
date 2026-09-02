@@ -18,6 +18,7 @@ import androidx.room.DatabaseView
             IFNULL(M.description, '') AS description,
             M.status AS status,
             IFNULL(M.volume_count, 0) AS volumeCount,
+            M.original_language AS originalLanguage,
             IFNULL(M.on_user_library, 0) AS isOnUserLibrary,
             COUNT(V.id) AS volumeOwned
         FROM Manga M
@@ -40,6 +41,7 @@ data class MangaWithOwned(
     val description: String,
     val status: String?,
     val volumeCount: Int,
+    val originalLanguage: String? = null,
     val isOnUserLibrary: Boolean,
     val volumeOwned: Int
 )
@@ -58,6 +60,7 @@ fun MangaWithOwned.toManga(): Manga {
         description = this.description,
         status = this.status,
         volumeCount = this.volumeCount,
+        originalLanguage = this.originalLanguage,
         isOnUserLibrary = this.isOnUserLibrary
     )
 }

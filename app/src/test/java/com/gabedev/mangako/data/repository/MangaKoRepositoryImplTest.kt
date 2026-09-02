@@ -31,6 +31,7 @@ class MangaKoRepositoryImplTest {
         assertEquals("Eiichiro Oda", manga.author)
         assertEquals("Descricao PT", manga.description)
         assertEquals(12, manga.volumeCount)
+        assertEquals("pt-BR", manga.originalLanguage)
     }
 
     @Test

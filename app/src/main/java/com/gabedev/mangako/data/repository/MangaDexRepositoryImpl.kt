@@ -107,6 +107,7 @@ class MangaDexRepositoryImpl(
             description = Utils.handleMangaDescription(dto.attributes),
             status = dto.attributes.status,
             volumeCount = lastVolumeNumber,
+            originalLanguage = dto.attributes.originalLanguage,
         )
     }
 
@@ -128,8 +129,7 @@ class MangaDexRepositoryImpl(
                     volume = volumeNumber,
                     coverUrl = handleCoverUrl(manga.id, cover.attributes.fileName),
                     owned = false,
-                    isSpecialEdition = cover.attributes.locale != "ja" ||
-                        (volumeNumber?.let { it % 1.0f != 0.0f } ?: true),
+                    isSpecialEdition = volumeNumber?.let { it % 1.0f != 0.0f } ?: true,
                     locale = cover.attributes.locale,
                     createdAt = cover.attributes.createdAt,
                     updatedAt = cover.attributes.updatedAt
@@ -210,6 +210,7 @@ class MangaDexRepositoryImpl(
             description = Utils.handleMangaDescription(attributes),
             status = attributes.status,
             volumeCount = fallbackVolumeCount,
+            originalLanguage = attributes.originalLanguage,
         )
     }
 

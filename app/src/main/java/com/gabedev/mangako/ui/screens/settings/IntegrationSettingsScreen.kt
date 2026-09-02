@@ -19,10 +19,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.gabedev.mangako.R
 import com.gabedev.mangako.data.local.CatalogIntegration
+import com.gabedev.mangako.data.local.CoverLanguagePreference
 import com.gabedev.mangako.data.local.NavigationBarStyle
 import com.gabedev.mangako.data.local.getCatalogIntegration
+import com.gabedev.mangako.data.local.getCoverLanguagePreference
 import com.gabedev.mangako.data.local.getNavigationBarStyle
 import com.gabedev.mangako.data.local.saveCatalogIntegration
+import com.gabedev.mangako.data.local.saveCoverLanguagePreference
 import com.gabedev.mangako.data.local.saveNavigationBarStyle
 import kotlinx.coroutines.launch
 
@@ -36,6 +39,8 @@ fun IntegrationSettingsScreen(
         .collectAsState(initial = CatalogIntegration.MANGAKO)
     val navigationBarStyle by context.getNavigationBarStyle()
         .collectAsState(initial = NavigationBarStyle.CLASSIC)
+    val coverLanguagePreference by context.getCoverLanguagePreference()
+        .collectAsState(initial = CoverLanguagePreference.JAPANESE)
     val scope = rememberCoroutineScope()
 
     Column(
@@ -96,7 +101,48 @@ fun IntegrationSettingsScreen(
             selected = navigationBarStyle == NavigationBarStyle.FLOATING,
             onClick = { scope.launch { context.saveNavigationBarStyle(NavigationBarStyle.FLOATING) } },
         )
+        Text(
+            text = stringResource(R.string.cover_settings_title),
+            modifier = Modifier.padding(top = 32.dp),
+            style = MaterialTheme.typography.headlineSmall,
+        )
+        Text(
+            text = stringResource(R.string.cover_settings_description),
+            modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        CoverLanguagePreference.entries.forEach { preference ->
+            IntegrationOption(
+                title = stringResource(preference.titleRes()),
+                description = stringResource(preference.descriptionRes()),
+                selected = coverLanguagePreference == preference,
+                onClick = {
+                    scope.launch { context.saveCoverLanguagePreference(preference) }
+                },
+            )
+        }
     }
+}
+
+private fun CoverLanguagePreference.titleRes(): Int = when (this) {
+    CoverLanguagePreference.JAPANESE -> R.string.cover_language_japanese
+    CoverLanguagePreference.ORIGINAL -> R.string.cover_language_original
+    CoverLanguagePreference.PORTUGUESE -> R.string.cover_language_portuguese
+    CoverLanguagePreference.ENGLISH -> R.string.cover_language_english
+    CoverLanguagePreference.KOREAN -> R.string.cover_language_korean
+    CoverLanguagePreference.CHINESE -> R.string.cover_language_chinese
+    CoverLanguagePreference.ALL -> R.string.cover_language_all
+}
+
+private fun CoverLanguagePreference.descriptionRes(): Int = when (this) {
+    CoverLanguagePreference.JAPANESE -> R.string.cover_language_japanese_description
+    CoverLanguagePreference.ORIGINAL -> R.string.cover_language_original_description
+    CoverLanguagePreference.PORTUGUESE -> R.string.cover_language_portuguese_description
+    CoverLanguagePreference.ENGLISH -> R.string.cover_language_english_description
+    CoverLanguagePreference.KOREAN -> R.string.cover_language_korean_description
+    CoverLanguagePreference.CHINESE -> R.string.cover_language_chinese_description
+    CoverLanguagePreference.ALL -> R.string.cover_language_all_description
 }
 
 @Composable

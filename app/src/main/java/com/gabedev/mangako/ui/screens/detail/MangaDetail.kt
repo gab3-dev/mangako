@@ -89,6 +89,8 @@ import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.model.Volume
 import com.gabedev.mangako.data.repository.LibraryRepository
 import com.gabedev.mangako.data.repository.MangaDexRepository
+import com.gabedev.mangako.data.local.CoverLanguagePreference
+import com.gabedev.mangako.data.local.getCoverLanguagePreference
 import com.gabedev.mangako.ui.components.ConfirmDialog
 import com.gabedev.mangako.ui.components.CustomLoadingIndicator
 import com.gabedev.mangako.ui.components.ListGridSwitch
@@ -114,6 +116,38 @@ internal fun filterVolumes(
     return result
 }
 
+internal fun filterVolumesByLanguagePreference(
+    volumes: List<Volume>,
+    originalLanguage: String?,
+    preference: CoverLanguagePreference,
+): List<Volume> {
+    if (preference == CoverLanguagePreference.ALL) return volumes
+
+    val preferredLanguage = when (preference) {
+        CoverLanguagePreference.JAPANESE -> "ja"
+        CoverLanguagePreference.ORIGINAL -> originalLanguage
+        CoverLanguagePreference.PORTUGUESE -> "pt"
+        CoverLanguagePreference.ENGLISH -> "en"
+        CoverLanguagePreference.KOREAN -> "ko"
+        CoverLanguagePreference.CHINESE -> "zh"
+        CoverLanguagePreference.ALL -> null
+    }
+    val preferredVolumes = preferredLanguage
+        ?.let { language -> volumes.filter { it.locale.matchesLanguage(language) } }
+        .orEmpty()
+    if (preferredVolumes.isNotEmpty()) return preferredVolumes
+
+    val originalVolumes = originalLanguage
+        ?.let { language -> volumes.filter { it.locale.matchesLanguage(language) } }
+        .orEmpty()
+    return originalVolumes.ifEmpty { volumes }
+}
+
+private fun String.matchesLanguage(language: String): Boolean {
+    return lowercase().replace('_', '-').substringBefore('-') ==
+        language.lowercase().replace('_', '-').substringBefore('-')
+}
+
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterialApi::class)
 @Composable
 fun MangaDetail(
@@ -128,14 +162,27 @@ fun MangaDetail(
     val context = LocalContext.current
     val viewModeFlow = remember { context.getConfigText() }
     val viewMode by viewModeFlow.collectAsState(initial = "list")
+    val coverLanguagePreference by context.getCoverLanguagePreference()
+        .collectAsState(initial = CoverLanguagePreference.JAPANESE)
     val viewModel: MangaDetailViewModel = viewModel(
         viewModelStoreOwner = backStackEntry,
         factory = MangaDetailViewModelFactory(apiRepository, localRepository, manga)
     )
     val mangaState by viewModel.mangaState.collectAsState()
     val volumeList by viewModel.volumeList.collectAsState()
-    val filteredVolumeList = remember(specialCoverFilter, notOwnedFilter, volumeList) {
-        filterVolumes(volumeList, specialCoverFilter, notOwnedFilter)
+    val preferredVolumeList = remember(
+        volumeList,
+        mangaState.originalLanguage,
+        coverLanguagePreference,
+    ) {
+        filterVolumesByLanguagePreference(
+            volumes = volumeList,
+            originalLanguage = mangaState.originalLanguage,
+            preference = coverLanguagePreference,
+        )
+    }
+    val filteredVolumeList = remember(specialCoverFilter, notOwnedFilter, preferredVolumeList) {
+        filterVolumes(preferredVolumeList, specialCoverFilter, notOwnedFilter)
     }
     val isCoverLoading by viewModel.isVolumeLoading.collectAsState()
     val canLoadMore by viewModel.noMoreVolume.collectAsState()

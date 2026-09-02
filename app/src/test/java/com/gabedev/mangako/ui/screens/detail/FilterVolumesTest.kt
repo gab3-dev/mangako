@@ -1,6 +1,7 @@
 package com.gabedev.mangako.ui.screens.detail
 
 import com.gabedev.mangako.data.model.Volume
+import com.gabedev.mangako.data.local.CoverLanguagePreference
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -89,5 +90,60 @@ class FilterVolumesTest {
         )
         val result = filterVolumes(volumes, showSpecialEditions = false, showNotOwnedOnly = true)
         assertEquals(emptyList<Volume>(), result)
+    }
+
+    @Test
+    fun `Japanese preference keeps Japanese covers when available`() {
+        val japanese = volume("ja").copy(locale = "ja")
+        val portuguese = volume("pt").copy(locale = "pt-br")
+
+        val result = filterVolumesByLanguagePreference(
+            volumes = listOf(japanese, portuguese),
+            originalLanguage = "pt-br",
+            preference = CoverLanguagePreference.JAPANESE,
+        )
+
+        assertEquals(listOf(japanese), result)
+    }
+
+    @Test
+    fun `missing preferred language falls back to original language`() {
+        val portuguese = volume("pt").copy(locale = "pt-br")
+        val english = volume("en").copy(locale = "en")
+
+        val result = filterVolumesByLanguagePreference(
+            volumes = listOf(portuguese, english),
+            originalLanguage = "pt-br",
+            preference = CoverLanguagePreference.JAPANESE,
+        )
+
+        assertEquals(listOf(portuguese), result)
+    }
+
+    @Test
+    fun `missing preferred and original language keeps available covers`() {
+        val english = volume("en").copy(locale = "en")
+
+        val result = filterVolumesByLanguagePreference(
+            volumes = listOf(english),
+            originalLanguage = null,
+            preference = CoverLanguagePreference.KOREAN,
+        )
+
+        assertEquals(listOf(english), result)
+    }
+
+    @Test
+    fun `all language preference keeps every cover`() {
+        val japanese = volume("ja").copy(locale = "ja")
+        val korean = volume("ko").copy(locale = "ko")
+
+        val result = filterVolumesByLanguagePreference(
+            volumes = listOf(japanese, korean),
+            originalLanguage = "ko",
+            preference = CoverLanguagePreference.ALL,
+        )
+
+        assertEquals(listOf(japanese, korean), result)
     }
 }

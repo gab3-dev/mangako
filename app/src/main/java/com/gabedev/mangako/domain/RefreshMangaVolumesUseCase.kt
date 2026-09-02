@@ -47,9 +47,16 @@ class RefreshMangaVolumesUseCase(
         val updatedManga = apiRepository.getManga(manga.id, forceRefresh)
         val localVolumes = localRepository.getMangaWithVolume(manga.id)?.volumes.orEmpty()
         val remoteVolumes = fetchAllVolumes(updatedManga, forceRefresh).deduplicateVolumes()
-        val latestVolumeNumber = remoteVolumes
+        val preferredVolumes = remoteVolumes
+            .filter { it.locale.matchesLanguage("ja") }
+            .ifEmpty {
+                updatedManga.originalLanguage
+                    ?.let { language -> remoteVolumes.filter { it.locale.matchesLanguage(language) } }
+                    .orEmpty()
+            }
+            .ifEmpty { remoteVolumes }
+        val latestVolumeNumber = preferredVolumes
             .asSequence()
-            .filter { it.locale.equals("ja", ignoreCase = true) }
             .mapNotNull { it.volume }
             .maxOrNull()
             ?.toInt()
@@ -131,6 +138,11 @@ class RefreshMangaVolumesUseCase(
             mangaId == other.mangaId &&
             volume == other.volume &&
             locale == other.locale
+    }
+
+    private fun String.matchesLanguage(language: String): Boolean {
+        return lowercase().replace('_', '-').substringBefore('-') ==
+            language.lowercase().replace('_', '-').substringBefore('-')
     }
 
     private data class RefreshMangaResult(

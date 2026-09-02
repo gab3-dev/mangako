@@ -21,6 +21,7 @@ object SettingsKeys {
     )
     val NOTIFICATION_PERMISSION_REQUESTED = booleanPreferencesKey("notification_permission_requested")
     val NAVIGATION_BAR_STYLE = stringPreferencesKey("navigation_bar_style")
+    val COVER_LANGUAGE_PREFERENCE = stringPreferencesKey("cover_language_preference")
 }
 
 enum class CatalogIntegration {
@@ -31,6 +32,16 @@ enum class CatalogIntegration {
 enum class NavigationBarStyle {
     CLASSIC,
     FLOATING,
+}
+
+enum class CoverLanguagePreference {
+    JAPANESE,
+    ORIGINAL,
+    PORTUGUESE,
+    ENGLISH,
+    KOREAN,
+    CHINESE,
+    ALL,
 }
 
 // Função para salvar texto
@@ -76,6 +87,20 @@ fun Context.getNavigationBarStyle(): Flow<NavigationBarStyle> {
         preferences[SettingsKeys.NAVIGATION_BAR_STYLE]
             ?.let { value -> runCatching { NavigationBarStyle.valueOf(value) }.getOrNull() }
             ?: NavigationBarStyle.CLASSIC
+    }
+}
+
+suspend fun Context.saveCoverLanguagePreference(preference: CoverLanguagePreference) {
+    dataStore.edit { settings ->
+        settings[SettingsKeys.COVER_LANGUAGE_PREFERENCE] = preference.name
+    }
+}
+
+fun Context.getCoverLanguagePreference(): Flow<CoverLanguagePreference> {
+    return dataStore.data.map { settings ->
+        settings[SettingsKeys.COVER_LANGUAGE_PREFERENCE]
+            ?.let { value -> runCatching { CoverLanguagePreference.valueOf(value) }.getOrNull() }
+            ?: CoverLanguagePreference.JAPANESE
     }
 }
 

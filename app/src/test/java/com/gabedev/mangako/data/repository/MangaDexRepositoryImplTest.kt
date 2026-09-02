@@ -357,7 +357,7 @@ class MangaDexRepositoryImplTest {
     }
 
     @Test
-    fun `getCoverListByManga maps createdAt and marks non ja locale as special edition`() = runTest {
+    fun `getCoverListByManga maps createdAt without marking a translated cover as special`() = runTest {
         val manga = Manga(
             id = "manga-1", title = "One Piece",
             coverUrl = "url", description = "desc"
@@ -375,7 +375,7 @@ class MangaDexRepositoryImplTest {
         assertEquals("en", result[0].locale)
         assertEquals("2024-02-01T00:00:00Z", result[0].createdAt)
         assertEquals("2024-02-02T00:00:00Z", result[0].updatedAt)
-        assertTrue(result[0].isSpecialEdition)
+        assertFalse(result[0].isSpecialEdition)
     }
 
     @Test

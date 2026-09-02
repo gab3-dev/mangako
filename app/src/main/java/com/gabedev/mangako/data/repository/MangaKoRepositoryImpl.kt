@@ -62,6 +62,7 @@ class MangaKoRepositoryImpl(
             description = localizations.localizedDescription().orEmpty(),
             status = status,
             volumeCount = latestVolumeNumber?.toFloatOrNull()?.toInt() ?: 0,
+            originalLanguage = originalLanguage ?: localizations.firstOrNull { it.isPrimary }?.language,
         )
     }
 
@@ -73,7 +74,7 @@ class MangaKoRepositoryImpl(
             coverUrl = sourceUrl,
             volume = volume?.toFloatOrNull(),
             locale = locale,
-            isSpecialEdition = isSpecialEdition,
+            isSpecialEdition = volume?.toFloatOrNull()?.let { it % 1.0f != 0.0f } ?: true,
             createdAt = sourceCreatedAt,
             updatedAt = sourceUpdatedAt ?: updatedAt,
         )

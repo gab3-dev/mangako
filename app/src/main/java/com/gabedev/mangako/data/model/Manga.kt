@@ -20,5 +20,6 @@ data class Manga (
     @ColumnInfo(name = "description")       val description: String,
     @ColumnInfo(name = "status")            val status: String? = null,
     @ColumnInfo(name = "volume_count")      val volumeCount: Int = 0,
+    @ColumnInfo(name = "original_language") val originalLanguage: String? = null,
     @ColumnInfo(name = "on_user_library")   val isOnUserLibrary: Boolean = false
 )

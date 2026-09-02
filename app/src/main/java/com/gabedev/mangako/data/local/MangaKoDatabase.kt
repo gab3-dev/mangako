@@ -116,6 +116,51 @@ class MangaKoDatabase(
                 )
             }
         }
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE Manga ADD COLUMN original_language TEXT")
+                db.execSQL(
+                    """
+                    UPDATE Volume
+                    SET is_special_edition = CASE
+                        WHEN volume IS NULL
+                        OR (
+                            CAST(volume AS TEXT) LIKE '%.%'
+                            AND CAST(volume AS TEXT) NOT LIKE '%.0'
+                        )
+                        THEN 1
+                        ELSE 0
+                    END
+                    """.trimIndent()
+                )
+                db.execSQL("DROP VIEW IF EXISTS MangaWithOwned")
+                db.execSQL(
+                    """
+                    CREATE VIEW MangaWithOwned AS
+                    SELECT
+                        M.id AS id,
+                        M.title AS title,
+                        M.alt_title AS altTitle,
+                        M.type AS type,
+                        M.cover_id AS coverId,
+                        M.cover_file_name AS coverFileName,
+                        IFNULL(M.cover_url, '') AS coverUrl,
+                        M.author_id AS authorId,
+                        M.author AS author,
+                        IFNULL(M.description, '') AS description,
+                        M.status AS status,
+                        IFNULL(M.volume_count, 0) AS volumeCount,
+                        M.original_language AS originalLanguage,
+                        IFNULL(M.on_user_library, 0) AS isOnUserLibrary,
+                        COUNT(V.id) AS volumeOwned
+                    FROM Manga M
+                    LEFT JOIN Volume V ON V.manga_id = M.id AND V.owned = 1
+                    GROUP BY M.id
+                    """.trimIndent()
+                )
+            }
+        }
     }
 
     init {
@@ -124,7 +169,7 @@ class MangaKoDatabase(
             LocalDatabase::class.java,
             name = "mangako_database"
         )
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
             .build()
         this.db = db
     }

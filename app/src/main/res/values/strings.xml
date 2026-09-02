@@ -24,6 +24,22 @@
     <string name="navigation_style_classic_description">Show all navigation labels in a fixed bottom bar.</string>
     <string name="navigation_style_floating">Floating</string>
     <string name="navigation_style_floating_description">Show the selected label in a compact floating bar.</string>
+    <string name="cover_settings_title">Cover language</string>
+    <string name="cover_settings_description">Choose the preferred language for volume covers. If unavailable, the original-language cover is used.</string>
+    <string name="cover_language_japanese">Japanese</string>
+    <string name="cover_language_japanese_description">Use Japanese covers when available.</string>
+    <string name="cover_language_original">Original language</string>
+    <string name="cover_language_original_description">Use covers in the original language of the work.</string>
+    <string name="cover_language_portuguese">Portuguese</string>
+    <string name="cover_language_portuguese_description">Use Portuguese covers when available.</string>
+    <string name="cover_language_english">English</string>
+    <string name="cover_language_english_description">Use English covers when available.</string>
+    <string name="cover_language_korean">Korean</string>
+    <string name="cover_language_korean_description">Use Korean covers when available.</string>
+    <string name="cover_language_chinese">Chinese</string>
+    <string name="cover_language_chinese_description">Use Chinese covers when available.</string>
+    <string name="cover_language_all">All languages</string>
+    <string name="cover_language_all_description">Show all available covers.</string>
 
     <!-- Collection Screen -->
     <string name="welcome_message">Welcome to MangaKō!</string>

@@ -19,6 +19,22 @@
     <string name="navigation_style_classic_description">すべてのラベルを固定の下部バーに表示します。</string>
     <string name="navigation_style_floating">フローティング</string>
     <string name="navigation_style_floating_description">選択中のラベルをコンパクトなバーに表示します。</string>
+    <string name="cover_settings_title">表紙の言語</string>
+    <string name="cover_settings_description">巻の表紙に使用する言語を選択します。見つからない場合は、作品の原語の表紙を使用します。</string>
+    <string name="cover_language_japanese">日本語</string>
+    <string name="cover_language_japanese_description">利用可能な場合は日本語の表紙を使用します。</string>
+    <string name="cover_language_original">原語</string>
+    <string name="cover_language_original_description">作品の原語の表紙を使用します。</string>
+    <string name="cover_language_portuguese">ポルトガル語</string>
+    <string name="cover_language_portuguese_description">利用可能な場合はポルトガル語の表紙を使用します。</string>
+    <string name="cover_language_english">英語</string>
+    <string name="cover_language_english_description">利用可能な場合は英語の表紙を使用します。</string>
+    <string name="cover_language_korean">韓国語</string>
+    <string name="cover_language_korean_description">利用可能な場合は韓国語の表紙を使用します。</string>
+    <string name="cover_language_chinese">中国語</string>
+    <string name="cover_language_chinese_description">利用可能な場合は中国語の表紙を使用します。</string>
+    <string name="cover_language_all">すべての言語</string>
+    <string name="cover_language_all_description">利用可能なすべての表紙を表示します。</string>
 
     <!-- Collection Screen -->
     <string name="welcome_message">MangaKōへようこそ！</string>
