@@ -1,19 +1,19 @@
 package com.gabedev.mangako
 
 import android.Manifest
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.content.pm.PackageManager
 import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,7 +24,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Book
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -34,12 +37,15 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -47,16 +53,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.lifecycleScope
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.gabedev.mangako.background.LibraryVolumeRefreshScheduler
 import com.gabedev.mangako.background.RefreshLibraryVolumesWorker
 import com.gabedev.mangako.backup.BackupManager
 import com.gabedev.mangako.data.local.NavigationBarStyle
-import com.gabedev.mangako.data.local.getNavigationBarStyle
 import com.gabedev.mangako.data.local.getBackupPreferences
+import com.gabedev.mangako.data.local.getNavigationBarStyle
 import com.gabedev.mangako.data.local.getNotificationPermissionRequested
 import com.gabedev.mangako.data.local.migrateCatalogIntegrationDefaultToMangaKo
 import com.gabedev.mangako.data.local.saveNotificationPermissionRequested
@@ -65,8 +69,8 @@ import com.gabedev.mangako.data.repository.LibraryRepository
 import com.gabedev.mangako.data.repository.MangaDexRepository
 import com.gabedev.mangako.ui.components.AppNavigationBar
 import com.gabedev.mangako.ui.components.DynamicTopBar
-import com.gabedev.mangako.ui.screens.collection.MangaCollection
 import com.gabedev.mangako.ui.screens.backup.BackupOnboardingScreen
+import com.gabedev.mangako.ui.screens.collection.MangaCollection
 import com.gabedev.mangako.ui.screens.detail.MangaDetail
 import com.gabedev.mangako.ui.screens.search_list.MangaSearchScreen
 import com.gabedev.mangako.ui.screens.settings.IntegrationSettingsScreen
@@ -125,6 +129,7 @@ class MainActivity : ComponentActivity() {
                         getString(R.string.sync_failed),
                         Toast.LENGTH_LONG,
                     ).show()
+
                     else -> Unit
                 }
             }
@@ -145,8 +150,13 @@ class MainActivity : ComponentActivity() {
                 updatedCount,
                 failedCount,
             )
+
             updatedCount > 0 -> getString(R.string.sync_completed_with_updates, updatedCount)
-            failedCount > 0 -> getString(R.string.sync_completed_no_updates_with_failures, failedCount)
+            failedCount > 0 -> getString(
+                R.string.sync_completed_no_updates_with_failures,
+                failedCount
+            )
+
             else -> getString(R.string.sync_completed_no_updates)
         }
 
@@ -205,6 +215,7 @@ private fun BackupStartupGate(
             backupManager = backupManager,
             onComplete = { onboardingCompleted = true },
         )
+
         true -> {
             LaunchedEffect(Unit) { onReady() }
             MainAppNavHost(
@@ -310,6 +321,23 @@ fun MainAppNavHost(
                 return@Scaffold
             }
 
+            val isSettings = currentRoute == Screen.Settings.route
+            if (isSettings) {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = stringResource(Screen.Settings.titleRes)
+                        )
+                    },
+                    navigationIcon = {
+                            Icon(
+                                imageVector = Icons.Outlined.Settings,
+                                contentDescription = stringResource(R.string.nav_settings)
+                            )
+                    },
+                )
+            }
+
             val isExplore = currentRoute == Screen.Explore.route
             if (!isExplore) {
                 return@Scaffold
@@ -356,184 +384,184 @@ fun MainAppNavHost(
                 startDestination = Screen.UserCollection.route,
                 modifier = Modifier.fillMaxSize(),
                 enterTransition = {
-                val initialRoute = initialState.destination.route
-                val targetRoute = targetState.destination.route
-                val initialIndex = itemsNavBar.indexOfFirst { it.route == initialRoute }
-                val targetIndex = itemsNavBar.indexOfFirst { it.route == targetRoute }
+                    val initialRoute = initialState.destination.route
+                    val targetRoute = targetState.destination.route
+                    val initialIndex = itemsNavBar.indexOfFirst { it.route == initialRoute }
+                    val targetIndex = itemsNavBar.indexOfFirst { it.route == targetRoute }
 
-                when {
-                    targetRoute == detailRoute -> slideIntoContainer(
-                        towards = AnimatedContentTransitionScope.SlideDirection.Up,
-                        animationSpec = tween(screenTransitionDuration),
-                    )
-
-                    initialIndex >= 0 && targetIndex > initialIndex ->
-                        slideIntoContainer(
-                            towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                    when {
+                        targetRoute == detailRoute -> slideIntoContainer(
+                            towards = AnimatedContentTransitionScope.SlideDirection.Up,
                             animationSpec = tween(screenTransitionDuration),
                         )
 
-                    initialIndex >= 0 && targetIndex < initialIndex ->
-                        slideIntoContainer(
-                            towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        initialIndex in 0..<targetIndex ->
+                            slideIntoContainer(
+                                towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                                animationSpec = tween(screenTransitionDuration),
+                            )
+
+                        initialIndex >= 0 && targetIndex < initialIndex ->
+                            slideIntoContainer(
+                                towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                                animationSpec = tween(screenTransitionDuration),
+                            )
+
+                        else -> EnterTransition.None
+                    }
+                },
+                exitTransition = {
+                    val initialRoute = initialState.destination.route
+                    val targetRoute = targetState.destination.route
+                    val initialIndex = itemsNavBar.indexOfFirst { it.route == initialRoute }
+                    val targetIndex = itemsNavBar.indexOfFirst { it.route == targetRoute }
+
+                    when {
+                        targetRoute == detailRoute -> slideOutOfContainer(
+                            towards = AnimatedContentTransitionScope.SlideDirection.Up,
                             animationSpec = tween(screenTransitionDuration),
                         )
 
-                    else -> EnterTransition.None
-                }
-            },
-            exitTransition = {
-                val initialRoute = initialState.destination.route
-                val targetRoute = targetState.destination.route
-                val initialIndex = itemsNavBar.indexOfFirst { it.route == initialRoute }
-                val targetIndex = itemsNavBar.indexOfFirst { it.route == targetRoute }
+                        initialIndex in 0..<targetIndex ->
+                            slideOutOfContainer(
+                                towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                                animationSpec = tween(screenTransitionDuration),
+                            )
 
-                when {
-                    targetRoute == detailRoute -> slideOutOfContainer(
-                        towards = AnimatedContentTransitionScope.SlideDirection.Up,
-                        animationSpec = tween(screenTransitionDuration),
-                    )
+                        initialIndex >= 0 && targetIndex < initialIndex ->
+                            slideOutOfContainer(
+                                towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                                animationSpec = tween(screenTransitionDuration),
+                            )
 
-                    initialIndex >= 0 && targetIndex > initialIndex ->
-                        slideOutOfContainer(
-                            towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        else -> ExitTransition.None
+                    }
+                },
+                popEnterTransition = {
+                    val initialRoute = initialState.destination.route
+                    val targetRoute = targetState.destination.route
+                    val initialIndex = itemsNavBar.indexOfFirst { it.route == initialRoute }
+                    val targetIndex = itemsNavBar.indexOfFirst { it.route == targetRoute }
+
+                    when {
+                        initialRoute == detailRoute -> slideIntoContainer(
+                            towards = AnimatedContentTransitionScope.SlideDirection.Down,
                             animationSpec = tween(screenTransitionDuration),
                         )
 
-                    initialIndex >= 0 && targetIndex < initialIndex ->
-                        slideOutOfContainer(
-                            towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        initialIndex >= 0 && targetIndex < initialIndex ->
+                            slideIntoContainer(
+                                towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                                animationSpec = tween(screenTransitionDuration),
+                            )
+
+                        initialIndex in 0..<targetIndex ->
+                            slideIntoContainer(
+                                towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                                animationSpec = tween(screenTransitionDuration),
+                            )
+
+                        else -> EnterTransition.None
+                    }
+                },
+                popExitTransition = {
+                    val initialRoute = initialState.destination.route
+                    val targetRoute = targetState.destination.route
+                    val initialIndex = itemsNavBar.indexOfFirst { it.route == initialRoute }
+                    val targetIndex = itemsNavBar.indexOfFirst { it.route == targetRoute }
+
+                    when {
+                        initialRoute == detailRoute -> slideOutOfContainer(
+                            towards = AnimatedContentTransitionScope.SlideDirection.Down,
                             animationSpec = tween(screenTransitionDuration),
                         )
 
-                    else -> ExitTransition.None
-                }
-            },
-            popEnterTransition = {
-                val initialRoute = initialState.destination.route
-                val targetRoute = targetState.destination.route
-                val initialIndex = itemsNavBar.indexOfFirst { it.route == initialRoute }
-                val targetIndex = itemsNavBar.indexOfFirst { it.route == targetRoute }
+                        initialIndex >= 0 && targetIndex < initialIndex ->
+                            slideOutOfContainer(
+                                towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                                animationSpec = tween(screenTransitionDuration),
+                            )
 
-                when {
-                    initialRoute == detailRoute -> slideIntoContainer(
-                        towards = AnimatedContentTransitionScope.SlideDirection.Down,
-                        animationSpec = tween(screenTransitionDuration),
-                    )
+                        initialIndex in 0..<targetIndex ->
+                            slideOutOfContainer(
+                                towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                                animationSpec = tween(screenTransitionDuration),
+                            )
 
-                    initialIndex >= 0 && targetIndex < initialIndex ->
-                        slideIntoContainer(
-                            towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                            animationSpec = tween(screenTransitionDuration),
-                        )
-
-                    initialIndex >= 0 && targetIndex > initialIndex ->
-                        slideIntoContainer(
-                            towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                            animationSpec = tween(screenTransitionDuration),
-                        )
-
-                    else -> EnterTransition.None
-                }
-            },
-            popExitTransition = {
-                val initialRoute = initialState.destination.route
-                val targetRoute = targetState.destination.route
-                val initialIndex = itemsNavBar.indexOfFirst { it.route == initialRoute }
-                val targetIndex = itemsNavBar.indexOfFirst { it.route == targetRoute }
-
-                when {
-                    initialRoute == detailRoute -> slideOutOfContainer(
-                        towards = AnimatedContentTransitionScope.SlideDirection.Down,
-                        animationSpec = tween(screenTransitionDuration),
-                    )
-
-                    initialIndex >= 0 && targetIndex < initialIndex ->
-                        slideOutOfContainer(
-                            towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                            animationSpec = tween(screenTransitionDuration),
-                        )
-
-                    initialIndex >= 0 && targetIndex > initialIndex ->
-                        slideOutOfContainer(
-                            towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                            animationSpec = tween(screenTransitionDuration),
-                        )
-
-                    else -> ExitTransition.None
-                }
+                        else -> ExitTransition.None
+                    }
                 },
             ) {
-            // 2.0 HomeScreen
-            composable(Screen.UserCollection.route) {
-                MangaCollection(
-                    repository = localRepository,
-                    contentBottomPadding = floatingNavigationBottomPadding,
-                    startupSyncRefreshVersion = startupSyncRefreshVersion,
-                    onMangaClick = { manga ->
-                        navController.navigate(
-                            Screen.MangaDetail.createRoute(
-                                manga = manga
-                            )
-                        ) {
-                            launchSingleTop = true
-                        }
-                    },
-                    onExploreSearch = { query ->
-                        exploreSearchQuery = query
-                        navController.navigate(Screen.Explore.route) {
-                            popUpTo(navController.graph.startDestinationId) {
-                                saveState = false
+                // 2.0 HomeScreen
+                composable(Screen.UserCollection.route) {
+                    MangaCollection(
+                        repository = localRepository,
+                        contentBottomPadding = floatingNavigationBottomPadding,
+                        startupSyncRefreshVersion = startupSyncRefreshVersion,
+                        onMangaClick = { manga ->
+                            navController.navigate(
+                                Screen.MangaDetail.createRoute(
+                                    manga = manga
+                                )
+                            ) {
+                                launchSingleTop = true
                             }
-                            launchSingleTop = true
-                            restoreState = false
-                        }
-                    },
-                )
-            }
+                        },
+                        onExploreSearch = { query ->
+                            exploreSearchQuery = query
+                            navController.navigate(Screen.Explore.route) {
+                                popUpTo(navController.graph.startDestinationId) {
+                                    saveState = false
+                                }
+                                launchSingleTop = true
+                                restoreState = false
+                            }
+                        },
+                    )
+                }
 
-            // 2.1 MangaSearchScreen
-            composable(Screen.Explore.route) {
-                MangaSearchScreen(
-                    apiRepository = mangaRepository,
-                    searchQuery = exploreSearchQuery,
-                    contentBottomPadding = floatingNavigationBottomPadding,
-                    onResultClick = { manga ->
-                        navController.navigate(
-                            Screen.MangaDetail.createRoute(
-                                manga = manga
-                            )
-                        ) {
-                            launchSingleTop = true
-                        }
-                    },
-                )
-            }
+                // 2.1 MangaSearchScreen
+                composable(Screen.Explore.route) {
+                    MangaSearchScreen(
+                        apiRepository = mangaRepository,
+                        searchQuery = exploreSearchQuery,
+                        contentBottomPadding = floatingNavigationBottomPadding,
+                        onResultClick = { manga ->
+                            navController.navigate(
+                                Screen.MangaDetail.createRoute(
+                                    manga = manga
+                                )
+                            ) {
+                                launchSingleTop = true
+                            }
+                        },
+                    )
+                }
 
-            composable(Screen.Settings.route) {
-                IntegrationSettingsScreen(
-                    backupManager = backupManager,
-                    contentBottomPadding = floatingNavigationBottomPadding,
-                )
-            }
+                composable(Screen.Settings.route) {
+                    IntegrationSettingsScreen(
+                        backupManager = backupManager,
+                        contentBottomPadding = floatingNavigationBottomPadding,
+                    )
+                }
 
-            // 2.2 DetailScreen (recebe o ID via argumento)
-            composable(
-                Screen.MangaDetail.route,
-                arguments = listOf(
-                    navArgument("manga") { type = NavType.StringType },
-                )
-            ) { backStackEntry ->
-                val mangaJson =
-                    backStackEntry.arguments?.getString("manga") ?: "{}"
+                // 2.2 DetailScreen (recebe o ID via argumento)
+                composable(
+                    Screen.MangaDetail.route,
+                    arguments = listOf(
+                        navArgument("manga") { type = NavType.StringType },
+                    )
+                ) { backStackEntry ->
+                    val mangaJson =
+                        backStackEntry.arguments?.getString("manga") ?: "{}"
 
-                MangaDetail(
-                    manga = Json.decodeFromString<Manga>(mangaJson),
-                    apiRepository = mangaRepository,
-                    localRepository = localRepository,
-                    backStackEntry = backStackEntry
-                )
-            }
+                    MangaDetail(
+                        manga = Json.decodeFromString<Manga>(mangaJson),
+                        apiRepository = mangaRepository,
+                        localRepository = localRepository,
+                        backStackEntry = backStackEntry
+                    )
+                }
             }
 
             if (
