@@ -1,6 +1,9 @@
 package com.gabedev.mangako
 
 import android.content.Context
+import androidx.room.withTransaction
+import com.gabedev.mangako.backup.BackupManager
+import com.gabedev.mangako.backup.BackupScheduler
 import com.gabedev.mangako.core.FileLogger
 import com.gabedev.mangako.data.local.LocalDatabase
 import com.gabedev.mangako.data.local.MangaKoDatabase
@@ -21,11 +24,13 @@ data class AppContainer(
     val logger: FileLogger,
     val mangaRepository: MangaDexRepository,
     val localRepository: LibraryRepository,
+    val backupManager: BackupManager? = null,
 ) {
     companion object {
         fun create(context: Context): AppContainer {
             val database = MangaKoDatabase(context).getDatabase()
             val logger = FileLogger(context)
+            val backupManager = BackupManager(context.applicationContext, database)
             val mangaDexApi = Retrofit.Builder()
                 .baseUrl("https://api.mangadex.org/")
                 .addConverterFactory(GsonConverterFactory.create())
@@ -61,7 +66,17 @@ data class AppContainer(
                     mangaDexRepository = mangaDexRepository,
                     mangaKoRepository = mangaKoRepository,
                 ),
-                localRepository = LibraryRepositoryImpl(database, logger),
+                localRepository = LibraryRepositoryImpl(
+                    db = database,
+                    logger = logger,
+                    onBackupRelevantChange = {
+                        BackupScheduler.enqueueAfterChange(context.applicationContext)
+                    },
+                    runInTransaction = { operation ->
+                        database.withTransaction { operation() }
+                    },
+                ),
+                backupManager = backupManager,
             )
         }
     }

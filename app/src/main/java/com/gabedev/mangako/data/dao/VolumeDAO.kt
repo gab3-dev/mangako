@@ -16,6 +16,9 @@ interface VolumeDAO {
     @Query("SELECT * FROM Volume WHERE manga_id = :mangaId")
     suspend fun getVolumesByMangaId(mangaId: String): List<Volume>
 
+    @Query("SELECT * FROM Volume WHERE manga_id = :mangaId AND volume = :volume AND locale = :locale LIMIT 1")
+    suspend fun getNumberedVolume(mangaId: String, volume: Float, locale: String): Volume?
+
     @Query(
         """
         SELECT DISTINCT manga_id FROM Volume
@@ -52,4 +55,7 @@ interface VolumeDAO {
 
     @Query("DELETE FROM Volume WHERE id = :id")
     suspend fun deleteVolumeById(id: String): Int
+
+    @Query("UPDATE Volume SET owned = 0 WHERE owned = 1")
+    suspend fun clearOwnedStatus()
 }

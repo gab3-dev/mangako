@@ -26,6 +26,7 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -52,8 +53,10 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.gabedev.mangako.background.LibraryVolumeRefreshScheduler
 import com.gabedev.mangako.background.RefreshLibraryVolumesWorker
+import com.gabedev.mangako.backup.BackupManager
 import com.gabedev.mangako.data.local.NavigationBarStyle
 import com.gabedev.mangako.data.local.getNavigationBarStyle
+import com.gabedev.mangako.data.local.getBackupPreferences
 import com.gabedev.mangako.data.local.getNotificationPermissionRequested
 import com.gabedev.mangako.data.local.migrateCatalogIntegrationDefaultToMangaKo
 import com.gabedev.mangako.data.local.saveNotificationPermissionRequested
@@ -63,6 +66,7 @@ import com.gabedev.mangako.data.repository.MangaDexRepository
 import com.gabedev.mangako.ui.components.AppNavigationBar
 import com.gabedev.mangako.ui.components.DynamicTopBar
 import com.gabedev.mangako.ui.screens.collection.MangaCollection
+import com.gabedev.mangako.ui.screens.backup.BackupOnboardingScreen
 import com.gabedev.mangako.ui.screens.detail.MangaDetail
 import com.gabedev.mangako.ui.screens.search_list.MangaSearchScreen
 import com.gabedev.mangako.ui.screens.settings.IntegrationSettingsScreen
@@ -76,29 +80,31 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestPermission()
     ) { }
     private var startupSyncRefreshVersion by mutableIntStateOf(0)
+    private var startupWorkStarted = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val app = application as MangaKoApplication
-        if (app.enableStartupWork) {
-            requestNotificationPermissionIfNeeded()
-            lifecycleScope.launch {
-                applicationContext.migrateCatalogIntegrationDefaultToMangaKo()
-                enqueueLibraryVolumeRefresh()
-            }
-        }
 
         enableEdgeToEdge()
         setContent {
             MangaKōTheme {
-                MainAppNavHost(
-                    navController = rememberNavController(),
-                    mangaRepository = app.appContainer.mangaRepository,
-                    localRepository = app.appContainer.localRepository,
+                BackupStartupGate(
+                    app = app,
                     startupSyncRefreshVersion = startupSyncRefreshVersion,
-                    modifier = Modifier
+                    onReady = { startStartupWork(app) },
                 )
             }
+        }
+    }
+
+    private fun startStartupWork(app: MangaKoApplication) {
+        if (startupWorkStarted || !app.enableStartupWork) return
+        startupWorkStarted = true
+        requestNotificationPermissionIfNeeded()
+        lifecycleScope.launch {
+            applicationContext.migrateCatalogIntegrationDefaultToMangaKo()
+            enqueueLibraryVolumeRefresh()
         }
     }
 
@@ -172,6 +178,47 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@Composable
+private fun BackupStartupGate(
+    app: MangaKoApplication,
+    startupSyncRefreshVersion: Int,
+    onReady: () -> Unit,
+) {
+    val backupManager = remember(app) {
+        app.appContainer.backupManager
+            ?: BackupManager(app.applicationContext, app.appContainer.database)
+    }
+    var onboardingCompleted by remember { mutableStateOf<Boolean?>(null) }
+    LaunchedEffect(app) {
+        onboardingCompleted = if (app.enableStartupWork) {
+            runCatching {
+                app.applicationContext.getBackupPreferences().first().onboardingCompleted
+            }.getOrDefault(false)
+        } else {
+            true
+        }
+    }
+
+    when (onboardingCompleted) {
+        null -> Box(Modifier.fillMaxSize())
+        false -> BackupOnboardingScreen(
+            backupManager = backupManager,
+            onComplete = { onboardingCompleted = true },
+        )
+        true -> {
+            LaunchedEffect(Unit) { onReady() }
+            MainAppNavHost(
+                navController = rememberNavController(),
+                mangaRepository = app.appContainer.mangaRepository,
+                localRepository = app.appContainer.localRepository,
+                backupManager = backupManager,
+                startupSyncRefreshVersion = startupSyncRefreshVersion,
+                modifier = Modifier,
+            )
+        }
+    }
+}
+
 sealed class Screen(
     val route: String,
     val titleRes: Int,
@@ -213,6 +260,7 @@ fun MainAppNavHost(
     navController: NavHostController,
     mangaRepository: MangaDexRepository,
     localRepository: LibraryRepository,
+    backupManager: BackupManager,
     startupSyncRefreshVersion: Int,
     modifier: Modifier
 ) {
@@ -463,7 +511,10 @@ fun MainAppNavHost(
             }
 
             composable(Screen.Settings.route) {
-                IntegrationSettingsScreen(contentBottomPadding = floatingNavigationBottomPadding)
+                IntegrationSettingsScreen(
+                    backupManager = backupManager,
+                    contentBottomPadding = floatingNavigationBottomPadding,
+                )
             }
 
             // 2.2 DetailScreen (recebe o ID via argumento)

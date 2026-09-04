@@ -9,7 +9,9 @@ import com.gabedev.mangako.data.model.Volume
 
 class LibraryRepositoryImpl(
     private val db: LocalDatabase,
-    private val logger: FileLogger
+    private val logger: FileLogger,
+    private val onBackupRelevantChange: () -> Unit = {},
+    private val runInTransaction: suspend (suspend () -> Unit) -> Unit = { operation -> operation() },
 ) : LibraryRepository {
     override suspend fun getManga(mangaId: String): Manga? {
         try {
@@ -83,29 +85,38 @@ class LibraryRepositoryImpl(
     override suspend fun addMangaToLibrary(manga: Manga) {
         val updatedManga = manga.copy(isOnUserLibrary = true)
         db.mangaDao().updateMangaLibraryStatus(updatedManga)
+        onBackupRelevantChange()
     }
 
     override suspend fun removeMangaFromLibrary(mangaId: String) {
-        val manga = db.mangaDao().getMangaById(mangaId)
-        if (manga == null) {
-            logger.log("Manga with ID $mangaId not found in database.")
-            return
+        var changed = false
+        runInTransaction {
+            val manga = db.mangaDao().getMangaById(mangaId)
+            if (manga == null) {
+                logger.log("Manga with ID $mangaId not found in database.")
+                return@runInTransaction
+            }
+            val updatedManga = manga.copy(isOnUserLibrary = false)
+            val volumeList = db.mangaDao().getMangaWithVolumeById(mangaId)
+            volumeList?.volumes?.forEach { volume ->
+                db.volumeDao().updateVolume(volume.copy(owned = false))
+            }
+            db.mangaDao().updateMangaLibraryStatus(updatedManga)
+            changed = true
         }
-        val updatedManga = manga.copy(isOnUserLibrary = false)
-        val volumeList = db.mangaDao().getMangaWithVolumeById(mangaId)
-        volumeList?.volumes?.forEach { volume ->
-            db.volumeDao().updateVolume(volume.copy(owned = false))
-        }
-        db.mangaDao().updateMangaLibraryStatus(updatedManga)
+        if (changed) onBackupRelevantChange()
     }
 
     override suspend fun removeMangaFromLibrary(manga: Manga) {
-        val updatedManga = manga.copy(isOnUserLibrary = false)
-        val volumeList = db.mangaDao().getMangaWithVolumeById(manga.id)
-        volumeList?.volumes?.forEach { volume ->
-            db.volumeDao().updateVolume(volume.copy(owned = false))
+        runInTransaction {
+            val updatedManga = manga.copy(isOnUserLibrary = false)
+            val volumeList = db.mangaDao().getMangaWithVolumeById(manga.id)
+            volumeList?.volumes?.forEach { volume ->
+                db.volumeDao().updateVolume(volume.copy(owned = false))
+            }
+            db.mangaDao().updateMangaLibraryStatus(updatedManga)
         }
-        db.mangaDao().updateMangaLibraryStatus(updatedManga)
+        onBackupRelevantChange()
     }
 
     override suspend fun isMangaInLibrary(mangaId: String): Boolean {
@@ -123,12 +134,14 @@ class LibraryRepositoryImpl(
 
     override suspend fun updateVolume(volume: Volume) {
         db.volumeDao().updateVolume(volume)
+        onBackupRelevantChange()
     }
 
     override suspend fun updateVolumeList(volumeList: List<Volume>) {
         if (volumeList.isEmpty()) return
         try {
             db.volumeDao().updateVolumeList(volumeList)
+            onBackupRelevantChange()
         } catch (e: Exception) {
             logger.logError(e)
         }

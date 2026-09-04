@@ -50,6 +50,9 @@ interface MangaDAO {
     @Query("DELETE FROM Manga WHERE id = :id")
     suspend fun deleteMangaById(id: String): Int
 
+    @Query("UPDATE Manga SET on_user_library = 0 WHERE on_user_library = 1")
+    suspend fun clearLibraryStatus()
+
     @Delete
     suspend fun deleteManga(
         manga: Manga

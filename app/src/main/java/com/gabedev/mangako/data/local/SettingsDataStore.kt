@@ -1,12 +1,16 @@
 package com.gabedev.mangako.data.local
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.gabedev.mangako.backup.BackupScheduler
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 // Criação do DataStore
@@ -21,6 +25,10 @@ object SettingsKeys {
     )
     val NOTIFICATION_PERMISSION_REQUESTED = booleanPreferencesKey("notification_permission_requested")
     val NAVIGATION_BAR_STYLE = stringPreferencesKey("navigation_bar_style")
+    val BACKUP_TREE_URI = stringPreferencesKey("backup_tree_uri")
+    val BACKUP_FREQUENCY = stringPreferencesKey("backup_frequency")
+    val LAST_BACKUP_AT = stringPreferencesKey("last_backup_at")
+    val LAST_BACKUP_ERROR = stringPreferencesKey("last_backup_error")
 }
 
 enum class CatalogIntegration {
@@ -33,11 +41,26 @@ enum class NavigationBarStyle {
     FLOATING,
 }
 
+enum class BackupFrequency {
+    ON_CHANGE,
+    DAILY,
+    WEEKLY,
+}
+
+data class BackupPreferences(
+    val treeUri: String?,
+    val frequency: BackupFrequency,
+    val onboardingCompleted: Boolean,
+    val lastBackupAt: String?,
+    val lastBackupError: String?,
+)
+
 // Função para salvar texto
 suspend fun Context.saveConfigText(text: String) {
     dataStore.edit { preferences ->
         preferences[SettingsKeys.VIEW_MODE] = text
     }
+    BackupScheduler.enqueueAfterChange(applicationContext)
 }
 
 // Função para ler texto como Flow
@@ -51,6 +74,7 @@ suspend fun Context.saveCollectionDensity(density: Int) {
     dataStore.edit { preferences ->
         preferences[SettingsKeys.COLLECTION_DENSITY] = density.coerceIn(1, 5)
     }
+    BackupScheduler.enqueueAfterChange(applicationContext)
 }
 
 fun Context.getCollectionDensity(): Flow<Int> {
@@ -63,12 +87,14 @@ suspend fun Context.saveCatalogIntegration(integration: CatalogIntegration) {
     dataStore.edit { preferences ->
         preferences[SettingsKeys.CATALOG_INTEGRATION] = integration.name
     }
+    BackupScheduler.enqueueAfterChange(applicationContext)
 }
 
 suspend fun Context.saveNavigationBarStyle(style: NavigationBarStyle) {
     dataStore.edit { preferences ->
         preferences[SettingsKeys.NAVIGATION_BAR_STYLE] = style.name
     }
+    BackupScheduler.enqueueAfterChange(applicationContext)
 }
 
 fun Context.getNavigationBarStyle(): Flow<NavigationBarStyle> {
@@ -107,3 +133,49 @@ suspend fun Context.saveNotificationPermissionRequested(requested: Boolean) {
         preferences[SettingsKeys.NOTIFICATION_PERMISSION_REQUESTED] = requested
     }
 }
+
+fun Context.getBackupPreferences(): Flow<BackupPreferences> {
+    return dataStore.data.map { preferences ->
+        BackupPreferences(
+            treeUri = preferences[SettingsKeys.BACKUP_TREE_URI],
+            frequency = preferences[SettingsKeys.BACKUP_FREQUENCY]
+                ?.let { runCatching { BackupFrequency.valueOf(it) }.getOrNull() }
+                ?: BackupFrequency.ON_CHANGE,
+            onboardingCompleted = noBackupFilesDir.resolve(BACKUP_ONBOARDING_MARKER).exists(),
+            lastBackupAt = preferences[SettingsKeys.LAST_BACKUP_AT],
+            lastBackupError = preferences[SettingsKeys.LAST_BACKUP_ERROR],
+        )
+    }
+}
+
+suspend fun Context.saveBackupTreeUri(uri: String?) {
+    val previousUri = dataStore.data.first()[SettingsKeys.BACKUP_TREE_URI]
+    dataStore.edit { preferences ->
+        if (uri == null) {
+            preferences.remove(SettingsKeys.BACKUP_TREE_URI)
+        } else {
+            preferences[SettingsKeys.BACKUP_TREE_URI] = uri
+        }
+    }
+    if (previousUri != null && previousUri != uri) {
+        runCatching {
+            contentResolver.releasePersistableUriPermission(
+                Uri.parse(previousUri),
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+            )
+        }
+    }
+}
+
+suspend fun Context.saveBackupFrequency(frequency: BackupFrequency) {
+    dataStore.edit { preferences ->
+        preferences[SettingsKeys.BACKUP_FREQUENCY] = frequency.name
+    }
+    BackupScheduler.configure(applicationContext, frequency)
+}
+
+suspend fun Context.completeBackupOnboarding() {
+    noBackupFilesDir.resolve(BACKUP_ONBOARDING_MARKER).createNewFile()
+}
+
+private const val BACKUP_ONBOARDING_MARKER = "backup_onboarding_completed"

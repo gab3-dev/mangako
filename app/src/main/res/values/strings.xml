@@ -25,6 +25,44 @@
     <string name="navigation_style_floating">Floating</string>
     <string name="navigation_style_floating_description">Show the selected label in a compact floating bar.</string>
 
+    <!-- Backups -->
+    <string name="backup_welcome_title">Protect your collection</string>
+    <string name="backup_welcome_description">MangaKō can keep your library, local volume list, and ownership state in a folder you choose. Backup files do not include cover images.</string>
+    <string name="backup_have_backup">I have a backup</string>
+    <string name="backup_no_backup">Set up a new backup</string>
+    <string name="backup_choose_file_error">This backup could not be opened or is invalid.</string>
+    <string name="backup_choose_folder_error">The selected folder could not be used.</string>
+    <string name="backup_restore_title">Restore backup?</string>
+    <string name="backup_restore_summary">%1$d manga and %2$d volumes (%3$d owned)\nCreated %4$s</string>
+    <string name="backup_merge">Merge</string>
+    <string name="backup_merge_description">Keep local items and add everything from the backup.</string>
+    <string name="backup_replace">Replace</string>
+    <string name="backup_replace_description">Replace the current collection and ownership state.</string>
+    <string name="backup_skip">Continue without backup</string>
+    <string name="backup_skip_title">Continue without protection?</string>
+    <string name="backup_skip_description">If this device is lost or the app data is removed, your collection and owned-volume history cannot be recovered.</string>
+    <string name="backup_processing">Processing backup…</string>
+    <string name="backup_settings_title">Backups</string>
+    <string name="backup_settings_description">Keep up to five snapshots of your collection in a folder you control.</string>
+    <string name="backup_folder_configured">Backup folder configured</string>
+    <string name="backup_folder_missing">No backup folder configured</string>
+    <string name="backup_choose_folder">Choose folder</string>
+    <string name="backup_change_folder">Change folder</string>
+    <string name="backup_now">Back up now</string>
+    <string name="backup_restore">Restore backup</string>
+    <string name="backup_frequency_title">Automatic frequency</string>
+    <string name="backup_frequency_change">After changes</string>
+    <string name="backup_frequency_change_description">Back up shortly after library, ownership, or important settings change.</string>
+    <string name="backup_frequency_daily">Daily</string>
+    <string name="backup_frequency_daily_description">Create a backup approximately once a day.</string>
+    <string name="backup_frequency_weekly">Weekly</string>
+    <string name="backup_frequency_weekly_description">Create a backup approximately once a week.</string>
+    <string name="backup_last_success">Last backup: %1$s</string>
+    <string name="backup_last_error">Last backup failed: %1$s</string>
+    <string name="backup_success">Backup created successfully.</string>
+    <string name="backup_restore_success">Backup restored successfully.</string>
+    <string name="backup_action_failed">The backup operation failed.</string>
+
     <!-- Collection Screen -->
     <string name="welcome_message">Welcome to MangaKō!</string>
 

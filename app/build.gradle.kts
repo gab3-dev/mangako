@@ -256,6 +256,7 @@ dependencies {
 
     // DataStore for preferences
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.documentfile)
 
     // Background work
     implementation(libs.androidx.work.runtime.ktx)

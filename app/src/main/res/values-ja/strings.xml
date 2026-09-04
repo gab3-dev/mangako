@@ -20,6 +20,44 @@
     <string name="navigation_style_floating">フローティング</string>
     <string name="navigation_style_floating_description">選択中のラベルをコンパクトなバーに表示します。</string>
 
+    <!-- Backups -->
+    <string name="backup_welcome_title">コレクションを保護</string>
+    <string name="backup_welcome_description">MangaKōは、ライブラリ、端末内の巻一覧、所持状態を選択したフォルダーに保存できます。バックアップに表紙画像は含まれません。</string>
+    <string name="backup_have_backup">バックアップがあります</string>
+    <string name="backup_no_backup">新しいバックアップを設定</string>
+    <string name="backup_choose_file_error">バックアップを開けないか、ファイルが無効です。</string>
+    <string name="backup_choose_folder_error">選択したフォルダーを使用できません。</string>
+    <string name="backup_restore_title">バックアップを復元しますか？</string>
+    <string name="backup_restore_summary">マンガ%1$d件、巻%2$d件（所持%3$d件）\n作成日時：%4$s</string>
+    <string name="backup_merge">統合</string>
+    <string name="backup_merge_description">端末内の項目を残し、バックアップの内容を追加します。</string>
+    <string name="backup_replace">置換</string>
+    <string name="backup_replace_description">現在のコレクションと所持状態を置き換えます。</string>
+    <string name="backup_skip">バックアップなしで続行</string>
+    <string name="backup_skip_title">保護せずに続行しますか？</string>
+    <string name="backup_skip_description">端末を紛失したりアプリデータを削除した場合、コレクションと所持巻の履歴を復元できません。</string>
+    <string name="backup_processing">バックアップを処理中…</string>
+    <string name="backup_settings_title">バックアップ</string>
+    <string name="backup_settings_description">選択したフォルダーにコレクションのスナップショットを最大5件保存します。</string>
+    <string name="backup_folder_configured">バックアップフォルダー設定済み</string>
+    <string name="backup_folder_missing">バックアップフォルダー未設定</string>
+    <string name="backup_choose_folder">フォルダーを選択</string>
+    <string name="backup_change_folder">フォルダーを変更</string>
+    <string name="backup_now">今すぐバックアップ</string>
+    <string name="backup_restore">バックアップを復元</string>
+    <string name="backup_frequency_title">自動バックアップ頻度</string>
+    <string name="backup_frequency_change">変更後</string>
+    <string name="backup_frequency_change_description">コレクション、所持状態、重要な設定の変更後にバックアップします。</string>
+    <string name="backup_frequency_daily">毎日</string>
+    <string name="backup_frequency_daily_description">およそ1日ごとにバックアップを作成します。</string>
+    <string name="backup_frequency_weekly">毎週</string>
+    <string name="backup_frequency_weekly_description">およそ1週間ごとにバックアップを作成します。</string>
+    <string name="backup_last_success">前回のバックアップ：%1$s</string>
+    <string name="backup_last_error">前回のバックアップに失敗：%1$s</string>
+    <string name="backup_success">バックアップを作成しました。</string>
+    <string name="backup_restore_success">バックアップを復元しました。</string>
+    <string name="backup_action_failed">バックアップ操作に失敗しました。</string>
+
     <!-- Collection Screen -->
     <string name="welcome_message">MangaKōへようこそ！</string>
 

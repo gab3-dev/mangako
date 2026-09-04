@@ -5,6 +5,7 @@ coilCompose = "2.7.0"
 converterGson = "3.0.0"
 coreTesting = "2.2.0"
 datastorePreferences = "1.2.1"
+documentFile = "1.1.0"
 kotlin = "2.2.21"
 kover = "0.9.2"
 coreKtx = "1.18.0"
@@ -38,6 +39,7 @@ androidx-animation-graphics = { module = "androidx.compose.animation:animation-g
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-core-testing = { module = "androidx.arch.core:core-testing", version.ref = "coreTesting" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
+androidx-documentfile = { module = "androidx.documentfile:documentfile", version.ref = "documentFile" }
 androidx-material = { module = "androidx.compose.material:material", version.ref = "material" }
 androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }

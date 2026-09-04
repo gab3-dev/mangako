@@ -18,6 +18,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.gabedev.mangako.R
+import com.gabedev.mangako.backup.BackupManager
 import com.gabedev.mangako.data.local.CatalogIntegration
 import com.gabedev.mangako.data.local.NavigationBarStyle
 import com.gabedev.mangako.data.local.getCatalogIntegration
@@ -28,6 +29,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun IntegrationSettingsScreen(
+    backupManager: BackupManager,
     modifier: Modifier = Modifier,
     contentBottomPadding: Dp = 0.dp,
 ) {
@@ -44,6 +46,10 @@ fun IntegrationSettingsScreen(
             .verticalScroll(rememberScrollState())
             .padding(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 24.dp + contentBottomPadding),
     ) {
+        BackupSettingsSection(
+            backupManager = backupManager,
+            modifier = Modifier.padding(bottom = 32.dp),
+        )
         Text(
             text = stringResource(R.string.integration_settings_title),
             style = MaterialTheme.typography.headlineSmall,

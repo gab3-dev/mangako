@@ -166,9 +166,12 @@ class MangaDetailViewModel(
                     loadCoverList()
                 } else {
                     volumeList.value = tmpData.volumes.map { it.copy() }
+                    if (tmpData.manga.description.isBlank()) {
+                        loadCoverList()
+                    }
                 }
             } catch (_: Exception) {
-                volumeList.value = emptyList()
+                // Keep a restored minimal snapshot visible while offline.
             } finally {
                 isVolumeLoading.value = false
             }
@@ -232,8 +235,11 @@ class MangaDetailViewModel(
         )
         val distinctCoverList = deduplicateVolumes(coverList)
 
-        localRepository.insertVolumeList(distinctCoverList)
-        volumeList.value = distinctCoverList.map { it.copy() }
+        localRepository.updateOrInsertVolumeList(distinctCoverList)
+        volumeList.value = localRepository
+            .getMangaWithVolume(idManga)
+            ?.volumes?.map { it.copy() }
+            ?: distinctCoverList.map { it.copy() }
     }
 
     fun loadMoreVolumes() {
