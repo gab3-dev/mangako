@@ -11,13 +11,15 @@ import com.gabedev.mangako.data.local.BackupFrequency
 import java.util.concurrent.TimeUnit
 
 object BackupScheduler {
-    private const val CHANGE_WORK_NAME = "collection_backup_after_change"
-    private const val PERIODIC_WORK_NAME = "collection_backup_periodic"
+    internal const val CHANGE_WORK_NAME = "collection_backup_after_change"
+    internal const val PERIODIC_WORK_NAME = "collection_backup_periodic"
+    internal const val CHANGE_TRIGGER_TAG = "collection_backup_change_trigger"
 
     fun enqueueAfterChange(context: Context) {
         val request = OneTimeWorkRequestBuilder<BackupWorker>()
             .setInitialDelay(30, TimeUnit.SECONDS)
             .setInputData(workDataOf(BackupWorker.KEY_CHANGE_TRIGGER to true))
+            .addTag(CHANGE_TRIGGER_TAG)
             .build()
         WorkManager.getInstance(context).enqueueUniqueWork(
             CHANGE_WORK_NAME,

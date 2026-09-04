@@ -5,8 +5,14 @@ import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
 import java.io.ByteArrayOutputStream
 
-class BackupStorage(private val context: Context) {
-    fun read(uri: Uri): ByteArray {
+interface BackupStore {
+    fun read(uri: Uri): ByteArray
+    fun write(treeUri: Uri, fileName: String, bytes: ByteArray)
+    fun canWrite(treeUri: Uri): Boolean
+}
+
+class BackupStorage(private val context: Context) : BackupStore {
+    override fun read(uri: Uri): ByteArray {
         val stream = context.contentResolver.openInputStream(uri)
             ?: error("Unable to open backup")
         return stream.use { input ->
@@ -24,7 +30,7 @@ class BackupStorage(private val context: Context) {
         }
     }
 
-    fun write(treeUri: Uri, fileName: String, bytes: ByteArray) {
+    override fun write(treeUri: Uri, fileName: String, bytes: ByteArray) {
         require(bytes.size <= MAX_BACKUP_BYTES) { "Backup is too large" }
         val directory = DocumentFile.fromTreeUri(context, treeUri)
             ?.takeIf { it.isDirectory && it.canWrite() }
@@ -52,7 +58,7 @@ class BackupStorage(private val context: Context) {
         }
     }
 
-    fun canWrite(treeUri: Uri): Boolean {
+    override fun canWrite(treeUri: Uri): Boolean {
         val hasPermission = context.contentResolver.persistedUriPermissions.any {
             it.uri == treeUri && it.isReadPermission && it.isWritePermission
         }

@@ -32,6 +32,7 @@ class LibraryRepositoryImplTest {
     private lateinit var mangaDao: MangaDAO
     private lateinit var volumeDao: VolumeDAO
     private lateinit var logger: FileLogger
+    private lateinit var onBackupRelevantChange: () -> Unit
     private lateinit var repository: LibraryRepositoryImpl
 
     private fun createManga(
@@ -68,11 +69,16 @@ class LibraryRepositoryImplTest {
         mangaDao = mockk()
         volumeDao = mockk()
         logger = mockk(relaxed = true)
+        onBackupRelevantChange = mockk(relaxed = true)
 
         every { db.mangaDao() } returns mangaDao
         every { db.volumeDao() } returns volumeDao
 
-        repository = LibraryRepositoryImpl(db, logger)
+        repository = LibraryRepositoryImpl(
+            db = db,
+            logger = logger,
+            onBackupRelevantChange = onBackupRelevantChange,
+        )
     }
 
     @After
@@ -264,6 +270,7 @@ class LibraryRepositoryImplTest {
         repository.addMangaToLibrary(manga)
 
         coVerify { mangaDao.updateMangaLibraryStatus(match { it.isOnUserLibrary }) }
+        verify(exactly = 1) { onBackupRelevantChange() }
     }
 
     // --- removeMangaFromLibrary(String) tests ---
@@ -284,6 +291,7 @@ class LibraryRepositoryImplTest {
 
         coVerify(exactly = 2) { volumeDao.updateVolume(match { !it.owned }) }
         coVerify { mangaDao.updateMangaLibraryStatus(match { !it.isOnUserLibrary }) }
+        verify(exactly = 1) { onBackupRelevantChange() }
     }
 
     @Test
@@ -293,6 +301,7 @@ class LibraryRepositoryImplTest {
         repository.removeMangaFromLibrary("nonexistent")
 
         coVerify(exactly = 0) { mangaDao.updateMangaLibraryStatus(any()) }
+        verify(exactly = 0) { onBackupRelevantChange() }
     }
 
     // --- removeMangaFromLibrary(Manga) tests ---
@@ -312,6 +321,7 @@ class LibraryRepositoryImplTest {
 
         coVerify(exactly = 2) { volumeDao.updateVolume(match { !it.owned }) }
         coVerify { mangaDao.updateMangaLibraryStatus(match { !it.isOnUserLibrary }) }
+        verify(exactly = 1) { onBackupRelevantChange() }
     }
 
     // --- isMangaInLibrary tests ---
@@ -376,6 +386,7 @@ class LibraryRepositoryImplTest {
         repository.updateVolume(volume)
 
         coVerify { volumeDao.updateVolume(volume) }
+        verify(exactly = 1) { onBackupRelevantChange() }
     }
 
     // --- updateVolumeList tests ---
@@ -388,6 +399,7 @@ class LibraryRepositoryImplTest {
         repository.updateVolumeList(volumes)
 
         coVerify { volumeDao.updateVolumeList(volumes) }
+        verify(exactly = 1) { onBackupRelevantChange() }
     }
 
     @Test
@@ -395,6 +407,7 @@ class LibraryRepositoryImplTest {
         repository.updateVolumeList(emptyList())
 
         coVerify(exactly = 0) { volumeDao.updateVolumeList(any()) }
+        verify(exactly = 0) { onBackupRelevantChange() }
     }
 
     // --- updateOrInsertVolumeList tests ---
