@@ -20,6 +20,19 @@
     <string name="navigation_style_floating">Flutuante</string>
     <string name="navigation_style_floating_description">Exibe o rótulo selecionado em uma barra compacta.</string>
 
+    <!-- Appearance Settings -->
+    <string name="appearance_settings_title">Aparência</string>
+    <string name="appearance_settings_description">Escolha as cores do app e o modo claro ou escuro de forma independente.</string>
+    <string name="appearance_theme_mangako">MangaKō Original</string>
+    <string name="appearance_theme_mangako_description">Usar a paleta de cores original do MangaKō.</string>
+    <string name="appearance_theme_dynamic">Cores do sistema</string>
+    <string name="appearance_theme_dynamic_description">Usar cores dinâmicas baseadas no papel de parede do dispositivo.</string>
+    <string name="appearance_theme_dynamic_unavailable">As cores do sistema exigem Android 12 ou superior.</string>
+    <string name="appearance_mode_title">Modo de exibição</string>
+    <string name="appearance_mode_system">Seguir o sistema</string>
+    <string name="appearance_mode_light">Claro</string>
+    <string name="appearance_mode_dark">Escuro</string>
+
     <!-- Backups -->
     <string name="backup_welcome_title">Proteja sua coleção</string>
     <string name="backup_welcome_description">O MangaKō pode guardar sua biblioteca, a lista local de volumes e o estado de posse em uma pasta escolhida por você. Os arquivos não incluem imagens das capas.</string>

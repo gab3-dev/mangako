@@ -20,6 +20,19 @@
     <string name="navigation_style_floating">フローティング</string>
     <string name="navigation_style_floating_description">選択中のラベルをコンパクトなバーに表示します。</string>
 
+    <!-- Appearance Settings -->
+    <string name="appearance_settings_title">外観</string>
+    <string name="appearance_settings_description">アプリの配色とライト・ダークモードを個別に選択できます。</string>
+    <string name="appearance_theme_mangako">MangaKō オリジナル</string>
+    <string name="appearance_theme_mangako_description">MangaKō本来のカラーパレットを使用します。</string>
+    <string name="appearance_theme_dynamic">システムカラー</string>
+    <string name="appearance_theme_dynamic_description">端末の壁紙に基づいたダイナミックカラーを使用します。</string>
+    <string name="appearance_theme_dynamic_unavailable">システムカラーにはAndroid 12以降が必要です。</string>
+    <string name="appearance_mode_title">表示モード</string>
+    <string name="appearance_mode_system">システム設定に従う</string>
+    <string name="appearance_mode_light">ライト</string>
+    <string name="appearance_mode_dark">ダーク</string>
+
     <!-- Backups -->
     <string name="backup_welcome_title">コレクションを保護</string>
     <string name="backup_welcome_description">MangaKōは、ライブラリ、端末内の巻一覧、所持状態を選択したフォルダーに保存できます。バックアップに表紙画像は含まれません。</string>

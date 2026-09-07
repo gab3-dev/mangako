@@ -25,6 +25,19 @@
     <string name="navigation_style_floating">Floating</string>
     <string name="navigation_style_floating_description">Show the selected label in a compact floating bar.</string>
 
+    <!-- Appearance Settings -->
+    <string name="appearance_settings_title">Appearance</string>
+    <string name="appearance_settings_description">Choose the app colors and light or dark mode independently.</string>
+    <string name="appearance_theme_mangako">MangaKō Original</string>
+    <string name="appearance_theme_mangako_description">Use the original MangaKō color palette.</string>
+    <string name="appearance_theme_dynamic">System colors</string>
+    <string name="appearance_theme_dynamic_description">Use dynamic colors based on your device wallpaper.</string>
+    <string name="appearance_theme_dynamic_unavailable">System colors require Android 12 or later.</string>
+    <string name="appearance_mode_title">Display mode</string>
+    <string name="appearance_mode_system">Follow system</string>
+    <string name="appearance_mode_light">Light</string>
+    <string name="appearance_mode_dark">Dark</string>
+
     <!-- Backups -->
     <string name="backup_welcome_title">Protect your collection</string>
     <string name="backup_welcome_description">MangaKō can keep your library, local volume list, and ownership state in a folder you choose. Backup files do not include cover images.</string>

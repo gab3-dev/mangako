@@ -5,11 +5,18 @@ import android.content.Intent
 import android.net.Uri
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.gabedev.mangako.backup.BackupScheduler
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.retryWhen
+import java.io.IOException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
@@ -17,6 +24,8 @@ import kotlinx.coroutines.flow.map
 val Context.dataStore by preferencesDataStore(name = "settings")
 
 object SettingsKeys {
+    val APP_THEME = stringPreferencesKey("app_theme")
+    val THEME_MODE = stringPreferencesKey("theme_mode")
     val VIEW_MODE = stringPreferencesKey("view_mode")
     val COLLECTION_DENSITY = intPreferencesKey("collection_density")
     val CATALOG_INTEGRATION = stringPreferencesKey("catalog_integration")
@@ -29,6 +38,31 @@ object SettingsKeys {
     val BACKUP_FREQUENCY = stringPreferencesKey("backup_frequency")
     val LAST_BACKUP_AT = stringPreferencesKey("last_backup_at")
     val LAST_BACKUP_ERROR = stringPreferencesKey("last_backup_error")
+}
+
+fun Context.getAppearancePreferences(): Flow<AppearancePreferences> = flow {
+    var hasValue = false
+    emitAll(dataStore.data
+        .onEach { hasValue = true }
+        .retryWhen { error, _ ->
+            if (error !is IOException) return@retryWhen false
+            // Allow startup on a read failure, then recover without resetting a valid theme.
+            if (!hasValue) {
+                emit(emptyPreferences())
+                hasValue = true
+            }
+            delay(1_000)
+            true
+        }
+        .map { AppearancePreferences.fromStored(it[SettingsKeys.APP_THEME], it[SettingsKeys.THEME_MODE]) })
+}
+
+suspend fun Context.saveAppTheme(theme: AppTheme) {
+    dataStore.edit { it[SettingsKeys.APP_THEME] = theme.name }
+}
+
+suspend fun Context.saveThemeMode(mode: ThemeMode) {
+    dataStore.edit { it[SettingsKeys.THEME_MODE] = mode.name }
 }
 
 enum class CatalogIntegration {

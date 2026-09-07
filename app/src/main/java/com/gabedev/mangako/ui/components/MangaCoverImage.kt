@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -36,7 +37,8 @@ fun MangaCoverImage(
     modifier: Modifier = Modifier,
     contentDescription: String? = null
 ) {
-    var isLoading by remember { mutableStateOf(true) }
+    var isLoading by remember(imageUrl) { mutableStateOf(true) }
+    var hasError by remember(imageUrl) { mutableStateOf(false) }
 
     Box(
         modifier = modifier
@@ -64,8 +66,20 @@ fun MangaCoverImage(
                 onSuccess = {
                     isLoading = false
                 },
-                error = painterResource(R.drawable.ic_broken_image)
+                onError = {
+                    isLoading = false
+                    hasError = true
+                },
             )
+
+            if (hasError) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_broken_image),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
 
             // Adiciona um loading se quiser (opcional)
             if (isLoading) {
