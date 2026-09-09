@@ -2,6 +2,7 @@ package com.gabedev.mangako
 
 import androidx.room.Room
 import com.gabedev.mangako.core.FileLogger
+import com.gabedev.mangako.core.unavailableMangaTitle
 import com.gabedev.mangako.data.local.LocalDatabase
 import com.gabedev.mangako.data.remote.api.MangaKoAPI
 import com.gabedev.mangako.data.repository.LibraryRepositoryImpl
@@ -37,7 +38,7 @@ class E2ETestApplication : MangaKoApplication() {
         return AppContainer(
             database = database,
             logger = logger,
-            mangaRepository = MangaKoRepositoryImpl(api),
+            mangaRepository = MangaKoRepositoryImpl(api, this::unavailableMangaTitle),
             localRepository = LibraryRepositoryImpl(database, logger),
         )
     }

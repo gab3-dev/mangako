@@ -1,4 +1,5 @@
 <resources>
+    <string name="manga_title_unavailable">タイトル情報なし</string>
     <string name="manga_description_unavailable">あらすじはありません</string>
     <!-- Navigation -->
     <string name="nav_library">ライブラリ</string>

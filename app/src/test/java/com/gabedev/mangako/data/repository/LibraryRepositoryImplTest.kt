@@ -239,8 +239,12 @@ class LibraryRepositoryImplTest {
 
     @Test
     fun `updateManga merges with existing and updates`() = runTest {
-        val existing = createManga(isOnLibrary = true)
-        val incoming = createManga().copy(title = "Updated Title", author = "New Author")
+        val existing = createManga(isOnLibrary = true).copy(altTitle = "Old Alternative Title")
+        val incoming = createManga().copy(
+            title = "Updated Title",
+            altTitle = "New Alternative Title",
+            author = "New Author"
+        )
         coEvery { mangaDao.getMangaById("manga-1") } returns existing
         coEvery { mangaDao.updateManga(any()) } returns 1
 
@@ -248,7 +252,31 @@ class LibraryRepositoryImplTest {
 
         assertNotNull(result)
         assertEquals("Updated Title", result!!.title)
+        assertEquals("New Alternative Title", result.altTitle)
         assertTrue(result.isOnUserLibrary) // Preserved from existing
+        coVerify(exactly = 1) {
+            mangaDao.updateManga(incoming.copy(isOnUserLibrary = true))
+        }
+    }
+
+    @Test
+    fun `updateManga clears obsolete altTitle preserving library status`() = runTest {
+        for (isOnLibrary in listOf(true, false)) {
+            val existing = createManga(isOnLibrary = isOnLibrary)
+                .copy(altTitle = "Old Alternative Title")
+            val incoming = createManga(isOnLibrary = !isOnLibrary).copy(altTitle = null)
+            coEvery { mangaDao.getMangaById("manga-1") } returns existing
+            coEvery { mangaDao.updateManga(any()) } returns 1
+
+            val result = repository.updateManga(incoming)
+
+            assertNotNull(result)
+            assertNull(result!!.altTitle)
+            assertEquals(isOnLibrary, result.isOnUserLibrary)
+            coVerify(exactly = 1) {
+                mangaDao.updateManga(existing.copy(altTitle = null))
+            }
+        }
     }
 
     @Test

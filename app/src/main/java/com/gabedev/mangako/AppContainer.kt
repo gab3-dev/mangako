@@ -5,6 +5,7 @@ import androidx.room.withTransaction
 import com.gabedev.mangako.backup.BackupManager
 import com.gabedev.mangako.backup.BackupScheduler
 import com.gabedev.mangako.core.FileLogger
+import com.gabedev.mangako.core.unavailableMangaTitle
 import com.gabedev.mangako.data.local.LocalDatabase
 import com.gabedev.mangako.data.local.MangaKoDatabase
 import com.gabedev.mangako.data.remote.api.MangaDexAPI
@@ -36,7 +37,7 @@ data class AppContainer(
                 .addConverterFactory(GsonConverterFactory.create())
                 .build()
                 .create(MangaDexAPI::class.java)
-            val mangaDexRepository = MangaDexRepositoryImpl(mangaDexApi, logger)
+            val mangaDexRepository = MangaDexRepositoryImpl(mangaDexApi, logger, context::unavailableMangaTitle)
             val mangaKoRepository = BuildConfig.MANGAKO_API_TOKEN
                 .takeIf { it.isNotBlank() }
                 ?.let { token ->
@@ -55,7 +56,7 @@ data class AppContainer(
                         .addConverterFactory(GsonConverterFactory.create())
                         .build()
                         .create(MangaKoAPI::class.java)
-                    MangaKoRepositoryImpl(mangaKoApi)
+                    MangaKoRepositoryImpl(mangaKoApi, context::unavailableMangaTitle)
                 }
 
             return AppContainer(

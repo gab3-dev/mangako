@@ -10,6 +10,7 @@ import java.util.Locale
 
 class MangaKoRepositoryImpl(
     private val api: MangaKoAPI,
+    private val unavailableTitle: (Locale) -> String,
     private val localeProvider: () -> Locale = { Locale.getDefault() },
 ) : MangaDexRepository {
     override suspend fun searchManga(title: String, offset: Int?): List<Manga> {
@@ -53,18 +54,20 @@ class MangaKoRepositoryImpl(
     override fun log(message: Exception) = Unit
 
     private fun MangaKoMangaDto.toManga(): Manga {
-        val title = localizations.localizedTitle() ?: primaryTitle
+        val locale = localeProvider()
+        val titles = localizations.map { it.language to it.title } + aliases.map { it.language to it.title }
+        val title = Utils.localizedTitle(titles, locale) ?: unavailableTitle(locale)
         return Manga(
             id = mangaDexId ?: id,
             title = title,
-            altTitle = aliases.firstOrNull { it.language.normalized() == "ja-ro" }?.title,
+            altTitle = Utils.romanizedTitle(titles),
             coverId = covers.firstOrNull { it.isPrimary }?.mangaDexCoverId
                 ?: covers.firstOrNull { it.isPrimary }?.id,
             coverUrl = covers.firstOrNull { it.isPrimary }?.sourceUrl.orEmpty(),
             author = authors.firstOrNull()?.name,
             description = Utils.localizedDescription(
                 localizations.sortedByDescending { it.isPrimary }.map { it.language to it.description },
-                localeProvider(),
+                locale,
             ),
             status = status,
             volumeCount = latestVolumeNumber?.toFloatOrNull()?.toInt() ?: 0,
@@ -85,11 +88,4 @@ class MangaKoRepositoryImpl(
         )
     }
 
-    private fun List<com.gabedev.mangako.data.dto.MangaKoLocalizationDto>.localizedTitle(): String? {
-        return firstOrNull { it.language.normalized() == "en" }?.title
-            ?: firstOrNull { it.language.normalized() == "ja-ro" }?.title
-            ?: firstOrNull { it.language.normalized() == "pt-br" }?.title
-    }
-
-    private fun String.normalized(): String = lowercase().replace('_', '-')
 }

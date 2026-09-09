@@ -38,6 +38,21 @@ class BackupFormatTest {
     }
 
     @Test
+    fun `unavailable Japanese title and romanized alternative survive backup round trip`() {
+        val original = payload()
+        val localized = original.copy(
+            collection = original.collection.map {
+                it.copy(title = "タイトル情報なし", altTitle = "Sousou no Frieren")
+            },
+        )
+
+        val parsed = format.decode(format.encode(localized, CREATED_AT, 1))
+
+        assertEquals(localized, parsed.document.payload)
+        assertTrue(parsed.document.payload.collection.single().title.isNotBlank())
+    }
+
+    @Test
     fun `changed payload is rejected when checksum no longer matches`() {
         val encoded = format.encode(payload(), CREATED_AT, 1)
             .decodeToString()
