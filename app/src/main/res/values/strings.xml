@@ -1,4 +1,5 @@
 <resources>
+    <string name="manga_description_unavailable">No description available</string>
     <string name="app_name" translatable="false">MangaKō</string>
     <string name="title_activity_manga_card" translatable="false">MangaCard</string>
     <string name="title_activity_manga_list" translatable="false">MangaList</string>

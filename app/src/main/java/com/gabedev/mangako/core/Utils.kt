@@ -1,6 +1,7 @@
 package com.gabedev.mangako.core
 
 import com.gabedev.mangako.data.dto.AttributesDto
+import java.util.Locale
 
 object Utils {
     // Remove ".0" from the string, just for exhibition
@@ -33,11 +34,28 @@ object Utils {
         return mangatitle ?: "Titulo não encontrado"
     }
 
-    // Search and return the correct manga description
-    fun handleMangaDescription(attributes: AttributesDto) :String  {
-        val mangaDescription = attributes.description?.get("pt-br")
-            ?: attributes.description?.get("en")
-            ?: attributes.description?.get("ja-ro")
-        return mangaDescription ?: "Nenhuma descrição disponível"
+    fun handleMangaDescription(attributes: AttributesDto, locale: Locale = Locale.getDefault()): String {
+        return localizedDescription(attributes.description.orEmpty().toList(), locale)
+    }
+
+    fun localizedDescription(
+        descriptions: List<Pair<String, String?>>,
+        locale: Locale = Locale.getDefault(),
+    ): String {
+        val available = descriptions.mapNotNull { (language, text) ->
+            text?.takeIf { it.isNotBlank() }?.let {
+                language.replace('_', '-').lowercase(Locale.ROOT) to it
+            }
+        }
+        val tag = locale.toLanguageTag().lowercase(Locale.ROOT)
+        val language = locale.language.lowercase(Locale.ROOT)
+        // Prefer the exact region, then the base language and its other regional variants.
+        return available.firstOrNull { it.first == tag }?.second
+            ?: available.firstOrNull { it.first == language }?.second
+            ?: available.firstOrNull { it.first.startsWith("$language-") }?.second
+            ?: available.firstOrNull { it.first == "en" }?.second
+            ?: available.firstOrNull { it.first.startsWith("en-") }?.second
+            ?: available.firstOrNull()?.second
+            ?: ""
     }
 }

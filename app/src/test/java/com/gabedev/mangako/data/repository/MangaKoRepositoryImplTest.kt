@@ -13,10 +13,11 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import java.util.Locale
 
 class MangaKoRepositoryImplTest {
     private val api = mockk<MangaKoAPI>()
-    private val repository = MangaKoRepositoryImpl(api)
+    private val repository = MangaKoRepositoryImpl(api, localeProvider = { Locale.ENGLISH })
 
     @Test
     fun `search maps localized manga while preserving MangaDex ID`() = runTest {
@@ -29,7 +30,7 @@ class MangaKoRepositoryImplTest {
         assertEquals("Wan Pisu", manga.altTitle)
         assertEquals("https://example.com/primary.jpg", manga.coverUrl)
         assertEquals("Eiichiro Oda", manga.author)
-        assertEquals("Descricao PT", manga.description)
+        assertEquals("Description EN", manga.description)
         assertEquals(12, manga.volumeCount)
     }
 
@@ -49,6 +50,112 @@ class MangaKoRepositoryImplTest {
 
         assertEquals("Berserk", manga.title)
         assertNull(manga.altTitle)
+    }
+
+    @Test
+    fun `getManga selects Brazilian Portuguese description`() = runTest {
+        val repository = MangaKoRepositoryImpl(api) { Locale.forLanguageTag("pt-BR") }
+        coEvery { api.getManga("mangadex-manga", false) } returns mangaDto()
+
+        val manga = repository.getManga("mangadex-manga", false)
+
+        assertEquals("Descricao PT", manga.description)
+    }
+
+    @Test
+    fun `getManga selects exact Portugal locale over Brazilian primary`() = runTest {
+        val repository = MangaKoRepositoryImpl(api) { Locale.forLanguageTag("pt-PT") }
+        val dto = mangaDto()
+        coEvery { api.getManga("mangadex-manga", false) } returns dto.copy(
+            localizations = dto.localizations + MangaKoLocalizationDto(
+                "pt-PT", "One Piece PT", "Descricao Portugal", false,
+            ),
+        )
+
+        val manga = repository.getManga("mangadex-manga", false)
+
+        assertEquals("Descricao Portugal", manga.description)
+    }
+
+    @Test
+    fun `getManga falls back to Brazilian Portuguese for Portugal locale`() = runTest {
+        val repository = MangaKoRepositoryImpl(api) { Locale.forLanguageTag("pt-PT") }
+        coEvery { api.getManga("mangadex-manga", false) } returns mangaDto()
+
+        val manga = repository.getManga("mangadex-manga", false)
+
+        assertEquals("Descricao PT", manga.description)
+    }
+
+    @Test
+    fun `getManga selects Japanese description over English and primary`() = runTest {
+        val repository = MangaKoRepositoryImpl(api) { Locale.JAPANESE }
+        val dto = mangaDto()
+        coEvery { api.getManga("mangadex-manga", false) } returns dto.copy(
+            localizations = dto.localizations + MangaKoLocalizationDto(
+                "ja", "One Piece JA", "Description JA", false,
+            ),
+        )
+
+        val manga = repository.getManga("mangadex-manga", false)
+
+        assertEquals("Description JA", manga.description)
+    }
+
+    @Test
+    fun `getManga falls back to English when requested language is missing`() = runTest {
+        val repository = MangaKoRepositoryImpl(api) { Locale.JAPANESE }
+        coEvery { api.getManga("mangadex-manga", false) } returns mangaDto()
+
+        val manga = repository.getManga("mangadex-manga", false)
+
+        assertEquals("Description EN", manga.description)
+    }
+
+    @Test
+    fun `getManga falls back to primary when requested language and English are missing`() = runTest {
+        val repository = MangaKoRepositoryImpl(api) { Locale.JAPANESE }
+        coEvery { api.getManga("mangadex-manga", false) } returns mangaDto().copy(
+            localizations = listOf(
+                MangaKoLocalizationDto("fr", "One Piece FR", "Description FR", false),
+                mangaDto().localizations.single { it.isPrimary },
+            ),
+        )
+
+        val manga = repository.getManga("mangadex-manga", false)
+
+        assertEquals("Descricao PT", manga.description)
+    }
+
+    @Test
+    fun `getManga ignores blank primary and preserves first nonblank duplicate description`() = runTest {
+        val repository = MangaKoRepositoryImpl(api) { Locale.forLanguageTag("pt-BR") }
+        val dto = mangaDto()
+        val primary = dto.localizations.single { it.isPrimary }
+        coEvery { api.getManga("mangadex-manga", false) } returns dto.copy(
+            localizations = listOf(primary.copy(description = " \n\t")) +
+                dto.localizations.map { it.copy(isPrimary = false) } +
+                primary.copy(description = "Duplicate PT", isPrimary = false),
+        )
+
+        val manga = repository.getManga("mangadex-manga", false)
+
+        assertEquals("Descricao PT", manga.description)
+    }
+
+    @Test
+    fun `getManga falls back to English when requested description is blank`() = runTest {
+        val repository = MangaKoRepositoryImpl(api) { Locale.forLanguageTag("pt-BR") }
+        val dto = mangaDto()
+        coEvery { api.getManga("mangadex-manga", false) } returns dto.copy(
+            localizations = dto.localizations.map {
+                if (it.isPrimary) it.copy(description = " \n\t") else it
+            },
+        )
+
+        val manga = repository.getManga("mangadex-manga", false)
+
+        assertEquals("Description EN", manga.description)
     }
 
     @Test

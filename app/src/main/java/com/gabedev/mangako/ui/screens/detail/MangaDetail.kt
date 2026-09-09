@@ -742,7 +742,7 @@ fun MangaHeader(
                 }
             }
             ExpandableDescription(
-                text = description,
+                text = description.ifBlank { stringResource(R.string.manga_description_unavailable) },
                 modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
             )
         }

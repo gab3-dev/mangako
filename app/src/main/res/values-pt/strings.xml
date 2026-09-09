@@ -1,4 +1,5 @@
 <resources>
+    <string name="manga_description_unavailable">Nenhuma descrição disponível</string>
     <!-- Navigation -->
     <string name="nav_library">Biblioteca</string>
     <string name="nav_explore">Explorar</string>

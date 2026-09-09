@@ -4,6 +4,7 @@ import com.gabedev.mangako.data.dto.AttributesDto
 import com.gabedev.mangako.data.dto.LinksDto
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.util.Locale
 
 class UtilsTest {
 
@@ -141,12 +142,12 @@ class UtilsTest {
     // --- handleMangaDescription tests ---
 
     @Test
-    fun `handleMangaDescription returns pt-br when available`() {
+    fun `handleMangaDescription returns pt-br for Brazilian devices`() {
         val attrs = createAttributesDto(
             description = mapOf("pt-br" to "Descrição em português", "en" to "English description")
         )
 
-        assertEquals("Descrição em português", Utils.handleMangaDescription(attrs))
+        assertEquals("Descrição em português", Utils.handleMangaDescription(attrs, Locale.forLanguageTag("pt-BR")))
     }
 
     @Test
@@ -155,7 +156,7 @@ class UtilsTest {
             description = mapOf("en" to "English description")
         )
 
-        assertEquals("English description", Utils.handleMangaDescription(attrs))
+        assertEquals("English description", Utils.handleMangaDescription(attrs, Locale.JAPANESE))
     }
 
     @Test
@@ -164,29 +165,64 @@ class UtilsTest {
             description = mapOf("ja-ro" to "Japanese romanized")
         )
 
-        assertEquals("Japanese romanized", Utils.handleMangaDescription(attrs))
+        assertEquals("Japanese romanized", Utils.handleMangaDescription(attrs, Locale.ENGLISH))
     }
 
     @Test
-    fun `handleMangaDescription returns fallback when no description found`() {
+    fun `handleMangaDescription uses another available language as last fallback`() {
         val attrs = createAttributesDto(
             description = mapOf("zh" to "中文描述")
         )
 
-        assertEquals("Nenhuma descrição disponível", Utils.handleMangaDescription(attrs))
+        assertEquals("中文描述", Utils.handleMangaDescription(attrs, Locale.ENGLISH))
     }
 
     @Test
     fun `handleMangaDescription with null description`() {
         val attrs = createAttributesDto(description = null)
 
-        assertEquals("Nenhuma descrição disponível", Utils.handleMangaDescription(attrs))
+        assertEquals("", Utils.handleMangaDescription(attrs, Locale.ENGLISH))
     }
 
     @Test
     fun `handleMangaDescription with empty description map`() {
         val attrs = createAttributesDto(description = emptyMap())
 
-        assertEquals("Nenhuma descrição disponível", Utils.handleMangaDescription(attrs))
+        assertEquals("", Utils.handleMangaDescription(attrs, Locale.ENGLISH))
+    }
+
+    @Test
+    fun `description follows device language instead of always preferring Portuguese`() {
+        val attrs = createAttributesDto(description = mapOf(
+            "pt-br" to "Portuguese", "en" to "English", "ja" to "Japanese",
+        ))
+        assertEquals("English", Utils.handleMangaDescription(attrs, Locale.US))
+        assertEquals("Japanese", Utils.handleMangaDescription(attrs, Locale.JAPAN))
+        assertEquals("English", Utils.handleMangaDescription(attrs, Locale.GERMAN))
+    }
+
+    @Test
+    fun `description matches normalized region before base language`() {
+        val attrs = createAttributesDto(description = mapOf(
+            "pt" to "Generic", "PT_br" to "Brazilian", "pt-PT" to "Portugal", "en" to "English",
+        ))
+        assertEquals("Brazilian", Utils.handleMangaDescription(attrs, Locale.forLanguageTag("pt-BR")))
+        assertEquals("Portugal", Utils.handleMangaDescription(attrs, Locale.forLanguageTag("pt-PT")))
+        assertEquals("Generic", Utils.handleMangaDescription(attrs, Locale.forLanguageTag("pt-AO")))
+    }
+
+    @Test
+    fun `description uses another regional variant before English`() {
+        val attrs = createAttributesDto(description = mapOf("en" to "English", "pt-br" to "Brazilian"))
+        assertEquals("Brazilian", Utils.handleMangaDescription(attrs, Locale.forLanguageTag("pt-PT")))
+    }
+
+    @Test
+    fun `description skips null empty and whitespace values`() {
+        val attrs = createAttributesDto(description = mapOf(
+            "pt-br" to "  ", "pt" to "", "pt-pt" to null, "en" to "English",
+        ))
+        assertEquals("English", Utils.handleMangaDescription(attrs, Locale.forLanguageTag("pt-BR")))
+        assertEquals("", Utils.localizedDescription(listOf("en" to "\n", "ja" to null), Locale.US))
     }
 }
