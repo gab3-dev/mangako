@@ -6,10 +6,13 @@ import com.gabedev.mangako.data.dto.MangaDto
 import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.model.Volume
 import com.gabedev.mangako.data.remote.api.MangaDexAPI
+import java.util.Locale
 
 class MangaDexRepositoryImpl(
     private val api: MangaDexAPI,
-    private val logger: FileLogger
+    private val logger: FileLogger,
+    private val unavailableTitle: (Locale) -> String,
+    private val localeProvider: () -> Locale = { Locale.getDefault() },
 ) : MangaDexRepository {
 
     private fun defaultCoverUrl(mangaId: String): String {
@@ -95,16 +98,17 @@ class MangaDexRepositoryImpl(
             it.type == "cover_art"
         }?.id.orEmpty())
         val lastVolumeNumber = getLastVolumeNumber(api, dto, logger)
+        val locale = localeProvider()
         return Manga(
             id = dto.id,
-            title = Utils.handleMangaTitle(dto.attributes),
-            altTitle = dto.attributes.altTitles?.find { it.containsKey("ja-ro") }?.get("ja-ro"),
+            title = Utils.handleMangaTitle(dto.attributes, locale) ?: unavailableTitle(locale),
+            altTitle = Utils.handleMangaAlternativeTitle(dto.attributes),
             coverId = cover.data.id,
             coverFileName = cover.data.attributes.fileName,
             coverUrl = handleCoverUrl(dto.id, cover.data.attributes.fileName),
             authorId = author.data.id,
             author = author.data.attributes.name,
-            description = Utils.handleMangaDescription(dto.attributes),
+            description = Utils.handleMangaDescription(dto.attributes, locale),
             status = dto.attributes.status,
             volumeCount = lastVolumeNumber,
         )
@@ -196,18 +200,19 @@ class MangaDexRepositoryImpl(
         val coverRelationship = relationships.firstOrNull { it.type == "cover_art" }
         val coverFileName = coverRelationship?.attributes?.fileName
         val fallbackVolumeCount = attributes.lastVolume?.toFloatOrNull()?.toInt() ?: 0
+        val locale = localeProvider()
 
         return Manga(
             id = id,
-            title = Utils.handleMangaTitle(attributes),
-            altTitle = attributes.altTitles?.find { it.containsKey("ja-ro") }?.get("ja-ro"),
+            title = Utils.handleMangaTitle(attributes, locale) ?: unavailableTitle(locale),
+            altTitle = Utils.handleMangaAlternativeTitle(attributes),
             type = type,
             coverId = coverRelationship?.id,
             coverFileName = coverFileName,
             coverUrl = coverFileName?.let { handleCoverUrl(id, it) } ?: defaultCoverUrl(id),
             authorId = authorRelationship?.id,
             author = authorRelationship?.attributes?.name,
-            description = Utils.handleMangaDescription(attributes),
+            description = Utils.handleMangaDescription(attributes, locale),
             status = attributes.status,
             volumeCount = fallbackVolumeCount,
         )

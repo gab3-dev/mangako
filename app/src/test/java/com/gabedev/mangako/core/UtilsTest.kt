@@ -3,7 +3,9 @@ package com.gabedev.mangako.core
 import com.gabedev.mangako.data.dto.AttributesDto
 import com.gabedev.mangako.data.dto.LinksDto
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
+import java.util.Locale
 
 class UtilsTest {
 
@@ -81,7 +83,7 @@ class UtilsTest {
     fun `handleMangaTitle returns English title when available`() {
         val attrs = createAttributesDto(title = mapOf("en" to "One Piece"))
 
-        assertEquals("One Piece", Utils.handleMangaTitle(attrs))
+        assertEquals("One Piece", Utils.handleMangaTitle(attrs, Locale.ENGLISH))
     }
 
     @Test
@@ -91,7 +93,7 @@ class UtilsTest {
             altTitles = listOf(mapOf("en" to "One Piece Alt"))
         )
 
-        assertEquals("One Piece Alt", Utils.handleMangaTitle(attrs))
+        assertEquals("One Piece Alt", Utils.handleMangaTitle(attrs, Locale.ENGLISH))
     }
 
     @Test
@@ -100,16 +102,16 @@ class UtilsTest {
             title = mapOf("ja-ro" to "Wan Pīsu")
         )
 
-        assertEquals("Wan Pīsu", Utils.handleMangaTitle(attrs))
+        assertEquals("Wan Pīsu", Utils.handleMangaTitle(attrs, Locale.ENGLISH))
     }
 
     @Test
-    fun `handleMangaTitle falls back to pt-br in title`() {
+    fun `handleMangaTitle selects pt-br on Brazilian device`() {
         val attrs = createAttributesDto(
             title = mapOf("pt-br" to "Uma Peça")
         )
 
-        assertEquals("Uma Peça", Utils.handleMangaTitle(attrs))
+        assertEquals("Uma Peça", Utils.handleMangaTitle(attrs, Locale.forLanguageTag("pt-BR")))
     }
 
     @Test
@@ -119,7 +121,7 @@ class UtilsTest {
             altTitles = listOf(mapOf("pt-br" to "Uma Peça Alt"))
         )
 
-        assertEquals("Uma Peça Alt", Utils.handleMangaTitle(attrs))
+        assertEquals("Uma Peça Alt", Utils.handleMangaTitle(attrs, Locale.forLanguageTag("pt-BR")))
     }
 
     @Test
@@ -128,25 +130,25 @@ class UtilsTest {
             title = mapOf("zh" to "海贼王")
         )
 
-        assertEquals("Titulo não encontrado", Utils.handleMangaTitle(attrs))
+        assertNull(Utils.handleMangaTitle(attrs, Locale.ENGLISH))
     }
 
     @Test
     fun `handleMangaTitle with null title and altTitles`() {
         val attrs = createAttributesDto(title = null, altTitles = null)
 
-        assertEquals("Titulo não encontrado", Utils.handleMangaTitle(attrs))
+        assertNull(Utils.handleMangaTitle(attrs, Locale.ENGLISH))
     }
 
     // --- handleMangaDescription tests ---
 
     @Test
-    fun `handleMangaDescription returns pt-br when available`() {
+    fun `handleMangaDescription returns pt-br for Brazilian devices`() {
         val attrs = createAttributesDto(
             description = mapOf("pt-br" to "Descrição em português", "en" to "English description")
         )
 
-        assertEquals("Descrição em português", Utils.handleMangaDescription(attrs))
+        assertEquals("Descrição em português", Utils.handleMangaDescription(attrs, Locale.forLanguageTag("pt-BR")))
     }
 
     @Test
@@ -155,7 +157,7 @@ class UtilsTest {
             description = mapOf("en" to "English description")
         )
 
-        assertEquals("English description", Utils.handleMangaDescription(attrs))
+        assertEquals("English description", Utils.handleMangaDescription(attrs, Locale.GERMAN))
     }
 
     @Test
@@ -164,29 +166,115 @@ class UtilsTest {
             description = mapOf("ja-ro" to "Japanese romanized")
         )
 
-        assertEquals("Japanese romanized", Utils.handleMangaDescription(attrs))
+        assertEquals("Japanese romanized", Utils.handleMangaDescription(attrs, Locale.ENGLISH))
     }
 
     @Test
-    fun `handleMangaDescription returns fallback when no description found`() {
+    fun `handleMangaDescription uses another available language as last fallback`() {
         val attrs = createAttributesDto(
             description = mapOf("zh" to "中文描述")
         )
 
-        assertEquals("Nenhuma descrição disponível", Utils.handleMangaDescription(attrs))
+        assertEquals("中文描述", Utils.handleMangaDescription(attrs, Locale.ENGLISH))
     }
 
     @Test
     fun `handleMangaDescription with null description`() {
         val attrs = createAttributesDto(description = null)
 
-        assertEquals("Nenhuma descrição disponível", Utils.handleMangaDescription(attrs))
+        assertEquals("", Utils.handleMangaDescription(attrs, Locale.ENGLISH))
     }
 
     @Test
     fun `handleMangaDescription with empty description map`() {
         val attrs = createAttributesDto(description = emptyMap())
 
-        assertEquals("Nenhuma descrição disponível", Utils.handleMangaDescription(attrs))
+        assertEquals("", Utils.handleMangaDescription(attrs, Locale.ENGLISH))
+    }
+
+    @Test
+    fun `description follows device language instead of always preferring Portuguese`() {
+        val attrs = createAttributesDto(description = mapOf(
+            "pt-br" to "Portuguese", "en" to "English", "ja" to "Japanese",
+        ))
+        assertEquals("English", Utils.handleMangaDescription(attrs, Locale.US))
+        assertEquals("Japanese", Utils.handleMangaDescription(attrs, Locale.JAPAN))
+        assertEquals("English", Utils.handleMangaDescription(attrs, Locale.GERMAN))
+    }
+
+    @Test
+    fun `description matches normalized region before base language`() {
+        val attrs = createAttributesDto(description = mapOf(
+            "pt" to "Generic", "PT_br" to "Brazilian", "pt-PT" to "Portugal", "en" to "English",
+        ))
+        assertEquals("Brazilian", Utils.handleMangaDescription(attrs, Locale.forLanguageTag("pt-BR")))
+        assertEquals("Portugal", Utils.handleMangaDescription(attrs, Locale.forLanguageTag("pt-PT")))
+        assertEquals("Generic", Utils.handleMangaDescription(attrs, Locale.forLanguageTag("pt-AO")))
+    }
+
+    @Test
+    fun `description uses another regional variant before English`() {
+        val attrs = createAttributesDto(description = mapOf("en" to "English", "pt-br" to "Brazilian"))
+        assertEquals("Brazilian", Utils.handleMangaDescription(attrs, Locale.forLanguageTag("pt-PT")))
+    }
+
+    @Test
+    fun `description skips null empty and whitespace values`() {
+        val attrs = createAttributesDto(description = mapOf(
+            "pt-br" to "  ", "pt" to "", "pt-pt" to null, "en" to "English",
+        ))
+        assertEquals("English", Utils.handleMangaDescription(attrs, Locale.forLanguageTag("pt-BR")))
+        assertEquals("", Utils.localizedDescription(listOf("en" to "\n", "ja" to null), Locale.US))
+    }
+
+    @Test
+    fun `Japanese title and description never fall back even to romanization`() {
+        val attrs = createAttributesDto(
+            title = mapOf("en" to "English", "ja" to " "),
+            altTitles = listOf(mapOf("JA_ro" to "Romanized"), mapOf("pt-br" to "Portuguese")),
+            description = mapOf("ja" to "\n", "ja-ro" to "Romanized description", "en" to "English"),
+        )
+        assertNull(Utils.handleMangaTitle(attrs, Locale.JAPAN))
+        assertEquals("", Utils.handleMangaDescription(attrs, Locale.JAPAN))
+        assertEquals("Romanized", Utils.handleMangaAlternativeTitle(attrs))
+    }
+
+    @Test
+    fun `Japanese title can come from an alternative but must use ja`() {
+        val attrs = createAttributesDto(
+            title = mapOf("en" to "English"),
+            altTitles = listOf(mapOf("ja-ro" to "Romanized"), mapOf("ja" to "日本語")),
+        )
+        assertEquals("日本語", Utils.handleMangaTitle(attrs, Locale.JAPAN))
+    }
+
+    @Test
+    fun `title language wins over source and Brazilian fallback order is strict`() {
+        val attrs = createAttributesDto(
+            title = mapOf("en" to "English", "ja-ro" to "Romanized"),
+            altTitles = listOf(mapOf("PT_br" to "Brazilian")),
+        )
+        val brazil = Locale.forLanguageTag("pt-BR")
+        assertEquals("Brazilian", Utils.handleMangaTitle(attrs, brazil))
+        val fallback = listOf("pt" to "Generic", "pt-pt" to "Portugal", "ja-ro" to "Romanized", "en" to "English")
+        assertEquals("English", Utils.localizedTitle(fallback, brazil))
+        assertEquals("Romanized", Utils.localizedTitle(fallback.filterNot { it.first == "en" }, brazil))
+        assertNull(Utils.localizedTitle(listOf("pt-br" to "Brazilian", "ja" to "Japanese"), Locale.US))
+    }
+
+    @Test
+    fun `other title locales use local variants before English and romanization`() {
+        val titles = listOf("en" to "English", "ja-ro" to "Romanized", "fr-ca" to "French Canadian")
+        assertEquals("French Canadian", Utils.localizedTitle(titles, Locale.FRANCE))
+        assertEquals("English", Utils.localizedTitle(titles, Locale.GERMANY))
+        assertEquals("Romanized", Utils.localizedTitle(titles.filterNot { it.first == "en" }, Locale.GERMANY))
+    }
+
+    @Test
+    fun `title selection skips blank and null duplicates`() {
+        val titles = listOf("ja" to " ", "ja" to null, "ja" to "Japanese")
+        assertEquals("Japanese", Utils.localizedTitle(titles, Locale.JAPAN))
+        assertNull(Utils.localizedTitle(emptyList(), Locale.JAPAN))
+        assertEquals("Romanized", Utils.romanizedTitle(listOf("ja-ro" to " ", "JA_RO" to "Romanized")))
     }
 }

@@ -30,6 +30,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.util.Locale
 
 class MangaDexRepositoryImplTest {
 
@@ -150,7 +151,9 @@ class MangaDexRepositoryImplTest {
     fun setup() {
         api = mockk()
         logger = mockk(relaxed = true)
-        repository = MangaDexRepositoryImpl(api, logger)
+        repository = MangaDexRepositoryImpl(
+            api, logger, unavailableTitle = { "Title unavailable" }, localeProvider = { Locale.ENGLISH },
+        )
     }
 
     // --- searchManga tests ---
@@ -327,6 +330,114 @@ class MangaDexRepositoryImplTest {
         assertEquals("Eiichiro Oda", result.author)
         assertEquals("cover-1", result.coverId)
         assertTrue(result.coverUrl.contains("cover-file.jpg"))
+    }
+
+    @Test
+    fun `search and detail use the same language priority across titles and alt titles`() = runTest {
+        val cases = listOf(
+            Triple(Locale.ENGLISH, listOf("fr" to "French", "en" to "English"), "English"),
+            Triple(Locale.ENGLISH, listOf("fr" to "French"), "Romanized"),
+            Triple(Locale.forLanguageTag("pt-BR"), listOf("en" to "English", "pt-br" to "Brazilian"), "Brazilian"),
+            Triple(Locale.forLanguageTag("pt-BR"), listOf("pt-PT" to "Portugal", "en" to "English"), "English"),
+            Triple(Locale.forLanguageTag("pt-BR"), listOf("pt-PT" to "Portugal"), "Romanized"),
+            Triple(Locale.forLanguageTag("de-AT"), listOf("en" to "English", "de" to "German", "de-AT" to "Austrian"), "Austrian"),
+            Triple(Locale.forLanguageTag("de-AT"), listOf("en" to "English", "de-DE" to "Regional", "de" to "German"), "German"),
+            Triple(Locale.GERMAN, listOf("en" to "English", "de-DE" to "Regional"), "Regional"),
+            Triple(Locale.GERMAN, listOf("fr" to "French", "en" to "English"), "English"),
+            Triple(Locale.GERMAN, listOf("fr" to "French"), "Romanized"),
+            Triple(Locale.JAPANESE, listOf("en" to "English", "ja" to "Japanese"), "Japanese"),
+            Triple(Locale.JAPAN, listOf("en" to "English", "ja-JP" to "Regional Japanese"), "Title unavailable"),
+            Triple(Locale.JAPANESE, listOf("en" to "English", "ja" to " \n\t"), "Title unavailable"),
+        )
+        coEvery { api.getAuthorById("author-1") } returns createAuthorResponse()
+        coEvery { api.getCoverById("cover-1") } returns createCoverResponse()
+        coEvery { api.getCover(manga = listOf("manga-1"), locales = listOf("ja"), limit = 1, orderVolume = "desc") } returns createCoverListResponse()
+        for ((locale, titles, expected) in cases) {
+            val repository = MangaDexRepositoryImpl(api, logger, { "Title unavailable" }) { locale }
+            val dto = createMangaDto().let {
+                it.copy(attributes = it.attributes.copy(
+                    title = mapOf(titles.first()),
+                    altTitles = titles.drop(1).map { title -> mapOf(title) } + mapOf("ja-ro" to "Romanized"),
+                ))
+            }
+            coEvery {
+                api.searchMangas(title = "test", offset = 0, limit = 6, orderRelevance = "desc", orderFollowedCount = null)
+            } returns MangaListResponse("ok", "collection", listOf(dto), 6, 0, 1)
+            coEvery { api.getManga("manga-1") } returns MangaResponseDto("ok", "entity", dto)
+
+            val search = repository.searchMangaPage("test", 0, 6).single()
+            val detail = repository.getManga("manga-1")
+
+            for (manga in listOf(search, detail)) {
+                assertEquals("locale=$locale titles=$titles", expected, manga.title)
+                assertEquals("Romanized", manga.altTitle)
+                assertTrue(manga.title.isNotBlank())
+            }
+        }
+    }
+
+    @Test
+    fun `Japanese title and description are exclusive with romanized subtitle preserved`() = runTest {
+        val locale = Locale.JAPAN
+        val receivedLocales = mutableListOf<Locale>()
+        val placeholder = "\u30bf\u30a4\u30c8\u30eb\u4e0d\u660e"
+        val repository = MangaDexRepositoryImpl(api, logger, unavailableTitle = {
+            receivedLocales += it
+            placeholder
+        }, localeProvider = { locale })
+        coEvery { api.getAuthorById("author-1") } returns createAuthorResponse()
+        coEvery { api.getCoverById("cover-1") } returns createCoverResponse()
+        coEvery { api.getCover(manga = listOf("manga-1"), locales = listOf("ja"), limit = 1, orderVolume = "desc") } returns createCoverListResponse()
+        for (japanese in listOf(emptyMap(), mapOf("ja" to " \n\t"), mapOf("ja" to "Japanese"))) {
+            val dto = createMangaDto().let {
+                it.copy(attributes = it.attributes.copy(
+                    title = mapOf("en" to "English") + japanese,
+                    description = mapOf("en" to "Description EN", "pt-br" to "Descricao PT") + japanese,
+                ))
+            }
+            coEvery {
+                api.searchMangas(title = "test", offset = 0, limit = 6, orderRelevance = "desc", orderFollowedCount = null)
+            } returns MangaListResponse("ok", "collection", listOf(dto), 6, 0, 1)
+            coEvery { api.getManga("manga-1") } returns MangaResponseDto("ok", "entity", dto)
+
+            val search = repository.searchMangaPage("test", 0, 6).single()
+            val detail = repository.getManga("manga-1")
+            val expected = japanese["ja"]?.takeIf { it.isNotBlank() }
+
+            for (manga in listOf(search, detail)) {
+                assertEquals(expected ?: placeholder, manga.title)
+                assertTrue(manga.title.isNotBlank())
+                assertEquals("Wan Pīsu", manga.altTitle)
+                assertEquals(expected.orEmpty(), manga.description)
+            }
+        }
+        assertEquals(List(4) { locale }, receivedLocales)
+    }
+
+    @Test
+    fun `search and detail use nonempty placeholder instead of unrelated titles`() = runTest {
+        val dto = createMangaDto().let {
+            it.copy(attributes = it.attributes.copy(
+                title = mapOf("fr" to "French"),
+                altTitles = listOf(mapOf("en" to " \n\t", "ja-ro" to " ", "ja" to "Japanese")),
+            ))
+        }
+        coEvery {
+            api.searchMangas(title = "test", offset = 0, limit = 6, orderRelevance = "desc", orderFollowedCount = null)
+        } returns MangaListResponse("ok", "collection", listOf(dto), 6, 0, 1)
+        coEvery { api.getManga("manga-1") } returns MangaResponseDto("ok", "entity", dto)
+        coEvery { api.getAuthorById("author-1") } returns createAuthorResponse()
+        coEvery { api.getCoverById("cover-1") } returns createCoverResponse()
+        coEvery { api.getCover(manga = listOf("manga-1"), locales = listOf("ja"), limit = 1, orderVolume = "desc") } returns createCoverListResponse()
+
+        val search = repository.searchMangaPage("test", 0, 6).single()
+        val detail = repository.getManga("manga-1")
+
+        for (manga in listOf(search, detail)) {
+            assertEquals("Title unavailable", manga.title)
+            assertTrue(manga.title.isNotBlank())
+            assertNull(manga.altTitle)
+        }
     }
 
     // --- getCoverListByManga tests ---

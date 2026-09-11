@@ -71,6 +71,7 @@ class LibraryRepositoryImpl(
         val existingManga = db.mangaDao().getMangaById(manga.id)
         val updatedManga: Manga? = existingManga?.copy(
             title = manga.title,
+            altTitle = manga.altTitle,
             author = manga.author,
             coverUrl = manga.coverUrl,
             description = manga.description,

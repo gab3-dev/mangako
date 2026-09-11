@@ -423,7 +423,7 @@ fun MangaDetail(
                         ) {
                             MangaHeader(
                                 title = mangaState.title,
-                                enTitle = mangaState.altTitle,
+                                alternativeTitle = mangaState.altTitle,
                                 author = mangaState.author,
                                 description = mangaState.description,
                                 situation = mangaState.status,
@@ -679,7 +679,7 @@ fun MangaDetail(
 fun MangaHeader(
     modifier: Modifier = Modifier,
     title: String,
-    enTitle: String? = null,
+    alternativeTitle: String? = null,
     author: String? = null,
     description: String,
     situation: String? = null,
@@ -713,9 +713,11 @@ fun MangaHeader(
                             style = MaterialTheme.typography.titleLarge,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
-                        if (enTitle != null) {
+                        if (!alternativeTitle.isNullOrBlank() &&
+                            !alternativeTitle.trim().equals(title.trim(), ignoreCase = true)
+                        ) {
                             SimpleText(
-                                text = enTitle,
+                                text = alternativeTitle,
                             )
                         }
                     }
@@ -742,7 +744,7 @@ fun MangaHeader(
                 }
             }
             ExpandableDescription(
-                text = description,
+                text = description.ifBlank { stringResource(R.string.manga_description_unavailable) },
                 modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
             )
         }
