@@ -2,7 +2,7 @@ package com.gabedev.mangako.ui.screens.detail
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.isSystemInDarkTheme
+import com.gabedev.mangako.ui.theme.LocalAppDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -147,7 +147,7 @@ fun MangaDetail(
     var callBackFunction by remember { mutableStateOf({}) }
     var showDialogMangaInLibrary by remember { mutableStateOf(false) }
     val isMultiSelectActive by viewModel.isMultiSelectActive
-    val isDarkMode = isSystemInDarkTheme()
+    val isDarkMode = LocalAppDarkTheme.current
     val screenBackgroundColor = MaterialTheme.colorScheme.background.toArgb()
     val toolbarBaseColor = MaterialTheme.colorScheme.surfaceVariant.toArgb()
     var coverTheme by remember { mutableStateOf<CoverTheme?>(null) }

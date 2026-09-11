@@ -1,6 +1,9 @@
 package com.gabedev.mangako.ui.components
 
 import android.widget.ImageView
+import android.content.res.ColorStateList
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.toArgb
 import androidx.annotation.DrawableRes
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.foundation.layout.size
@@ -18,6 +21,7 @@ fun AnimatedIcon(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val tint = MaterialTheme.colorScheme.onPrimaryContainer.toArgb()
     val drawable = remember(animatedIconRes) {
         AppCompatResources.getDrawable(context, animatedIconRes)?.mutate()
     }
@@ -30,6 +34,7 @@ fun AnimatedIcon(
             }
         },
         update = { imageView ->
+            imageView.imageTintList = ColorStateList.valueOf(tint)
             val stateArray = if (isSelected) {
                 intArrayOf(android.R.attr.state_checked)
             } else {

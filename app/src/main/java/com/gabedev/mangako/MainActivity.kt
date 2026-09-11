@@ -5,8 +5,10 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.view.ViewTreeObserver
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -15,6 +17,7 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,10 +29,12 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -59,6 +64,8 @@ import com.gabedev.mangako.background.LibraryVolumeRefreshScheduler
 import com.gabedev.mangako.background.RefreshLibraryVolumesWorker
 import com.gabedev.mangako.backup.BackupManager
 import com.gabedev.mangako.data.local.NavigationBarStyle
+import com.gabedev.mangako.data.local.AppTheme
+import com.gabedev.mangako.data.local.getAppearancePreferences
 import com.gabedev.mangako.data.local.getBackupPreferences
 import com.gabedev.mangako.data.local.getNavigationBarStyle
 import com.gabedev.mangako.data.local.getNotificationPermissionRequested
@@ -91,13 +98,44 @@ class MainActivity : ComponentActivity() {
         val app = application as MangaKoApplication
 
         enableEdgeToEdge()
+        // Keep the launch screen until the first frame can use the saved appearance.
+        var appearanceReady = false
+        val contentView = window.decorView
+        contentView.viewTreeObserver.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener {
+            override fun onPreDraw(): Boolean {
+                if (appearanceReady) contentView.viewTreeObserver.removeOnPreDrawListener(this)
+                return appearanceReady
+            }
+        })
         setContent {
-            MangaKōTheme {
-                BackupStartupGate(
-                    app = app,
-                    startupSyncRefreshVersion = startupSyncRefreshVersion,
-                    onReady = { startStartupWork(app) },
+            val appearanceFlow = remember { applicationContext.getAppearancePreferences() }
+            val appearance by appearanceFlow.collectAsState(initial = null)
+            val preferences = appearance ?: return@setContent
+            val darkTheme = preferences.isDark(isSystemInDarkTheme())
+            SideEffect {
+                enableEdgeToEdge(
+                    statusBarStyle = SystemBarStyle.auto(
+                        android.graphics.Color.TRANSPARENT,
+                        android.graphics.Color.TRANSPARENT,
+                    ) { darkTheme },
+                    navigationBarStyle = SystemBarStyle.auto(
+                        android.graphics.Color.argb(0xe6, 0xff, 0xff, 0xff),
+                        android.graphics.Color.argb(0x80, 0x1b, 0x1b, 0x1b),
+                    ) { darkTheme },
                 )
+                appearanceReady = true
+            }
+            MangaKōTheme(
+                darkTheme = darkTheme,
+                dynamicColor = preferences.theme == AppTheme.DYNAMIC,
+            ) {
+                Surface(Modifier.fillMaxSize()) {
+                    BackupStartupGate(
+                        app = app,
+                        startupSyncRefreshVersion = startupSyncRefreshVersion,
+                        onReady = { startStartupWork(app) },
+                    )
+                }
             }
         }
     }

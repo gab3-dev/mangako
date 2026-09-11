@@ -50,6 +50,7 @@ fun IntegrationSettingsScreen(
             backupManager = backupManager,
             modifier = Modifier.padding(bottom = 32.dp),
         )
+        AppearanceSettingsSection(modifier = Modifier.padding(bottom = 32.dp))
         Text(
             text = stringResource(R.string.integration_settings_title),
             style = MaterialTheme.typography.headlineSmall,
