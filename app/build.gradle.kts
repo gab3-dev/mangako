@@ -5,7 +5,7 @@ import java.util.Properties
 val keystoreProperties = Properties()
 val localProperties = Properties()
 
-// Tenta carregar as propriedades das variáveis de ambiente primeiro
+// Try loading properties from environment variables first.
 val storeFileEnv = System.getenv("KEYSTORE_PATH")
 val storePasswordEnv = System.getenv("STORE_PASSWORD")
 val keyAliasEnv = System.getenv("KEY_ALIAS")
@@ -25,7 +25,7 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
-// Se as variáveis de ambiente não estiverem completas, tenta o arquivo local
+// If environment variables are incomplete, try the local file.
 if (!isEnvConfigured) {
     val file = rootProject.file("keystore.properties")
     if (file.exists()) {
@@ -79,7 +79,7 @@ gradle.taskGraph.whenReady {
 android {
     signingConfigs {
         create("release") {
-            // Usa as variáveis de ambiente, se existirem. Caso contrário, usa as propriedades do arquivo.
+            // Use environment variables when available; otherwise, use properties from the file.
             val storeFileProperty = storeFileEnv ?: keystoreProperties.getProperty("storeFile")
             storeFile = storeFileProperty?.let { file(it) }
 
@@ -241,7 +241,7 @@ dependencies {
     // Material core
     implementation(libs.androidx.material)
 
-    // ícones estendidos
+    // Extended icons
     implementation(libs.androidx.material.icons.extended)
 
     // Animation graphics

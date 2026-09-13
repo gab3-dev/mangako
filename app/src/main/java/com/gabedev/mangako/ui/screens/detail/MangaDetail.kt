@@ -210,7 +210,7 @@ fun MangaDetail(
         ConfirmDialog(
             onConfirm = {
                 viewModel.removeMangaFromLibrary()
-                // Atualiza lista de volumes após remoção
+                // Refresh the volume list after removal.
                 viewModel.refreshManga()
                 showDialogMangaNotInLibrary = false
             },

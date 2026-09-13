@@ -20,7 +20,7 @@ import java.io.IOException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
-// Criação do DataStore
+// Create the DataStore.
 val Context.dataStore by preferencesDataStore(name = "settings")
 
 object SettingsKeys {
@@ -89,7 +89,7 @@ data class BackupPreferences(
     val lastBackupError: String?,
 )
 
-// Função para salvar texto
+// Save text settings.
 suspend fun Context.saveConfigText(text: String) {
     dataStore.edit { preferences ->
         preferences[SettingsKeys.VIEW_MODE] = text
@@ -97,7 +97,7 @@ suspend fun Context.saveConfigText(text: String) {
     BackupScheduler.enqueueAfterChange(applicationContext)
 }
 
-// Função para ler texto como Flow
+// Read text settings as a Flow.
 fun Context.getConfigText(): Flow<String> {
     return dataStore.data.map { preferences ->
         preferences[SettingsKeys.VIEW_MODE] ?: ""

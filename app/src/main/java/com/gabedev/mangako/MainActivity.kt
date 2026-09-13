@@ -583,7 +583,7 @@ fun MainAppNavHost(
                     )
                 }
 
-                // 2.2 DetailScreen (recebe o ID via argumento)
+                // 2.2 DetailScreen (receives the ID as an argument)
                 composable(
                     Screen.MangaDetail.route,
                     arguments = listOf(

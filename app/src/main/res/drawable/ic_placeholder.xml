@@ -5,7 +5,7 @@
     android:viewportHeight="24"
     android:tint="?attr/colorOnSurfaceVariant">
 
-    <!-- Ícone “image” do Material -->
+    <!-- Material "image" icon -->
     <path
         android:fillColor="@android:color/transparent"
         android:strokeColor="?attr/colorOnSurfaceVariant"
@@ -17,4 +17,3 @@
     <circle
         android:fillColor="?attr/colorOnSurfaceVariant" />
 </vector>
-

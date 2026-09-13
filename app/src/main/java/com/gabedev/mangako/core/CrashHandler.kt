@@ -10,7 +10,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-// A classe CrashHandler que salva o log em um arquivo
+// Crash handler that saves the log to a file.
 class CrashHandler(private val context: Context) : Thread.UncaughtExceptionHandler {
 
     private val defaultExceptionHandler: Thread.UncaughtExceptionHandler? = Thread.getDefaultUncaughtExceptionHandler()
@@ -22,7 +22,7 @@ class CrashHandler(private val context: Context) : Thread.UncaughtExceptionHandl
             Log.e("CrashHandler", "Error while saving crash log", ex)
         }
 
-        // Repassa a exceção para o handler padrão para que o app possa fechar
+        // Forward the exception to the default handler so the app can close.
         defaultExceptionHandler?.uncaughtException(t, e)
     }
 

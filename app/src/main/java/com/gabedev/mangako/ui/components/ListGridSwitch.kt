@@ -53,8 +53,8 @@ fun ListGridSwitch(
                     .semantics { role = Role.RadioButton }
                     .wrapContentWidth(),
                 colors = ToggleButtonDefaults.toggleButtonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,   // cor do botão desmarcado
-                    contentColor = MaterialTheme.colorScheme.onSurface,          // cor do ícone desmarcado
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,   // Unselected button color
+                    contentColor = MaterialTheme.colorScheme.onSurface,          // Unselected icon color
                     checkedContainerColor = MaterialTheme.colorScheme.primary,
                     checkedContentColor = MaterialTheme.colorScheme.onPrimary,
                 ),

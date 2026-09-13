@@ -11,7 +11,7 @@ import androidx.room.PrimaryKey
 )
 data class Volume(
     @PrimaryKey val                             id: String,
-    @ColumnInfo(name = "manga_id")              val mangaId: String, // chave estrangeira
+    @ColumnInfo(name = "manga_id")              val mangaId: String, // Foreign key
     @ColumnInfo(name = "title")                 val title: String,
     @ColumnInfo(name = "cover_url")             val coverUrl: String,
     @ColumnInfo(name = "volume")                val volume: Float?,

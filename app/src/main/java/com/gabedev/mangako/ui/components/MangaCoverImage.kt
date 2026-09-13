@@ -33,7 +33,7 @@ import com.gabedev.mangako.R
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun MangaCoverImage(
-    imageUrl: String?, // Pode ser nulo se não tiver cover
+    imageUrl: String?, // May be null when no cover is available.
     modifier: Modifier = Modifier,
     contentDescription: String? = null
 ) {
@@ -81,7 +81,7 @@ fun MangaCoverImage(
                 )
             }
 
-            // Adiciona um loading se quiser (opcional)
+            // Optionally display a loading indicator.
             if (isLoading) {
                 CircularWavyProgressIndicator(
                     Modifier
