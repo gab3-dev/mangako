@@ -2,6 +2,7 @@ package com.gabedev.mangako.data.repository
 
 import com.gabedev.mangako.core.FileLogger
 import com.gabedev.mangako.core.Utils
+import com.gabedev.mangako.data.local.CoverLanguage
 import com.gabedev.mangako.data.dto.MangaDto
 import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.model.Volume
@@ -12,6 +13,7 @@ class MangaDexRepositoryImpl(
     private val api: MangaDexAPI,
     private val logger: FileLogger,
     private val unavailableTitle: (Locale) -> String,
+    private val coverLanguageProvider: suspend () -> CoverLanguage = { CoverLanguage.JAPANESE },
     private val localeProvider: () -> Locale = { Locale.getDefault() },
 ) : MangaDexRepository {
 
@@ -80,7 +82,7 @@ class MangaDexRepositoryImpl(
         }
 
         try {
-            val lastVolumeNumber = getLastVolumeNumber(api, enriched.id, enriched.volumeCount, logger)
+            val lastVolumeNumber = getLastVolumeNumber(api, enriched.id, enriched.volumeCount, logger, enriched.originalLanguage)
             enriched = enriched.copy(volumeCount = lastVolumeNumber)
         } catch (e: Exception) {
             logger.logError(Throwable(message = "Error while enriching manga volume count: $e"))
@@ -111,6 +113,7 @@ class MangaDexRepositoryImpl(
             description = Utils.handleMangaDescription(dto.attributes, locale),
             status = dto.attributes.status,
             volumeCount = lastVolumeNumber,
+            originalLanguage = dto.attributes.originalLanguage,
         )
     }
 
@@ -132,8 +135,7 @@ class MangaDexRepositoryImpl(
                     volume = volumeNumber,
                     coverUrl = handleCoverUrl(manga.id, cover.attributes.fileName),
                     owned = false,
-                    isSpecialEdition = cover.attributes.locale != "ja" ||
-                        (volumeNumber?.let { it % 1.0f != 0.0f } ?: true),
+                    isSpecialEdition = volumeNumber?.let { it % 1.0f != 0.0f } ?: true,
                     locale = cover.attributes.locale,
                     createdAt = cover.attributes.createdAt,
                     updatedAt = cover.attributes.updatedAt
@@ -142,7 +144,7 @@ class MangaDexRepositoryImpl(
             return covers
         } catch (e: Exception) {
             logger.logError(e)
-            return emptyList()
+            throw e
         }
     }
 
@@ -161,7 +163,8 @@ class MangaDexRepositoryImpl(
             api = api,
             mangaId = dto.id,
             fallbackVolumeCount = dto.attributes.lastVolume?.toFloatOrNull()?.toInt(),
-            logger = logger
+            logger = logger,
+            originalLanguage = dto.attributes.originalLanguage,
         )
     }
 
@@ -169,17 +172,21 @@ class MangaDexRepositoryImpl(
         api: MangaDexAPI,
         mangaId: String,
         fallbackVolumeCount: Int?,
-        logger: FileLogger
+        logger: FileLogger,
+        originalLanguage: String?,
     ): Int {
+        val preference = coverLanguageProvider()
+        val language = (if (preference == CoverLanguage.ORIGINAL) originalLanguage ?: "ja" else preference.tag)
+            .replace('_', '-').lowercase(Locale.ROOT)
         try {
             val response = api.getCover(
                 manga = listOf(mangaId),
-                locales = listOf("ja"),
+                locales = listOf(language),
                 limit = 1,
                 orderVolume = "desc"
             )
             val volumeStr = response.data.firstOrNull()?.attributes?.volume
-            val parsed = volumeStr?.toFloatOrNull()?.toInt()
+            val parsed = volumeStr?.toFloatOrNull()?.takeIf { it.isFinite() && it % 1f == 0f }?.toInt()
             if (parsed != null) {
                 logger.log("Last volume number: $parsed for manga: $mangaId")
                 return parsed
@@ -215,6 +222,7 @@ class MangaDexRepositoryImpl(
             description = Utils.handleMangaDescription(attributes, locale),
             status = attributes.status,
             volumeCount = fallbackVolumeCount,
+            originalLanguage = attributes.originalLanguage,
         )
     }
 

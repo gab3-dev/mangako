@@ -1,6 +1,7 @@
 package com.gabedev.mangako.domain
 
 import com.gabedev.mangako.data.model.Manga
+import com.gabedev.mangako.data.local.CoverLanguage
 import com.gabedev.mangako.data.model.MangaWithOwned
 import com.gabedev.mangako.data.model.MangaWithVolume
 import com.gabedev.mangako.data.model.Volume
@@ -106,6 +107,21 @@ class RefreshMangaVolumesUseCaseTest {
         assertEquals(16, localRepository.persistedManga.single().volumeCount)
         assertEquals(16, result.newVolumesByManga.single().manga.volumeCount)
         assertEquals(listOf(newVolume), result.newVolumesByManga.single().volumes)
+    }
+
+    @Test
+    fun `sync counts selected regular editions and retains specials of other languages`() = runTest {
+        val manga = createManga("manga-1", "Frieren")
+        val japanese = createVolume("ja", manga.id, 15f)
+        val french = createVolume("fr", manga.id, 11f).copy(locale = "fr")
+        val special = createVolume("de-special", manga.id, 99.5f).copy(locale = "de", isSpecialEdition = true)
+        val volumes = listOf(japanese, french, special)
+        val api = FakeMangaRepository(mapOf(manga.id to manga), mapOf(manga.id to volumes))
+        val local = FakeLibraryRepository(listOf(manga), mapOf(manga.id to emptyList()))
+        val result = RefreshMangaVolumesUseCase(api, local) { CoverLanguage.FRENCH }.refreshLibrary()
+        assertEquals(11, local.persistedManga.single().volumeCount)
+        assertEquals(listOf(french, special), result.newVolumesByManga.single().volumes)
+        assertEquals(volumes, local.persistedVolumes.single())
     }
 
     private class FakeMangaRepository(

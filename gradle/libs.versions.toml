@@ -1,5 +1,6 @@
 [versions]
 agp = "9.2.1"
+appcompat = "1.7.0"
 animationGraphics = "1.11.1"
 coilCompose = "2.7.0"
 converterGson = "3.0.0"
@@ -35,6 +36,7 @@ runtimeSaveable = "1.11.1"
 workRuntimeKtx = "2.10.0"
 
 [libraries]
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
 androidx-animation-graphics = { module = "androidx.compose.animation:animation-graphics", version.ref = "animationGraphics" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-core-testing = { module = "androidx.arch.core:core-testing", version.ref = "coreTesting" }

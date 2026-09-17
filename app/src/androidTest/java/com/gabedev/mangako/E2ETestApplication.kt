@@ -2,8 +2,11 @@ package com.gabedev.mangako
 
 import androidx.room.Room
 import com.gabedev.mangako.core.FileLogger
+import com.gabedev.mangako.core.appTextLocale
 import com.gabedev.mangako.core.unavailableMangaTitle
 import com.gabedev.mangako.data.local.LocalDatabase
+import com.gabedev.mangako.data.local.getCoverLanguage
+import kotlinx.coroutines.flow.first
 import com.gabedev.mangako.data.remote.api.MangaKoAPI
 import com.gabedev.mangako.data.repository.LibraryRepositoryImpl
 import com.gabedev.mangako.data.repository.MangaKoRepositoryImpl
@@ -38,7 +41,11 @@ class E2ETestApplication : MangaKoApplication() {
         return AppContainer(
             database = database,
             logger = logger,
-            mangaRepository = MangaKoRepositoryImpl(api, this::unavailableMangaTitle),
+            mangaRepository = MangaKoRepositoryImpl(
+                api, this::unavailableMangaTitle,
+                coverLanguageProvider = { getCoverLanguage().first() },
+                localeProvider = this::appTextLocale,
+            ),
             localRepository = LibraryRepositoryImpl(database, logger),
         )
     }
@@ -67,7 +74,9 @@ private class FixtureDispatcher : Dispatcher() {
         const val mangaJson = """{
             "id":"manga-1","mangadexId":"manga-1","primaryTitle":"One Piece",
             "status":"ongoing","latestVolumeNumber":"2",
-            "localizations":[{"language":"en","title":"One Piece","description":"Pirate adventure","isPrimary":true}],
+            "localizations":[{"language":"en","title":"One Piece","description":"Pirate adventure","isPrimary":true},
+                {"language":"pt-br","title":"One Piece PT","description":"Aventura pirata","isPrimary":false},
+                {"language":"ja","title":"ワンピース","description":"海賊の冒険","isPrimary":false}],
             "aliases":[],"covers":[{"id":"cover-1","mangadexCoverId":"cover-1","isPrimary":true,"sourceUrl":"http://example.invalid/cover.jpg"}],
             "authors":[{"id":"author-1","name":"Eiichiro Oda"}]
         }"""

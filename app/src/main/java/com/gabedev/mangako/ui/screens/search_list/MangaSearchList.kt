@@ -17,11 +17,15 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import com.gabedev.mangako.data.local.getCoverLanguage
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -49,9 +53,13 @@ fun MangaSearchScreen(
     val noMoreManga by viewModel.noMoreManga.collectAsState()
     val listState = rememberLazyListState()
 
-    // Forward debounced search query to ViewModel
-    LaunchedEffect(searchQuery) {
-        viewModel.setQueryString(searchQuery)
+    val localeTag = LocalConfiguration.current.locales[0].toLanguageTag()
+    val context = LocalContext.current
+    val coverLanguageFlow = remember(context) { context.getCoverLanguage() }
+    val coverLanguage by coverLanguageFlow.collectAsState(initial = null)
+    // A retained ViewModel must reload localized results when the app language changes.
+    LaunchedEffect(searchQuery, localeTag, coverLanguage) {
+        coverLanguage?.let { viewModel.setQueryString(searchQuery, localeTag, it.tag) }
     }
 
     // Infinite scroll: preload before the user reaches the end.

@@ -26,6 +26,7 @@ val Context.dataStore by preferencesDataStore(name = "settings")
 object SettingsKeys {
     val APP_THEME = stringPreferencesKey("app_theme")
     val THEME_MODE = stringPreferencesKey("theme_mode")
+    val COVER_LANGUAGE = stringPreferencesKey("cover_language")
     val VIEW_MODE = stringPreferencesKey("view_mode")
     val COLLECTION_DENSITY = intPreferencesKey("collection_density")
     val CATALOG_INTEGRATION = stringPreferencesKey("catalog_integration")
@@ -63,6 +64,14 @@ suspend fun Context.saveAppTheme(theme: AppTheme) {
 
 suspend fun Context.saveThemeMode(mode: ThemeMode) {
     dataStore.edit { it[SettingsKeys.THEME_MODE] = mode.name }
+}
+
+fun Context.getCoverLanguage(): Flow<CoverLanguage> = dataStore.data.map {
+    CoverLanguage.fromStored(it[SettingsKeys.COVER_LANGUAGE])
+}
+
+suspend fun Context.saveCoverLanguage(language: CoverLanguage) {
+    dataStore.edit { it[SettingsKeys.COVER_LANGUAGE] = language.name }
 }
 
 enum class CatalogIntegration {

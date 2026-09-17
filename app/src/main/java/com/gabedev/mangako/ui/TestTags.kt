@@ -3,6 +3,7 @@ package com.gabedev.mangako.ui
 object TestTags {
     const val ExploreNavigation = "navigation-explore"
     const val LibraryNavigation = "navigation-library"
+    const val SettingsNavigation = "navigation-settings"
     const val ExploreSearch = "explore-search"
     const val AddToLibrary = "add-to-library"
 

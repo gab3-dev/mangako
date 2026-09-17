@@ -1,6 +1,7 @@
 package com.gabedev.mangako.domain
 
 import com.gabedev.mangako.data.model.Manga
+import com.gabedev.mangako.data.local.CoverLanguage
 import com.gabedev.mangako.data.model.Volume
 import com.gabedev.mangako.data.model.toManga
 import com.gabedev.mangako.data.repository.LibraryRepository
@@ -10,6 +11,7 @@ import kotlin.coroutines.cancellation.CancellationException
 class RefreshMangaVolumesUseCase(
     private val apiRepository: MangaDexRepository,
     private val localRepository: LibraryRepository,
+    private val coverLanguageProvider: suspend () -> CoverLanguage = { CoverLanguage.JAPANESE },
 ) {
     suspend fun refreshLibrary(forceRefresh: Boolean = false): LibrarySyncResult {
         val libraryManga = localRepository.getMangaOnLibrary().map { it.toManga() }
@@ -47,10 +49,12 @@ class RefreshMangaVolumesUseCase(
         val updatedManga = apiRepository.getManga(manga.id, forceRefresh)
         val localVolumes = localRepository.getMangaWithVolume(manga.id)?.volumes.orEmpty()
         val remoteVolumes = fetchAllVolumes(updatedManga, forceRefresh).deduplicateVolumes()
-        val latestVolumeNumber = remoteVolumes
+        val localizedVolumes = coverLanguageProvider().filterVolumes(remoteVolumes, updatedManga.originalLanguage)
+        val latestVolumeNumber = localizedVolumes
             .asSequence()
-            .filter { it.locale.equals("ja", ignoreCase = true) }
+            .filterNot { it.isSpecialEdition }
             .mapNotNull { it.volume }
+            .filter { it.isFinite() && it % 1f == 0f }
             .maxOrNull()
             ?.toInt()
         val mangaWithLatestVolume = latestVolumeNumber
@@ -59,7 +63,7 @@ class RefreshMangaVolumesUseCase(
             ?: updatedManga
         val finalManga = localRepository.updateManga(mangaWithLatestVolume) ?: manga
         val updateCount = remoteVolumes.countUpdatesComparedTo(localVolumes)
-        val newVolumes = remoteVolumes.filterNewComparedTo(localVolumes)
+        val newVolumes = localizedVolumes.filterNewComparedTo(localVolumes)
 
         localRepository.updateOrInsertVolumeList(remoteVolumes)
 

@@ -12,12 +12,14 @@ interface MangaKoAPI {
         @Query("title") title: String?,
         @Query("limit") limit: Int,
         @Query("offset") offset: Int,
+        @Query("locale") locale: String? = null,
     ): List<MangaKoMangaDto>
 
     @GET("mangas/{mangaRef}")
     suspend fun getManga(
         @Path("mangaRef") mangaRef: String,
         @Query("refresh") refresh: Boolean = false,
+        @Query("locale") locale: String? = null,
     ): MangaKoMangaDto
 
     @GET("mangas/{mangaRef}/volumes")
@@ -26,5 +28,6 @@ interface MangaKoAPI {
         @Query("limit") limit: Int,
         @Query("offset") offset: Int,
         @Query("refresh") refresh: Boolean = false,
+        @Query("locale") locale: String? = null,
     ): List<MangaKoVolumeDto>
 }

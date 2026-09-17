@@ -15,6 +15,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.Locale
+import com.gabedev.mangako.data.local.CoverLanguage
+import io.mockk.coVerify
 
 class MangaKoRepositoryImplTest {
     private val api = mockk<MangaKoAPI>()
@@ -266,6 +268,29 @@ class MangaKoRepositoryImplTest {
             }
         }
         assertEquals(List(4) { locale }, receivedLocales)
+    }
+
+    @Test
+    fun `cover language is sent to catalog endpoints independently of text language`() = runTest {
+        var selected = CoverLanguage.FRENCH
+        val repository = MangaKoRepositoryImpl(
+            api, { "Unavailable" }, coverLanguageProvider = { selected }, localeProvider = { Locale.ENGLISH },
+        )
+        val dto = mangaDto().copy(originalLanguage = "ja", latestVolumeNumber = "11")
+        coEvery { api.searchMangas("one", 6, 0, "fr") } returns listOf(dto)
+        coEvery { api.getManga("mangadex-manga", false, "fr") } returns dto
+        coEvery { api.getVolumes("mangadex-manga", 50, 0, false, "fr") } returns emptyList()
+        val manga = repository.searchMangaPage("one", 0, 6).single()
+        assertEquals("Description EN", manga.description)
+        assertEquals("ja", manga.originalLanguage)
+        assertEquals(11, repository.getManga(manga.id).volumeCount)
+        repository.getCoverListByManga(manga)
+        coVerify(exactly = 1) { api.getVolumes(manga.id, 50, 0, false, "fr") }
+
+        selected = CoverLanguage.ORIGINAL
+        coEvery { api.getVolumes(manga.id, 50, 0, false, "original") } returns emptyList()
+        repository.getCoverListByManga(manga)
+        coVerify(exactly = 1) { api.getVolumes(manga.id, 50, 0, false, "original") }
     }
 
     private fun mangaDto() = MangaKoMangaDto(

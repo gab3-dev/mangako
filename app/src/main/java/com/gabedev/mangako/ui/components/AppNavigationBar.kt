@@ -175,6 +175,7 @@ private fun Screen.navigationTestTag(): Modifier {
     return when (this) {
         Screen.UserCollection -> Modifier.testTag(TestTags.LibraryNavigation)
         Screen.Explore -> Modifier.testTag(TestTags.ExploreNavigation)
+        Screen.Settings -> Modifier.testTag(TestTags.SettingsNavigation)
         else -> Modifier
     }
 }

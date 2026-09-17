@@ -4,9 +4,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gabedev.mangako.data.model.Manga
+import com.gabedev.mangako.data.local.CoverLanguage
 import com.gabedev.mangako.data.model.Volume
 import com.gabedev.mangako.data.repository.LibraryRepository
 import com.gabedev.mangako.data.repository.MangaDexRepository
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -30,7 +36,11 @@ class MangaDetailViewModel(
     var isMultiSelectActive = mutableStateOf(false)
     val volumeList = MutableStateFlow<List<Volume>>(emptyList())
     val noMoreVolume = MutableStateFlow(false)
-    private var currentOffset = 0
+    val paginationPaused = MutableStateFlow(false)
+    val nextVolumeOffset = MutableStateFlow(0)
+    private var pagesWithoutProgress = 0
+    private var volumeLoadJob: Job? = null
+    private var activeCoverLanguage: CoverLanguage? = null
     private val limit = 50
 
     /**
@@ -50,7 +60,7 @@ class MangaDetailViewModel(
             .values
             .toList()
 
-        return deduplicatedNumbered + unnumbered
+        return deduplicatedNumbered + unnumbered.distinctBy { it.id }
     }
 
     fun markSelectedListAsOwned(isOwned: Boolean) {
@@ -157,63 +167,20 @@ class MangaDetailViewModel(
     }
 
     private fun checkCoverInLibrary() {
-        viewModelScope.launch {
-            isVolumeLoading.value = true
-            try {
-                // Check if the manga and volumes is already in the local database
-                val tmpData = localRepository.getMangaWithVolume(idManga)
-                if (tmpData == null || tmpData.volumes.isEmpty()) {
-                    loadCoverList()
-                } else {
-                    volumeList.value = tmpData.volumes.map { it.copy() }
-                    if (tmpData.manga.description.isBlank()) {
-                        loadCoverList()
-                    }
-                }
-            } catch (_: Exception) {
-                // Keep a restored minimal snapshot visible while offline.
-            } finally {
-                isVolumeLoading.value = false
-            }
-        }
+        loadVolumes(loadCached = true)
     }
 
     fun refreshManga() {
-        isVolumeLoading.value = true
-        viewModelScope.launch {
-            try {
-                // Reset pagination state to allow loading more volumes
-                currentOffset = 0
-                noMoreVolume.value = false
+        loadVolumes(refresh = true)
+    }
 
-                // Fetch updated manga info from the API
-                val updatedManga: Manga = apiRepository.getManga(idManga, refresh = true)
-                val finalLocalManga = localRepository.updateManga(updatedManga)
-                if (finalLocalManga != null) {
-                    mangaState.value = finalLocalManga
-                }
-
-                // Fetch cover list from the API
-                val coverList: List<Volume> = apiRepository.getCoverListByManga(
-                    manga = mangaState.value,
-                    refresh = true,
-                )
-
-                // Filter duplicated covers by volume number, keeping the most recently updated
-                val distinctCoverList = deduplicateVolumes(coverList)
-
-                localRepository.updateOrInsertVolumeList(distinctCoverList)
-
-                // Get updated cover list from local database
-                volumeList.value = localRepository
-                    .getMangaWithVolume(idManga)
-                    ?.volumes?.map { it.copy() }
-                    ?: emptyList()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                isVolumeLoading.value = false
-            }
+    fun setCoverLanguage(language: CoverLanguage) {
+        if (activeCoverLanguage == language) return
+        val previous = activeCoverLanguage
+        activeCoverLanguage = language
+        if (previous != null) {
+            finishMultiSelect()
+            refreshManga()
         }
     }
 
@@ -229,78 +196,74 @@ class MangaDetailViewModel(
         }
     }
 
-    private suspend fun loadCoverList() {
-        val coverList: List<Volume> = apiRepository.getCoverListByManga(
-            manga = mangaState.value
-        )
-        val distinctCoverList = deduplicateVolumes(coverList)
-
-        localRepository.updateOrInsertVolumeList(distinctCoverList)
-        volumeList.value = localRepository
-            .getMangaWithVolume(idManga)
-            ?.volumes?.map { it.copy() }
-            ?: distinctCoverList.map { it.copy() }
+    fun loadMoreVolumes() {
+        loadVolumes()
     }
 
-    fun loadMoreVolumes() {
-        if (isVolumeLoading.value || noMoreVolume.value) return
-        viewModelScope.launch {
-            isVolumeLoading.value = true
+    fun retryVolumes() {
+        if (isVolumeLoading.value || !paginationPaused.value || nextVolumeOffset.value >= 10_000) return
+        paginationPaused.value = false
+        pagesWithoutProgress = 0
+        loadVolumes()
+    }
 
-            val tmpMangaWithVolumes = localRepository.getMangaWithVolume(idManga)
-            if (tmpMangaWithVolumes != null && tmpMangaWithVolumes.volumes.isNotEmpty()) {
-                // If local volumes are greater than the current offset, return
-                if (tmpMangaWithVolumes.volumes.size > currentOffset) {
-                    isVolumeLoading.value = false
-                    try {
-                        volumeList.value = tmpMangaWithVolumes.volumes.map {
-                            it.copy()
-                        }
-                    } catch (e: Exception) {
-                        localRepository.log(e)
-                    }
-                    currentOffset = tmpMangaWithVolumes.volumes.size
+    private fun loadVolumes(refresh: Boolean = false, loadCached: Boolean = false) {
+        if (!refresh && (isVolumeLoading.value || noMoreVolume.value || paginationPaused.value)) return
+        val previousJob = volumeLoadJob
+        if (refresh) previousJob?.cancel()
+        // Set before launching so simultaneous scroll events cannot queue duplicate requests.
+        isVolumeLoading.value = true
+        volumeLoadJob = viewModelScope.launch {
+            try {
+                if (refresh) {
+                    previousJob?.join()
+                    nextVolumeOffset.value = 0
+                    pagesWithoutProgress = 0
+                    noMoreVolume.value = false
+                    paginationPaused.value = false
+                    val updated = apiRepository.getManga(idManga, refresh = true)
+                    currentCoroutineContext().ensureActive()
+                    localRepository.updateManga(updated)?.let { mangaState.value = it }
+                }
+                if (loadCached) {
+                    volumeList.value = localRepository.getMangaWithVolume(idManga)?.volumes.orEmpty()
+                }
+                if (nextVolumeOffset.value >= 10_000) {
+                    paginationPaused.value = true
                     return@launch
                 }
-            }
-
-            val moreVolumes = apiRepository.getCoverListByManga(
-                manga = mangaState.value,
-                offset = currentOffset,
-            )
-
-            // If no more volumes are returned, mark pagination as complete
-            if (moreVolumes.isEmpty()) {
-                noMoreVolume.value = true
-                isVolumeLoading.value = false
-                return@launch
-            }
-
-            // Insert the new volumes into the local database
-            // Filter duplicates by volume number, keeping the most recently updated
-            val allVolumes = deduplicateVolumes(volumeList.value + moreVolumes)
-
-            val distinctMoreVolumes = allVolumes.filter { incoming ->
-                // Only keep volumes that aren't already in the list
-                volumeList.value.none { existing ->
-                    existing.id == incoming.id
+                val page = apiRepository.getCoverListByManga(
+                    manga = mangaState.value,
+                    offset = nextVolumeOffset.value,
+                    limit = minOf(limit, 10_000 - nextVolumeOffset.value),
+                    refresh = refresh,
+                )
+                currentCoroutineContext().ensureActive()
+                if (page.isEmpty()) {
+                    noMoreVolume.value = true
+                    return@launch
                 }
-            }
 
-            if (distinctMoreVolumes.isNotEmpty()) {
-                localRepository.insertVolumeList(distinctMoreVolumes)
-                try {
-                    volumeList.value = allVolumes
-                    // Only increment offset after successfully loading new volumes
-                    currentOffset += limit
-                } catch (e: Exception) {
-                    localRepository.log(e)
-                }
-            } else {
-                // No new volumes to add, mark as complete
-                noMoreVolume.value = true
+                val before = volumeList.value.associateBy { it.id }
+                localRepository.updateOrInsertVolumeList(deduplicateVolumes(page))
+                currentCoroutineContext().ensureActive()
+                val stored = localRepository.getMangaWithVolume(idManga)?.volumes
+                    ?: deduplicateVolumes(volumeList.value + page)
+                currentCoroutineContext().ensureActive()
+                volumeList.value = stored
+                pagesWithoutProgress = if (stored.associateBy { it.id } == before) pagesWithoutProgress + 1 else 0
+                // Remote rows consumed, not the number of distinct volumes kept locally.
+                nextVolumeOffset.value += page.size
+                paginationPaused.value = pagesWithoutProgress >= 2 || nextVolumeOffset.value >= 10_000
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                paginationPaused.value = true
+                localRepository.log(e)
+            } finally {
+                // A cancelled request must not clear the loading flag of its replacement.
+                if (currentCoroutineContext().isActive) isVolumeLoading.value = false
             }
-            isVolumeLoading.value = false
         }
     }
 

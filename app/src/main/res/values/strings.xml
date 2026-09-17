@@ -1,4 +1,15 @@
 <resources>
+    <string name="cover_language_title">Volume cover language</string>
+    <string name="cover_language_description">Select the language of regular volume editions, independently of the app language. Special editions in all languages remain available through the special editions filter. Japanese is the default, falling back to the original language when unavailable.</string>
+    <string name="cover_language_original">Original language</string>
+    <string name="language_settings_title">App language</string>
+    <string name="language_settings_description">Changes the interface and manga titles and descriptions. Refresh saved manga to update their texts. Volume languages are not affected.</string>
+    <string name="language_follow_system">Follow device language</string>
+    <string name="language_portuguese" translatable="false">Português (Brasil)</string>
+    <string name="language_english" translatable="false">English</string>
+    <string name="language_japanese" translatable="false">日本語</string>
+    <string name="volumes_loading_paused">Volume loading paused. The list may be incomplete. Retry, or refresh if the page limit was reached.</string>
+    <string name="button_retry_volumes">Try again</string>
     <string name="manga_title_unavailable">Title unavailable</string>
     <string name="manga_description_unavailable">No description available</string>
     <string name="app_name" translatable="false">MangaKō</string>

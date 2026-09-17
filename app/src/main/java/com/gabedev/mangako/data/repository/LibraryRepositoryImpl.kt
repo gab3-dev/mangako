@@ -72,6 +72,7 @@ class LibraryRepositoryImpl(
         val updatedManga: Manga? = existingManga?.copy(
             title = manga.title,
             altTitle = manga.altTitle,
+            originalLanguage = manga.originalLanguage ?: existingManga.originalLanguage,
             author = manga.author,
             coverUrl = manga.coverUrl,
             description = manga.description,

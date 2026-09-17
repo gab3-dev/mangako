@@ -5,8 +5,11 @@ import androidx.room.withTransaction
 import com.gabedev.mangako.backup.BackupManager
 import com.gabedev.mangako.backup.BackupScheduler
 import com.gabedev.mangako.core.FileLogger
+import com.gabedev.mangako.core.appTextLocale
 import com.gabedev.mangako.core.unavailableMangaTitle
 import com.gabedev.mangako.data.local.LocalDatabase
+import com.gabedev.mangako.data.local.getCoverLanguage
+import kotlinx.coroutines.flow.first
 import com.gabedev.mangako.data.local.MangaKoDatabase
 import com.gabedev.mangako.data.remote.api.MangaDexAPI
 import com.gabedev.mangako.data.remote.api.MangaKoAPI
@@ -37,7 +40,11 @@ data class AppContainer(
                 .addConverterFactory(GsonConverterFactory.create())
                 .build()
                 .create(MangaDexAPI::class.java)
-            val mangaDexRepository = MangaDexRepositoryImpl(mangaDexApi, logger, context::unavailableMangaTitle)
+            val mangaDexRepository = MangaDexRepositoryImpl(
+                mangaDexApi, logger, context::unavailableMangaTitle,
+                coverLanguageProvider = { context.getCoverLanguage().first() },
+                localeProvider = context::appTextLocale,
+            )
             val mangaKoRepository = BuildConfig.MANGAKO_API_TOKEN
                 .takeIf { it.isNotBlank() }
                 ?.let { token ->
@@ -56,7 +63,11 @@ data class AppContainer(
                         .addConverterFactory(GsonConverterFactory.create())
                         .build()
                         .create(MangaKoAPI::class.java)
-                    MangaKoRepositoryImpl(mangaKoApi, context::unavailableMangaTitle)
+                    MangaKoRepositoryImpl(
+                        mangaKoApi, context::unavailableMangaTitle,
+                        coverLanguageProvider = { context.getCoverLanguage().first() },
+                        localeProvider = context::appTextLocale,
+                    )
                 }
 
             return AppContainer(

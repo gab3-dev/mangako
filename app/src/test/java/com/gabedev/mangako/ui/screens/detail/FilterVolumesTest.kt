@@ -82,6 +82,18 @@ class FilterVolumesTest {
     }
 
     @Test
+    fun `special chip includes every special language and still respects ownership filter`() {
+        val normal = volume("normal").copy(locale = "ja")
+        val specials = listOf("ja", "en", "pt-br").map {
+            volume(it, isSpecialEdition = true, owned = it == "en").copy(locale = it, volume = 1.5f)
+        }
+        val volumes = listOf(normal) + specials
+        assertEquals(listOf(normal), filterVolumes(volumes, false, false))
+        assertEquals(volumes, filterVolumes(volumes, true, false))
+        assertEquals(volumes.filterNot { it.owned }, filterVolumes(volumes, true, true))
+    }
+
+    @Test
     fun `all owned with not-owned filter returns empty`() {
         val volumes = listOf(
             volume("1", owned = true),

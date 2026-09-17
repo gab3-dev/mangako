@@ -12,6 +12,7 @@ data class MangaKoMangaDto(
     val aliases: List<MangaKoAliasDto>,
     val covers: List<MangaKoCoverDto>,
     val authors: List<MangaKoCreatorDto>,
+    @SerializedName("originalLanguage") val originalLanguage: String? = null,
 )
 
 data class MangaKoLocalizationDto(

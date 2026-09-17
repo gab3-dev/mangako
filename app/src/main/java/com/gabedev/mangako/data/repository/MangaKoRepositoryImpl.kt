@@ -1,6 +1,7 @@
 package com.gabedev.mangako.data.repository
 
 import com.gabedev.mangako.core.Utils
+import com.gabedev.mangako.data.local.CoverLanguage
 import com.gabedev.mangako.data.dto.MangaKoMangaDto
 import com.gabedev.mangako.data.dto.MangaKoVolumeDto
 import com.gabedev.mangako.data.model.Manga
@@ -11,6 +12,7 @@ import java.util.Locale
 class MangaKoRepositoryImpl(
     private val api: MangaKoAPI,
     private val unavailableTitle: (Locale) -> String,
+    private val coverLanguageProvider: suspend () -> CoverLanguage = { CoverLanguage.JAPANESE },
     private val localeProvider: () -> Locale = { Locale.getDefault() },
 ) : MangaDexRepository {
     override suspend fun searchManga(title: String, offset: Int?): List<Manga> {
@@ -22,13 +24,14 @@ class MangaKoRepositoryImpl(
             title = title.trim().ifBlank { null },
             limit = limit,
             offset = offset ?: 0,
+            locale = coverLanguageProvider().apiLocale,
         ).map { it.toManga() }
     }
 
     override suspend fun enrichManga(manga: Manga): Manga = manga
 
     override suspend fun getManga(id: String, refresh: Boolean): Manga {
-        return api.getManga(id, refresh).toManga()
+        return api.getManga(id, refresh, coverLanguageProvider().apiLocale).toManga()
     }
 
     override suspend fun getMangaCoverFileName(id: String): String {
@@ -48,6 +51,7 @@ class MangaKoRepositoryImpl(
             limit = limit,
             offset = offset ?: 0,
             refresh = refresh,
+            locale = coverLanguageProvider().apiLocale,
         ).map { it.toVolume(manga) }
     }
 
@@ -71,6 +75,7 @@ class MangaKoRepositoryImpl(
             ),
             status = status,
             volumeCount = latestVolumeNumber?.toFloatOrNull()?.toInt() ?: 0,
+            originalLanguage = originalLanguage,
         )
     }
 

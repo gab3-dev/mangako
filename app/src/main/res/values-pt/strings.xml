@@ -1,4 +1,12 @@
 <resources>
+    <string name="cover_language_title">Idioma das capas dos volumes</string>
+    <string name="cover_language_description">Escolha o idioma das edições normais dos volumes, independente do idioma do app. Especiais de todos os idiomas continuam disponíveis pelo filtro de edições especiais. O padrão é japonês, usando o idioma original quando não houver volumes japoneses.</string>
+    <string name="cover_language_original">Idioma original</string>
+    <string name="language_settings_title">Idioma do app</string>
+    <string name="language_settings_description">Altera a interface e os títulos e descrições dos mangás. Atualize os mangás salvos para renovar seus textos. Os idiomas dos volumes não são afetados.</string>
+    <string name="language_follow_system">Seguir o idioma do celular</string>
+    <string name="volumes_loading_paused">Carregamento de volumes pausado. A lista pode estar incompleta. Tente novamente ou atualize se o limite de páginas foi atingido.</string>
+    <string name="button_retry_volumes">Tentar novamente</string>
     <string name="manga_title_unavailable">Título indisponível</string>
     <string name="manga_description_unavailable">Nenhuma descrição disponível</string>
     <!-- Navigation -->

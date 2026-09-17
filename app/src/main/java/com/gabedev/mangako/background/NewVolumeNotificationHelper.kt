@@ -22,11 +22,12 @@ object NewVolumeNotificationHelper {
     fun notifyNewVolumes(context: Context, newVolumesByManga: List<MangaNewVolumes>) {
         if (newVolumesByManga.isEmpty() || !canPostNotifications(context)) return
 
-        createNotificationChannel(context)
+        val localizedContext = ContextCompat.getContextForLanguage(context)
+        createNotificationChannel(localizedContext)
         newVolumesByManga.forEach { update ->
             NotificationManagerCompat.from(context).notify(
                 update.manga.id.hashCode(),
-                buildNotification(context, update),
+                buildNotification(localizedContext, update),
             )
         }
     }

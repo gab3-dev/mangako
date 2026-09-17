@@ -1,5 +1,6 @@
 package com.gabedev.mangako.ui.screens.search_list
 
+import androidx.lifecycle.viewModelScope
 import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.repository.MangaDexRepository
 import io.mockk.clearAllMocks
@@ -7,12 +8,17 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -97,6 +103,79 @@ class MangaSearchListViewModelTest {
 
         assertEquals("One Piece", vm.queryString.value)
         assertEquals(1, vm.mangaList.value.size)
+    }
+
+    @Test
+    fun `same query reloads after app language changes and caches each language separately`() = runTest {
+        val english = createManga("m1", "One Piece")
+        val japanese = createManga("m1", "ワンピース")
+        coEvery { apiRepository.searchMangaPage(any(), any(), any()) } returnsMany
+            listOf(listOf(english), listOf(japanese))
+        val vm = MangaSearchListViewModel(apiRepository, testDispatcher)
+        try {
+            vm.setQueryString("one", "en")
+            advanceUntilIdle()
+            vm.setQueryString("one", "ja")
+            advanceUntilIdle()
+            assertEquals(listOf(japanese), vm.mangaList.value)
+            assertEquals(listOf(english), MangaSearchCache.get("one", 0, "en"))
+            assertEquals(listOf(japanese), MangaSearchCache.get("one", 0, "ja"))
+
+            vm.setQueryString("one", "en")
+            advanceUntilIdle()
+            assertEquals(listOf(english), vm.mangaList.value)
+            coVerify(exactly = 2) { apiRepository.searchMangaPage("one", 0, any()) }
+        } finally {
+            vm.viewModelScope.cancel()
+        }
+    }
+
+    @Test
+    fun `late result from previous language cannot overwrite current search or cache`() = runTest {
+        val previous = CompletableDeferred<List<Manga>>()
+        val japanese = createManga("m1", "ワンピース")
+        var calls = 0
+        coEvery { apiRepository.searchMangaPage(any(), any(), any()) } coAnswers {
+            if (++calls == 1) withContext(NonCancellable) { previous.await() } else listOf(japanese)
+        }
+        val vm = MangaSearchListViewModel(apiRepository, testDispatcher)
+        try {
+            vm.setQueryString("one", "en")
+            runCurrent()
+            vm.setQueryString("one", "ja")
+            runCurrent()
+            previous.complete(listOf(createManga("m1", "One Piece")))
+            advanceUntilIdle()
+            assertEquals(listOf(japanese), vm.mangaList.value)
+            assertEquals(listOf(japanese), MangaSearchCache.get("one", 0, "ja"))
+            assertEquals(null, MangaSearchCache.get("one", 0, "en"))
+        } finally {
+            previous.complete(emptyList())
+            vm.viewModelScope.cancel()
+        }
+    }
+
+    @Test
+    fun `cover language changes reload metadata without mixing app language caches`() = runTest {
+        val ja = createManga("m1", "Manga").copy(volumeCount = 15)
+        val fr = ja.copy(volumeCount = 11)
+        coEvery { apiRepository.searchMangaPage(any(), any(), any()) } returnsMany listOf(listOf(ja), listOf(fr))
+        val vm = MangaSearchListViewModel(apiRepository, testDispatcher)
+        try {
+            vm.setQueryString("manga", "en", "ja")
+            advanceUntilIdle()
+            vm.setQueryString("manga", "en", "fr")
+            advanceUntilIdle()
+            assertEquals(listOf(fr), vm.mangaList.value)
+            assertEquals(listOf(ja), MangaSearchCache.get("manga", 0, "en", "ja"))
+            assertEquals(listOf(fr), MangaSearchCache.get("manga", 0, "en", "fr"))
+            vm.setQueryString("manga", "en", "ja")
+            advanceUntilIdle()
+            assertEquals(listOf(ja), vm.mangaList.value)
+            coVerify(exactly = 2) { apiRepository.searchMangaPage("manga", 0, any()) }
+        } finally {
+            vm.viewModelScope.cancel()
+        }
     }
 
     @Test

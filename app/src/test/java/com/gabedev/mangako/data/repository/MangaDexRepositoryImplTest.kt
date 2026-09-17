@@ -31,6 +31,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.util.Locale
+import com.gabedev.mangako.data.local.CoverLanguage
 
 class MangaDexRepositoryImplTest {
 
@@ -468,7 +469,7 @@ class MangaDexRepositoryImplTest {
     }
 
     @Test
-    fun `getCoverListByManga maps createdAt and marks non ja locale as special edition`() = runTest {
+    fun `getCoverListByManga maps createdAt without treating foreign language as special`() = runTest {
         val manga = Manga(
             id = "manga-1", title = "One Piece",
             coverUrl = "url", description = "desc"
@@ -486,20 +487,30 @@ class MangaDexRepositoryImplTest {
         assertEquals("en", result[0].locale)
         assertEquals("2024-02-01T00:00:00Z", result[0].createdAt)
         assertEquals("2024-02-02T00:00:00Z", result[0].updatedAt)
-        assertTrue(result[0].isSpecialEdition)
+        assertEquals(false, result[0].isSpecialEdition)
     }
 
     @Test
-    fun `getCoverListByManga returns empty on exception`() = runTest {
+    fun `getCoverListByManga propagates errors instead of returning end of pagination`() = runTest {
         val manga = Manga(
             id = "manga-1", title = "Test",
             coverUrl = "url", description = "desc"
         )
         coEvery { api.getCover(manga = any(), offset = any(), limit = any()) } throws RuntimeException("error")
 
-        val result = repository.getCoverListByManga(manga)
+        val error = kotlin.runCatching { repository.getCoverListByManga(manga) }.exceptionOrNull()
+        assertTrue(error is RuntimeException)
+        assertEquals("error", error?.message)
+    }
 
-        assertTrue(result.isEmpty())
+    @Test
+    fun `fractional editions are special regardless of language`() = runTest {
+        val manga = Manga(id = "manga-1", title = "Test", coverUrl = "url", description = "desc")
+        for (locale in listOf("ja", "en", "pt-br")) {
+            coEvery { api.getCover(manga = listOf("manga-1"), offset = 0, limit = 50) } returns
+                createCoverListResponse(volume = "1.5", locale = locale)
+            assertTrue(repository.getCoverListByManga(manga).single().isSpecialEdition)
+        }
     }
 
     @Test
@@ -613,7 +624,7 @@ class MangaDexRepositoryImplTest {
     }
 
     @Test
-    fun `searchManga truncates decimal volume number to Int`() = runTest {
+    fun `searchManga does not use special edition number as regular volume total`() = runTest {
         val mangaDto = createMangaDto()
         coEvery { api.searchMangas(title = "One Piece", offset = null, limit = any(), orderRelevance = any(), orderFollowedCount = any()) } returns
                 MangaListResponse("ok", "collection", listOf(mangaDto), 6, 0, 1)
@@ -624,7 +635,25 @@ class MangaDexRepositoryImplTest {
 
         val result = repository.searchManga("One Piece")
 
-        assertEquals(15, result[0].volumeCount)
+        assertEquals(0, result[0].volumeCount)
+    }
+
+    @Test
+    fun `cover preference selects total language without restricting special cover pages`() = runTest {
+        val repository = MangaDexRepositoryImpl(
+            api, logger, { "Unavailable" },
+            coverLanguageProvider = { CoverLanguage.PORTUGUESE }, localeProvider = { Locale.JAPANESE },
+        )
+        val manga = Manga(id = "manga-1", title = "Manga", coverUrl = "url", description = "")
+        coEvery { api.getCover(manga = listOf("manga-1"), locales = listOf("pt-br"), limit = 1, orderVolume = "desc") } returns
+            createCoverListResponse(volume = "7", locale = "pt-br")
+        assertEquals(7, repository.enrichManga(manga).volumeCount)
+        coEvery { api.getCover(manga = listOf("manga-1"), offset = 0, limit = 50) } returns
+            createCoverListResponse(volume = "1.5", locale = "fr")
+        val page = repository.getCoverListByManga(manga)
+        assertEquals("fr", page.single().locale)
+        assertTrue(page.single().isSpecialEdition)
+        coVerify { api.getCover(manga = listOf("manga-1"), locales = null, offset = 0, limit = 50) }
     }
 
     @Test

@@ -51,6 +51,8 @@ fun IntegrationSettingsScreen(
             modifier = Modifier.padding(bottom = 32.dp),
         )
         AppearanceSettingsSection(modifier = Modifier.padding(bottom = 32.dp))
+        LanguageSettingsSection(modifier = Modifier.padding(bottom = 32.dp))
+        CoverLanguageSettingsSection(modifier = Modifier.padding(bottom = 32.dp))
         Text(
             text = stringResource(R.string.integration_settings_title),
             style = MaterialTheme.typography.headlineSmall,

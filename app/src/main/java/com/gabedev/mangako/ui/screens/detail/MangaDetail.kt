@@ -1,6 +1,7 @@
 package com.gabedev.mangako.ui.screens.detail
 
 import androidx.compose.foundation.BorderStroke
+import com.gabedev.mangako.data.local.getCoverLanguage
 import androidx.compose.foundation.combinedClickable
 import com.gabedev.mangako.ui.theme.LocalAppDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -126,6 +127,8 @@ fun MangaDetail(
     var specialCoverFilter by remember { mutableStateOf(false) }
     var notOwnedFilter by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val coverLanguageFlow = remember(context) { context.getCoverLanguage() }
+    val coverLanguage by coverLanguageFlow.collectAsState(initial = null)
     val viewModeFlow = remember { context.getConfigText() }
     val viewMode by viewModeFlow.collectAsState(initial = "list")
     val viewModel: MangaDetailViewModel = viewModel(
@@ -134,11 +137,17 @@ fun MangaDetail(
     )
     val mangaState by viewModel.mangaState.collectAsState()
     val volumeList by viewModel.volumeList.collectAsState()
-    val filteredVolumeList = remember(specialCoverFilter, notOwnedFilter, volumeList) {
-        filterVolumes(volumeList, specialCoverFilter, notOwnedFilter)
+    val filteredVolumeList = remember(specialCoverFilter, notOwnedFilter, volumeList, coverLanguage, mangaState.originalLanguage) {
+        val localizedVolumes = coverLanguage?.filterVolumes(volumeList, mangaState.originalLanguage).orEmpty()
+        filterVolumes(localizedVolumes, specialCoverFilter, notOwnedFilter)
+    }
+    LaunchedEffect(coverLanguage) {
+        coverLanguage?.let(viewModel::setCoverLanguage)
     }
     val isCoverLoading by viewModel.isVolumeLoading.collectAsState()
     val canLoadMore by viewModel.noMoreVolume.collectAsState()
+    val paginationPaused by viewModel.paginationPaused.collectAsState()
+    val nextVolumeOffset by viewModel.nextVolumeOffset.collectAsState()
     val addResult by viewModel.addResult.collectAsState()
     val removeResult by viewModel.removeResult.collectAsState()
     val isMangaInLibrary by viewModel.isMangaInLibrary.collectAsState()
@@ -223,7 +232,7 @@ fun MangaDetail(
 
     val shouldLoadMore = remember {
         derivedStateOf {
-            if (canLoadMore || isCoverLoading) return@derivedStateOf false
+            if (canLoadMore || isCoverLoading || paginationPaused) return@derivedStateOf false
             val totalItems = listState.layoutInfo.totalItemsCount
             if (totalItems == 0) return@derivedStateOf false
             val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
@@ -231,7 +240,7 @@ fun MangaDetail(
         }
     }
 
-    LaunchedEffect(shouldLoadMore.value) {
+    LaunchedEffect(shouldLoadMore.value, nextVolumeOffset) {
         if (shouldLoadMore.value) {
             viewModel.loadMoreVolumes()
         }
@@ -553,7 +562,20 @@ fun MangaDetail(
                                 }
                             }
                         }
-                        if (volumeList.isEmpty() && !isCoverLoading) {
+                        if (paginationPaused) {
+                            item(span = { GridItemSpan(maxLineSpan) }) {
+                                Column {
+                                    Text(stringResource(R.string.volumes_loading_paused))
+                                    TextButton(
+                                        onClick = { viewModel.retryVolumes() },
+                                        enabled = !isCoverLoading && nextVolumeOffset < 10_000,
+                                    ) {
+                                        Text(stringResource(R.string.button_retry_volumes))
+                                    }
+                                }
+                            }
+                        }
+                        if (filteredVolumeList.isEmpty() && !isCoverLoading && !paginationPaused) {
                             item(span = { GridItemSpan(maxLineSpan) }) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),

@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
+import java.util.Locale
 
 class MangaSearchListViewModel(
     private val apiRepository: MangaDexRepository,
@@ -24,6 +25,8 @@ class MangaSearchListViewModel(
     private var loadMangaJob: Job? = null
     private val enrichmentJobs = mutableSetOf<Job>()
     private var activeQuery: String? = null
+    private var activeLocaleTag = Locale.getDefault().toLanguageTag()
+    private var activeCoverLanguageTag = "ja"
     private var activeSearchGeneration = 0
     private var currentOffset = 0
     private val limit = 6
@@ -50,6 +53,8 @@ class MangaSearchListViewModel(
 
         val pageOffset = currentOffset
         val generation = activeSearchGeneration
+        val localeTag = activeLocaleTag
+        val coverLanguageTag = activeCoverLanguageTag
         val isLoadingMore = pageOffset != 0
 
         if (isLoadingMore) {
@@ -60,7 +65,7 @@ class MangaSearchListViewModel(
 
         activeQuery = currentQuery
 
-        val cached = MangaSearchCache.get(currentQuery, pageOffset)
+        val cached = MangaSearchCache.get(currentQuery, pageOffset, localeTag, coverLanguageTag)
 
         if (cached != null) {
             applyPage(pageOffset, cached)
@@ -92,7 +97,7 @@ class MangaSearchListViewModel(
                 val results = resultMangaList
                     .distinctBy { it.id }
                     .map { it.copy() }
-                MangaSearchCache.put(currentQuery, pageOffset, results)
+                MangaSearchCache.put(currentQuery, pageOffset, results, localeTag, coverLanguageTag)
 
                 applyPage(pageOffset, results)
                 currentOffset += limit
@@ -111,14 +116,16 @@ class MangaSearchListViewModel(
         }
     }
 
-    fun setQueryString(newQuery: String) {
-        if (newQuery == queryString.value) {
+    fun setQueryString(newQuery: String, localeTag: String = Locale.getDefault().toLanguageTag(), coverLanguageTag: String = "ja") {
+        if (newQuery == queryString.value && activeLocaleTag == localeTag && activeCoverLanguageTag == coverLanguageTag) {
             if (mangaList.value.isEmpty()) loadMangaList()
             return
         }
 
         cancelActiveJobs()
         activeSearchGeneration += 1
+        activeLocaleTag = localeTag
+        activeCoverLanguageTag = coverLanguageTag
         queryString.value = newQuery
         mangaList.value = emptyList()
         currentOffset = 0
@@ -142,13 +149,15 @@ class MangaSearchListViewModel(
         results: List<Manga>,
         generation: Int
     ) {
+        val localeTag = activeLocaleTag
+        val coverLanguageTag = activeCoverLanguageTag
         results.forEach { manga ->
             val job = viewModelScope.launch(dispatcher) {
                 try {
                     val enriched = apiRepository.enrichManga(manga)
                     if (!isSearchCurrent(query, generation) || !isActive) return@launch
 
-                    MangaSearchCache.updateItem(query, offset, enriched)
+                    MangaSearchCache.updateItem(query, offset, enriched, localeTag, coverLanguageTag)
                     mangaList.value = mangaList.value.map { current ->
                         if (current.id == enriched.id) enriched else current
                     }

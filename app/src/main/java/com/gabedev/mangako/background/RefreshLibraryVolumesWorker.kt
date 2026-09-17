@@ -6,6 +6,8 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.gabedev.mangako.MangaKoApplication
 import com.gabedev.mangako.core.FileLogger
+import com.gabedev.mangako.data.local.getCoverLanguage
+import kotlinx.coroutines.flow.first
 import com.gabedev.mangako.domain.RefreshMangaVolumesUseCase
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -20,6 +22,7 @@ class RefreshLibraryVolumesWorker(
             val syncResult = RefreshMangaVolumesUseCase(
                 apiRepository = container.mangaRepository,
                 localRepository = container.localRepository,
+                coverLanguageProvider = { applicationContext.getCoverLanguage().first() },
             ).refreshLibrary(forceRefresh = true)
             if (inputData.getBoolean(KEY_SHOULD_NOTIFY, false)) {
                 NewVolumeNotificationHelper.notifyNewVolumes(
