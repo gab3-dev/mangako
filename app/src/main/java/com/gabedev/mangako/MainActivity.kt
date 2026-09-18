@@ -315,6 +315,8 @@ fun MainAppNavHost(
 ) {
     // Per-screen search query states
     var exploreSearchQuery by remember { mutableStateOf("") }
+    var collectionSearchOpenRequest by remember { mutableIntStateOf(0) }
+    var exploreSearchFocusRequest by remember { mutableIntStateOf(0) }
     val context = LocalContext.current
 
     val itemsNavBar = listOf(Screen.UserCollection, Screen.Explore, Screen.Settings)
@@ -323,12 +325,20 @@ fun MainAppNavHost(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val onNavigate: (Screen) -> Unit = { screen ->
-        navController.navigate(screen.route) {
-            popUpTo(navController.graph.startDestinationId) {
-                saveState = false
+        if (currentRoute == screen.route) {
+            when (screen) {
+                Screen.UserCollection -> collectionSearchOpenRequest++
+                Screen.Explore -> exploreSearchFocusRequest++
+                else -> Unit
             }
-            launchSingleTop = true
-            restoreState = false
+        } else {
+            navController.navigate(screen.route) {
+                popUpTo(navController.graph.startDestinationId) {
+                    saveState = false
+                }
+                launchSingleTop = true
+                restoreState = false
+            }
         }
     }
     val navigationBarBottomInset = with(LocalDensity.current) {
@@ -388,6 +398,7 @@ fun MainAppNavHost(
                     alwaysShowSearchBar = true,
                     placeholderRes = R.string.search_placeholder,
                     initialQuery = exploreSearchQuery,
+                    focusRequest = exploreSearchFocusRequest,
                     onDebouncedQuery = { query ->
                         exploreSearchQuery = query
                     },
@@ -536,6 +547,7 @@ fun MainAppNavHost(
                         repository = localRepository,
                         contentBottomPadding = floatingNavigationBottomPadding,
                         startupSyncRefreshVersion = startupSyncRefreshVersion,
+                        openSearchRequest = collectionSearchOpenRequest,
                         onMangaClick = { manga ->
                             navController.navigate(
                                 Screen.MangaDetail.createRoute(

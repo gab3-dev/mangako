@@ -122,6 +122,7 @@ fun MangaCollection(
     repository: LibraryRepository,
     onMangaClick: (Manga) -> Unit,
     startupSyncRefreshVersion: Int = 0,
+    openSearchRequest: Int = 0,
     modifier: Modifier = Modifier,
     onExploreSearch: (String) -> Unit = {},
     contentBottomPadding: Dp = 0.dp,
@@ -215,6 +216,10 @@ fun MangaCollection(
             collectionSearchDockedAboveKeyboard = true
             collectionSearchFocusRequest++
         }
+    }
+
+    LaunchedEffect(openSearchRequest) {
+        if (openSearchRequest > 0) openCollectionSearch()
     }
 
     suspend fun snapCollectionSearchAfterPull() {
@@ -370,6 +375,7 @@ fun MangaCollection(
                     onExpandedChange = {},
                     modifier = Modifier
                         .focusRequester(focusRequester)
+                        .testTag(TestTags.CollectionSearch)
                         .onFocusChanged { focusState ->
                             if (focusState.isFocused) {
                                 searchSnapJob?.cancel()

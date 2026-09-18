@@ -26,7 +26,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
@@ -46,6 +49,7 @@ fun DynamicTopBar(
     alwaysShowSearchBar: Boolean = true,
     placeholderRes: Int = R.string.search_placeholder,
     initialQuery: String = "",
+    focusRequest: Int = 0,
     onDebouncedQuery: (String) -> Unit,
     expandedContent: @Composable (() -> Unit)? = null
 ) {
@@ -54,6 +58,8 @@ fun DynamicTopBar(
     var searchBarVisible by rememberSaveable { mutableStateOf(alwaysShowSearchBar) }
     val hasExpandedContent = expandedContent != null
     var expanded by rememberSaveable { mutableStateOf(false) }
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     val scrollBehavior: TopAppBarScrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
@@ -64,6 +70,14 @@ fun DynamicTopBar(
 
     LaunchedEffect(debouncedQuery) {
         onDebouncedQuery(debouncedQuery)
+    }
+
+    LaunchedEffect(focusRequest) {
+        if (focusRequest > 0) {
+            searchBarVisible = true
+            focusRequester.requestFocus()
+            keyboardController?.show()
+        }
     }
 
     AnimatedVisibility(
@@ -86,7 +100,9 @@ fun DynamicTopBar(
                         },
                         expanded = expanded,
                         onExpandedChange = { expanded = it && hasExpandedContent },
-                        modifier = Modifier.testTag(TestTags.ExploreSearch),
+                        modifier = Modifier
+                            .focusRequester(focusRequester)
+                            .testTag(TestTags.ExploreSearch),
                         leadingIcon = {
                             if (!alwaysShowSearchBar) {
                                 IconButton(onClick = {
