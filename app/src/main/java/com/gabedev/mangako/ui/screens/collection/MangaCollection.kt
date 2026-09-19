@@ -1,10 +1,16 @@
 package com.gabedev.mangako.ui.screens.collection
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,11 +37,12 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Deselect
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.outlined.Book
-import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -51,12 +58,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.PlainTooltip
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Tab
 import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
@@ -74,12 +83,14 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -87,6 +98,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -121,6 +133,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -132,6 +145,7 @@ fun MangaCollection(
     modifier: Modifier = Modifier,
     onExploreSearch: (String) -> Unit = {},
     contentBottomPadding: Dp = 0.dp,
+    onVolumeMultiSelectActiveChange: (Boolean) -> Unit = {},
 ) {
     val viewModel: MangaCollectionViewModel = viewModel(
         factory = MangaCollectionViewModelFactory(repository)
@@ -171,6 +185,8 @@ fun MangaCollection(
     var sortMenuExpanded by remember { mutableStateOf(false) }
     var filterSheetOpen by remember { mutableStateOf(false) }
     var gridColumns by remember { mutableIntStateOf(2) }
+    var collapsedVolumeGroupIds by rememberSaveable { mutableStateOf(emptySet<String>()) }
+    var tabsDragDistance by remember { mutableFloatStateOf(0f) }
     val animatedImeBottomPadding by animateDpAsState(
         targetValue = imeBottomPadding,
         label = "collectionEmptyStateImePadding",
@@ -325,6 +341,14 @@ fun MangaCollection(
     LaunchedEffect(collectionViewMode) {
         viewModel.finishMultiSelect()
         viewModel.finishVolumeMultiSelect()
+    }
+
+    LaunchedEffect(isVolumeMultiSelectActive) {
+        onVolumeMultiSelectActiveChange(isVolumeMultiSelectActive)
+    }
+
+    DisposableEffect(Unit) {
+        onDispose { onVolumeMultiSelectActiveChange(false) }
     }
 
     LaunchedEffect(debouncedSearchQuery) {
@@ -490,24 +514,24 @@ fun MangaCollection(
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
-                if (collectionViewMode == CollectionViewMode.MANGA) {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(
-                            text = stringResource(R.string.filters),
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = stringResource(R.string.filters),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (collectionViewMode == CollectionViewMode.MANGA) {
                             FilterChip(
                                 selected = showIncompleteOnly,
                                 onClick = { viewModel.toggleIncompleteFilter() },
                                 label = { Text(stringResource(R.string.filter_incomplete)) }
                             )
-                            FilterChip(
-                                selected = showSpecialEditionsOnly,
-                                onClick = { viewModel.toggleSpecialEditionsFilter() },
-                                label = { Text(stringResource(R.string.filter_special_editions)) }
-                            )
                         }
+                        FilterChip(
+                            selected = showSpecialEditionsOnly,
+                            onClick = { viewModel.toggleSpecialEditionsFilter() },
+                            label = { Text(stringResource(R.string.filter_special_editions)) }
+                        )
                     }
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -592,31 +616,6 @@ fun MangaCollection(
                                     contentDescription = stringResource(R.string.cd_search)
                                 )
                             }
-                            IconButton(
-                                onClick = {
-                                    val mode = if (collectionViewMode == CollectionViewMode.MANGA) {
-                                        CollectionViewMode.VOLUMES
-                                    } else {
-                                        CollectionViewMode.MANGA
-                                    }
-                                    coroutineScope.launch { context.saveCollectionViewMode(mode) }
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = if (collectionViewMode == CollectionViewMode.MANGA) {
-                                        Icons.Outlined.GridView
-                                    } else {
-                                        Icons.Outlined.Book
-                                    },
-                                    contentDescription = stringResource(
-                                        if (collectionViewMode == CollectionViewMode.MANGA) {
-                                            R.string.cd_show_volume_view
-                                        } else {
-                                            R.string.cd_show_manga_view
-                                        }
-                                    ),
-                                )
-                            }
                         },
                     )
 
@@ -638,6 +637,50 @@ fun MangaCollection(
                     }
                 }
 
+                PrimaryTabRow(
+                    selectedTabIndex = collectionViewMode.ordinal,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .pointerInput(collectionViewMode) {
+                            detectHorizontalDragGestures(
+                                onDragStart = { tabsDragDistance = 0f },
+                                onHorizontalDrag = { _, dragAmount -> tabsDragDistance += dragAmount },
+                                onDragEnd = {
+                                    if (abs(tabsDragDistance) >= 48f) {
+                                        val mode = if (tabsDragDistance < 0f) {
+                                            CollectionViewMode.VOLUMES
+                                        } else {
+                                            CollectionViewMode.MANGA
+                                        }
+                                        if (mode != collectionViewMode) {
+                                            coroutineScope.launch { context.saveCollectionViewMode(mode) }
+                                        }
+                                    }
+                                },
+                            )
+                        },
+                ) {
+                    CollectionViewMode.entries.forEach { mode ->
+                        Tab(
+                            selected = collectionViewMode == mode,
+                            onClick = {
+                                coroutineScope.launch { context.saveCollectionViewMode(mode) }
+                            },
+                            text = {
+                                Text(
+                                    stringResource(
+                                        if (mode == CollectionViewMode.MANGA) {
+                                            R.string.nav_library
+                                        } else {
+                                            R.string.label_volumes
+                                        }
+                                    )
+                                )
+                            },
+                        )
+                    }
+                }
+
                 if (collectionViewMode == CollectionViewMode.VOLUMES) {
                     Row(
                         modifier = Modifier
@@ -649,6 +692,12 @@ fun MangaCollection(
                             onClick = { viewModel.toggleUnownedVolumesFilter() },
                             label = { Text(stringResource(R.string.label_not_owned)) },
                         )
+                        IconButton(onClick = { filterSheetOpen = true }) {
+                            Icon(
+                                imageVector = Icons.Default.FilterList,
+                                contentDescription = stringResource(R.string.cd_filter_options),
+                            )
+                        }
                     }
                 } else {
                     Row(
@@ -755,13 +804,36 @@ fun MangaCollection(
                                             key = "volume-group-${group.manga.id}",
                                             span = { GridItemSpan(maxLineSpan) },
                                         ) {
-                                            Text(
-                                                text = group.manga.title,
-                                                style = MaterialTheme.typography.titleMedium,
-                                                modifier = Modifier.padding(top = 8.dp),
-                                            )
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clickable {
+                                                        collapsedVolumeGroupIds = if (
+                                                            group.manga.id in collapsedVolumeGroupIds
+                                                        ) {
+                                                            collapsedVolumeGroupIds - group.manga.id
+                                                        } else {
+                                                            collapsedVolumeGroupIds + group.manga.id
+                                                        }
+                                                    }
+                                                    .padding(top = 8.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                            ) {
+                                                Text(
+                                                    text = group.manga.title,
+                                                    style = MaterialTheme.typography.titleMedium,
+                                                    modifier = Modifier.weight(1f),
+                                                )
+                                                Icon(
+                                                    imageVector = if (
+                                                        group.manga.id in collapsedVolumeGroupIds
+                                                    ) Icons.Default.ExpandMore else Icons.Default.ExpandLess,
+                                                    contentDescription = group.manga.title,
+                                                )
+                                            }
                                         }
-                                        group.volumes.forEach { volume ->
+                                        if (group.manga.id !in collapsedVolumeGroupIds) {
+                                            group.volumes.forEach { volume ->
                                             item(key = volume.id) {
                                                 MangaCard(
                                                     modifier = Modifier
@@ -791,54 +863,69 @@ fun MangaCollection(
                                                 )
                                             }
                                         }
+                                        }
                                     }
                                 }
 
-                                if (isVolumeMultiSelectActive) {
-                                    HorizontalFloatingToolbar(
-                                        modifier = Modifier
-                                            .align(Alignment.BottomCenter)
-                                            .offset(y = -ScreenOffset)
-                                            .zIndex(1f),
-                                        colors = FloatingToolbarDefaults.vibrantFloatingToolbarColors(),
-                                        expanded = true,
+                                Column(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .padding(end = 16.dp, bottom = contentBottomPadding + 16.dp)
+                                        .zIndex(1f),
+                                ) {
+                                    AnimatedVisibility(
+                                        visible = isVolumeMultiSelectActive,
+                                        enter = fadeIn() + expandVertically(expandFrom = Alignment.Bottom),
+                                        exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Bottom),
                                     ) {
-                                        ToolbarTooltip(label = stringResource(R.string.cd_mark_as_owned)) {
-                                            IconButton(onClick = { viewModel.markSelectedVolumesAsOwned(true) }) {
-                                                Icon(Icons.Default.Check, stringResource(R.string.cd_mark_as_owned))
+                                    Surface(
+                                        shape = RoundedCornerShape(24.dp),
+                                        color = MaterialTheme.colorScheme.secondaryContainer,
+                                        tonalElevation = 6.dp,
+                                        shadowElevation = 8.dp,
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(vertical = 6.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                        ) {
+                                            ToolbarTooltip(label = stringResource(R.string.cd_mark_as_owned)) {
+                                                IconButton(onClick = { viewModel.markSelectedVolumesAsOwned(true) }) {
+                                                    Icon(Icons.Default.Check, stringResource(R.string.cd_mark_as_owned))
+                                                }
+                                            }
+                                            ToolbarTooltip(label = stringResource(R.string.cd_unmark_as_owned)) {
+                                                IconButton(onClick = { viewModel.markSelectedVolumesAsOwned(false) }) {
+                                                    Icon(Icons.Default.Close, stringResource(R.string.cd_unmark_as_owned))
+                                                }
+                                            }
+                                            ToolbarTooltip(label = stringResource(R.string.cd_select_all)) {
+                                                IconButton(
+                                                    onClick = {
+                                                        viewModel.selectAllVolumes(
+                                                            volumeGroups.flatMap { it.volumes }.map { it.id }.toSet(),
+                                                        )
+                                                    },
+                                                    enabled = viewModel.selectedVolumeIds.value.size <
+                                                        volumeGroups.sumOf { it.volumes.size },
+                                                ) {
+                                                    Icon(Icons.Default.SelectAll, stringResource(R.string.cd_select_all))
+                                                }
+                                            }
+                                            ToolbarTooltip(label = stringResource(R.string.cd_deselect)) {
+                                                IconButton(
+                                                    onClick = { viewModel.clearVolumeSelection() },
+                                                    enabled = viewModel.selectedVolumeIds.value.isNotEmpty(),
+                                                ) {
+                                                    Icon(Icons.Default.Deselect, stringResource(R.string.cd_deselect))
+                                                }
+                                            }
+                                            ToolbarTooltip(label = stringResource(R.string.cd_stop_multi_select)) {
+                                                FilledIconButton(onClick = { viewModel.finishVolumeMultiSelect() }) {
+                                                    Icon(Icons.AutoMirrored.Filled.Undo, stringResource(R.string.cd_stop_multi_select))
+                                                }
                                             }
                                         }
-                                        ToolbarTooltip(label = stringResource(R.string.cd_unmark_as_owned)) {
-                                            IconButton(onClick = { viewModel.markSelectedVolumesAsOwned(false) }) {
-                                                Icon(Icons.Default.Close, stringResource(R.string.cd_unmark_as_owned))
-                                            }
-                                        }
-                                        ToolbarTooltip(label = stringResource(R.string.cd_stop_multi_select)) {
-                                            FilledIconButton(onClick = { viewModel.finishVolumeMultiSelect() }) {
-                                                Icon(Icons.AutoMirrored.Filled.Undo, stringResource(R.string.cd_stop_multi_select))
-                                            }
-                                        }
-                                        ToolbarTooltip(label = stringResource(R.string.cd_select_all)) {
-                                            IconButton(
-                                                onClick = {
-                                                    viewModel.selectAllVolumes(
-                                                        volumeGroups.flatMap { it.volumes }.map { it.id }.toSet(),
-                                                    )
-                                                },
-                                                enabled = viewModel.selectedVolumeIds.value.size <
-                                                    volumeGroups.sumOf { it.volumes.size },
-                                            ) {
-                                                Icon(Icons.Default.SelectAll, stringResource(R.string.cd_select_all))
-                                            }
-                                        }
-                                        ToolbarTooltip(label = stringResource(R.string.cd_deselect)) {
-                                            IconButton(
-                                                onClick = { viewModel.clearVolumeSelection() },
-                                                enabled = viewModel.selectedVolumeIds.value.isNotEmpty(),
-                                            ) {
-                                                Icon(Icons.Default.Deselect, stringResource(R.string.cd_deselect))
-                                            }
-                                        }
+                                    }
                                     }
                                 }
                             } else {

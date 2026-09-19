@@ -15,6 +15,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Book
@@ -317,6 +319,7 @@ fun MainAppNavHost(
     var exploreSearchQuery by remember { mutableStateOf("") }
     var collectionSearchOpenRequest by remember { mutableIntStateOf(0) }
     var exploreSearchFocusRequest by remember { mutableIntStateOf(0) }
+    var collectionVolumeActionsExpanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     val itemsNavBar = listOf(Screen.UserCollection, Screen.Explore, Screen.Settings)
@@ -324,6 +327,11 @@ fun MainAppNavHost(
         .collectAsState(initial = NavigationBarStyle.CLASSIC)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    LaunchedEffect(currentRoute) {
+        if (currentRoute != Screen.UserCollection.route) {
+            collectionVolumeActionsExpanded = false
+        }
+    }
     val onNavigate: (Screen) -> Unit = { screen ->
         if (currentRoute == screen.route) {
             when (screen) {
@@ -344,6 +352,10 @@ fun MainAppNavHost(
     val navigationBarBottomInset = with(LocalDensity.current) {
         WindowInsets.navigationBars.getBottom(this).toDp()
     }
+    val floatingNavigationHorizontalOffset by animateDpAsState(
+        targetValue = if (collectionVolumeActionsExpanded) (-56).dp else 0.dp,
+        label = "collectionVolumeActionsNavigationOffset",
+    )
     val floatingNavigationBottomPadding = if (
         navigationBarStyle == NavigationBarStyle.FLOATING &&
         currentRoute != Screen.MangaDetail.route
@@ -548,6 +560,9 @@ fun MainAppNavHost(
                         contentBottomPadding = floatingNavigationBottomPadding,
                         startupSyncRefreshVersion = startupSyncRefreshVersion,
                         openSearchRequest = collectionSearchOpenRequest,
+                        onVolumeMultiSelectActiveChange = { active ->
+                            collectionVolumeActionsExpanded = active
+                        },
                         onMangaClick = { manga ->
                             navController.navigate(
                                 Screen.MangaDetail.createRoute(
@@ -623,7 +638,9 @@ fun MainAppNavHost(
                     currentRoute = currentRoute,
                     items = itemsNavBar,
                     onNavigate = onNavigate,
-                    modifier = Modifier.align(Alignment.BottomCenter),
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .offset(x = floatingNavigationHorizontalOffset),
                 )
             }
         }

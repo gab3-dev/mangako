@@ -4,6 +4,7 @@ import android.content.Context
 import com.gabedev.mangako.data.local.CatalogIntegration
 import com.gabedev.mangako.data.local.getCatalogIntegration
 import com.gabedev.mangako.data.model.Manga
+import com.gabedev.mangako.data.model.Volume
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -197,6 +198,46 @@ class ConfigurableMangaRepositoryTest {
         verify(exactly = 0) { mangaDexRepository.log(any()) }
 
         confirmVerified(mangaKoRepository, mangaDexRepository)
+    }
+
+    @Test
+    fun `remaining operations use MangaKo when integration is enabled`() = runTest {
+        val manga = createManga("manga", "Manga")
+        val enriched = manga.copy(description = "Enriched")
+        val volume = Volume("volume", manga.id, manga.title, "cover", 1f, "en")
+        val error = IllegalStateException("error")
+        coEvery { mangaKoRepository.searchManga("title", 4) } returns listOf(manga)
+        coEvery { mangaKoRepository.enrichManga(manga) } returns enriched
+        coEvery { mangaKoRepository.getManga("manga", true) } returns manga
+        coEvery { mangaKoRepository.getMangaCoverFileName("manga") } returns "cover.jpg"
+        coEvery { mangaKoRepository.getAuthorNameById("author") } returns "Author"
+        coEvery { mangaKoRepository.getCoverListByManga(manga, 2, 20, true) } returns listOf(volume)
+
+        assertEquals(listOf(manga), repository.searchManga("title", 4))
+        assertEquals(enriched, repository.enrichManga(manga))
+        assertEquals(manga, repository.getManga("manga", true))
+        assertEquals("cover.jpg", repository.getMangaCoverFileName("manga"))
+        assertEquals("Author", repository.getAuthorNameById("author"))
+        assertEquals(listOf(volume), repository.getCoverListByManga(manga, 2, 20, true))
+        repository.log(error)
+
+        coVerify { mangaKoRepository.searchManga("title", 4) }
+        coVerify { mangaKoRepository.enrichManga(manga) }
+        coVerify { mangaKoRepository.getManga("manga", true) }
+        coVerify { mangaKoRepository.getMangaCoverFileName("manga") }
+        coVerify { mangaKoRepository.getAuthorNameById("author") }
+        coVerify { mangaKoRepository.getCoverListByManga(manga, 2, 20, true) }
+        verify { mangaDexRepository.log(error) }
+    }
+
+    @Test
+    fun `uses MangaDex when MangaKo repository is unavailable`() = runTest {
+        val withoutMangaKo = ConfigurableMangaRepository(context, mangaDexRepository, null)
+        coEvery { mangaDexRepository.getAuthorNameById("author") } returns "MangaDex author"
+
+        assertEquals("MangaDex author", withoutMangaKo.getAuthorNameById("author"))
+
+        coVerify { mangaDexRepository.getAuthorNameById("author") }
     }
 
     private fun createManga(id: String, title: String) = Manga(

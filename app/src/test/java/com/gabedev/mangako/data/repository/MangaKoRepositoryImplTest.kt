@@ -6,6 +6,7 @@ import com.gabedev.mangako.data.dto.MangaKoCreatorDto
 import com.gabedev.mangako.data.dto.MangaKoLocalizationDto
 import com.gabedev.mangako.data.dto.MangaKoMangaDto
 import com.gabedev.mangako.data.dto.MangaKoVolumeDto
+import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.remote.api.MangaKoAPI
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -296,6 +297,46 @@ class MangaKoRepositoryImplTest {
         coEvery { api.getVolumes(manga.id, 50, 0, false, "original") } returns emptyList()
         repository.getCoverListByManga(manga)
         coVerify(exactly = 1) { api.getVolumes(manga.id, 50, 0, false, "original") }
+    }
+
+    @Test
+    fun `search uses defaults and normalizes blank queries`() = runTest {
+        coEvery { api.searchMangas("one", 10, 3) } returns listOf(mangaDto())
+        coEvery { api.searchMangas(null, 5, 0) } returns emptyList()
+
+        assertEquals("mangadex-manga", repository.searchManga("one", 3).single().id)
+        assertTrue(repository.searchMangaPage("  ", null, 5).isEmpty())
+
+        coVerify { api.searchMangas("one", 10, 3) }
+        coVerify { api.searchMangas(null, 5, 0) }
+    }
+
+    @Test
+    fun `cover filename author and volume fallbacks use available data`() = runTest {
+        val manga = Manga("manga", "Manga", coverUrl = "cover", description = "description")
+        coEvery { api.getManga("manga") } returns mangaDto().copy(
+            covers = listOf(MangaKoCoverDto("cover", null, false, "unused")),
+        )
+        coEvery { api.getVolumes("manga", 8, 0, true) } returns listOf(
+            MangaKoVolumeDto(
+                id = "internal-cover",
+                mangaDexCoverId = null,
+                sourceUrl = "volume-cover",
+                volume = "invalid",
+                locale = "en",
+                isSpecialEdition = false,
+                sourceCreatedAt = null,
+                sourceUpdatedAt = null,
+                updatedAt = "updated",
+            ),
+        )
+
+        assertEquals("", repository.getMangaCoverFileName("manga"))
+        assertEquals("", repository.getAuthorNameById("author"))
+        val volume = repository.getCoverListByManga(manga, null, 8, true).single()
+        assertEquals("internal-cover", volume.id)
+        assertNull(volume.volume)
+        assertEquals("updated", volume.updatedAt)
     }
 
     private fun mangaDto() = MangaKoMangaDto(

@@ -698,6 +698,22 @@ class MangaCollectionViewModelTest {
     }
 
     @Test
+    fun `special editions filter keeps only special volumes in volume groups`() = runTest(testDispatcher) {
+        val manga = createManga("1", "Alpha")
+        val regular = createVolume("v1", "1", 1f)
+        val special = createVolume("v2", "1", 1.5f).copy(isSpecialEdition = true)
+        coEvery { repository.getLibraryMangaWithVolumes() } returns listOf(
+            MangaWithVolume(manga, listOf(regular, special)),
+        )
+
+        viewModel = MangaCollectionViewModel(repository, testDispatcher)
+        advanceUntilIdle()
+        viewModel!!.toggleSpecialEditionsFilter()
+
+        assertEquals(listOf("v2"), viewModel!!.volumeGroups.value.single().volumes.map { it.id })
+    }
+
+    @Test
     fun `toggleVolumeOwned updates the collection owned count`() = runTest(testDispatcher) {
         val manga = createMangaWithOwned("1", "Alpha")
         val localManga = createManga("1", "Alpha")
@@ -712,5 +728,38 @@ class MangaCollectionViewModelTest {
 
         coVerify { repository.updateVolume(volume.copy(owned = true)) }
         assertEquals(1, viewModel!!.mangaCollection.value.single().volumeOwned)
+    }
+
+    @Test
+    fun `volume multi-select selects clears and finishes`() = runTest(testDispatcher) {
+        viewModel = MangaCollectionViewModel(repository, testDispatcher)
+
+        viewModel!!.selectAllVolumes(setOf("1", "2"))
+        assertTrue(viewModel!!.isVolumeMultiSelectActive.value)
+        assertEquals(setOf("1", "2"), viewModel!!.selectedVolumeIds.value)
+
+        viewModel!!.clearVolumeSelection()
+        assertTrue(viewModel!!.selectedVolumeIds.value.isEmpty())
+        viewModel!!.finishVolumeMultiSelect()
+        assertFalse(viewModel!!.isVolumeMultiSelectActive.value)
+    }
+
+    @Test
+    fun `markSelectedVolumesAsOwned persists selected volumes`() = runTest(testDispatcher) {
+        val manga = createManga("1", "Alpha")
+        val first = createVolume("v1", "1", 1f)
+        val second = createVolume("v2", "1", 2f)
+        coEvery { repository.getLibraryMangaWithVolumes() } returns listOf(MangaWithVolume(manga, listOf(first, second)))
+
+        viewModel = MangaCollectionViewModel(repository, testDispatcher)
+        advanceUntilIdle()
+        viewModel!!.toggleVolumeSelection(first.id)
+        viewModel!!.toggleVolumeSelection(second.id)
+        viewModel!!.markSelectedVolumesAsOwned(true)
+        advanceUntilIdle()
+
+        coVerify { repository.updateVolumeList(listOf(first.copy(owned = true), second.copy(owned = true))) }
+        assertTrue(viewModel!!.volumeGroups.value.single().volumes.all { it.owned })
+        assertTrue(viewModel!!.selectedVolumeIds.value.isEmpty())
     }
 }
