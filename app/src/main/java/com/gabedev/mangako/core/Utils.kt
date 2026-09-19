@@ -29,13 +29,27 @@ object Utils {
         )
     }
 
-    fun handleMangaAlternativeTitle(attributes: AttributesDto): String? = romanizedTitle(
+    fun handleMangaAlternativeTitle(attributes: AttributesDto): String? = alternativeTitle(
         attributes.title.orEmpty().toList() + attributes.altTitles.orEmpty().flatMap { it.toList() },
     )
+
+    fun alternativeTitle(titles: List<Pair<String, String?>>): String? {
+        return if (titleForLanguage(titles, "ja") != null) romanizedTitle(titles) else englishTitle(titles)
+    }
 
     fun romanizedTitle(titles: List<Pair<String, String?>>): String? = titles.firstNotNullOfOrNull { (tag, text) ->
         text?.takeIf { tag.replace('_', '-').equals("ja-ro", ignoreCase = true) && it.isNotBlank() }
     }
+
+    private fun englishTitle(titles: List<Pair<String, String?>>): String? =
+        titleForLanguage(titles, "en") ?: titles.firstNotNullOfOrNull { (tag, text) ->
+            text?.takeIf { tag.replace('_', '-').lowercase(Locale.ROOT).startsWith("en-") && it.isNotBlank() }
+        }
+
+    private fun titleForLanguage(titles: List<Pair<String, String?>>, language: String): String? =
+        titles.firstNotNullOfOrNull { (tag, text) ->
+            text?.takeIf { tag.replace('_', '-').equals(language, ignoreCase = true) && it.isNotBlank() }
+        }
 
     fun localizedTitle(titles: List<Pair<String, String?>>, locale: Locale = Locale.getDefault()): String? {
         val available = titles.mapNotNull { (language, text) ->

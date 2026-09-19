@@ -32,7 +32,7 @@ class MangaKoRepositoryImplTest {
 
         assertEquals("mangadex-manga", manga.id)
         assertEquals("One Piece", manga.title)
-        assertEquals("Wan Pisu", manga.altTitle)
+        assertEquals("One Piece", manga.altTitle)
         assertEquals("https://example.com/primary.jpg", manga.coverUrl)
         assertEquals("Eiichiro Oda", manga.author)
         assertEquals("Description EN", manga.description)
@@ -232,7 +232,12 @@ class MangaKoRepositoryImplTest {
 
             for (manga in listOf(search, detail)) {
                 assertEquals("locale=$locale titles=$titles", expected, manga.title)
-                assertEquals("Romanized", manga.altTitle)
+                val expectedSubtitle = if (titles.any { it.first.equals("ja", ignoreCase = true) && it.second.isNotBlank() }) {
+                    "Romanized"
+                } else {
+                    titles.firstOrNull { it.first.equals("en", ignoreCase = true) }?.second
+                }
+                assertEquals(expectedSubtitle, manga.altTitle)
                 assertTrue(manga.title.isNotBlank())
             }
         }
@@ -263,7 +268,7 @@ class MangaKoRepositoryImplTest {
             for (manga in listOf(search, detail)) {
                 assertEquals(if (hasJapanese) "Japanese" else placeholder, manga.title)
                 assertTrue(manga.title.isNotBlank())
-                assertEquals("Wan Pisu", manga.altTitle)
+                assertEquals(if (hasJapanese) "Wan Pisu" else "One Piece", manga.altTitle)
                 assertEquals(if (hasJapanese) "Description JA" else "", manga.description)
             }
         }

@@ -228,7 +228,7 @@ class UtilsTest {
     }
 
     @Test
-    fun `Japanese title and description never fall back even to romanization`() {
+    fun `missing Japanese title uses English as the subtitle`() {
         val attrs = createAttributesDto(
             title = mapOf("en" to "English", "ja" to " "),
             altTitles = listOf(mapOf("JA_ro" to "Romanized"), mapOf("pt-br" to "Portuguese")),
@@ -236,7 +236,7 @@ class UtilsTest {
         )
         assertNull(Utils.handleMangaTitle(attrs, Locale.JAPAN))
         assertEquals("", Utils.handleMangaDescription(attrs, Locale.JAPAN))
-        assertEquals("Romanized", Utils.handleMangaAlternativeTitle(attrs))
+        assertEquals("English", Utils.handleMangaAlternativeTitle(attrs))
     }
 
     @Test
@@ -246,6 +246,7 @@ class UtilsTest {
             altTitles = listOf(mapOf("ja-ro" to "Romanized"), mapOf("ja" to "日本語")),
         )
         assertEquals("日本語", Utils.handleMangaTitle(attrs, Locale.JAPAN))
+        assertEquals("Romanized", Utils.handleMangaAlternativeTitle(attrs))
     }
 
     @Test

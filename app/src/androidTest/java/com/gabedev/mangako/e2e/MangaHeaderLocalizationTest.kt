@@ -34,14 +34,14 @@ class MangaHeaderLocalizationTest {
     }
 
     @Test
-    fun unavailableJapaneseTitleKeepsRomanizedSubtitle() {
+    fun unavailableJapaneseTitleShowsEnglishSubtitle() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val unavailable = context.unavailableMangaTitle(Locale.JAPAN)
         composeRule.setContent {
             MangaKōTheme {
                 MangaHeader(
                     title = unavailable,
-                    alternativeTitle = "Wan Pisu",
+                    alternativeTitle = "One Piece",
                     description = "",
                 )
             }
@@ -49,7 +49,7 @@ class MangaHeaderLocalizationTest {
 
         assertEquals("タイトル情報なし", unavailable)
         composeRule.onNodeWithText(unavailable).assertIsDisplayed()
-        composeRule.onNodeWithText("Wan Pisu").assertIsDisplayed()
+        composeRule.onNodeWithText("One Piece").assertIsDisplayed()
     }
 
     @Test

@@ -64,7 +64,7 @@ class MangaKoRepositoryImpl(
         return Manga(
             id = mangaDexId ?: id,
             title = title,
-            altTitle = Utils.romanizedTitle(titles),
+            altTitle = Utils.alternativeTitle(titles),
             coverId = covers.firstOrNull { it.isPrimary }?.mangaDexCoverId
                 ?: covers.firstOrNull { it.isPrimary }?.id,
             coverUrl = covers.firstOrNull { it.isPrimary }?.sourceUrl.orEmpty(),

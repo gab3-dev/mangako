@@ -371,14 +371,19 @@ class MangaDexRepositoryImplTest {
 
             for (manga in listOf(search, detail)) {
                 assertEquals("locale=$locale titles=$titles", expected, manga.title)
-                assertEquals("Romanized", manga.altTitle)
+                val expectedSubtitle = if (titles.any { it.first.equals("ja", ignoreCase = true) && it.second.isNotBlank() }) {
+                    "Romanized"
+                } else {
+                    titles.firstOrNull { it.first.equals("en", ignoreCase = true) }?.second
+                }
+                assertEquals(expectedSubtitle, manga.altTitle)
                 assertTrue(manga.title.isNotBlank())
             }
         }
     }
 
     @Test
-    fun `Japanese title and description are exclusive with romanized subtitle preserved`() = runTest {
+    fun `missing Japanese title keeps English subtitle while Japanese keeps romanization`() = runTest {
         val locale = Locale.JAPAN
         val receivedLocales = mutableListOf<Locale>()
         val placeholder = "\u30bf\u30a4\u30c8\u30eb\u4e0d\u660e"
@@ -408,7 +413,7 @@ class MangaDexRepositoryImplTest {
             for (manga in listOf(search, detail)) {
                 assertEquals(expected ?: placeholder, manga.title)
                 assertTrue(manga.title.isNotBlank())
-                assertEquals("Wan Pīsu", manga.altTitle)
+                assertEquals(if (expected == null) "English" else "Wan Pīsu", manga.altTitle)
                 assertEquals(expected.orEmpty(), manga.description)
             }
         }
