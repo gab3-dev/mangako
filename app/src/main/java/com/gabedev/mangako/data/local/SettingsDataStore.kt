@@ -28,6 +28,7 @@ object SettingsKeys {
     val THEME_MODE = stringPreferencesKey("theme_mode")
     val COVER_LANGUAGE = stringPreferencesKey("cover_language")
     val VIEW_MODE = stringPreferencesKey("view_mode")
+    val COLLECTION_VIEW_MODE = stringPreferencesKey("collection_view_mode")
     val COLLECTION_DENSITY = intPreferencesKey("collection_density")
     val CATALOG_INTEGRATION = stringPreferencesKey("catalog_integration")
     val CATALOG_INTEGRATION_MIGRATED_TO_MANGAKO = booleanPreferencesKey(
@@ -84,6 +85,11 @@ enum class NavigationBarStyle {
     FLOATING,
 }
 
+enum class CollectionViewMode {
+    MANGA,
+    VOLUMES,
+}
+
 enum class BackupFrequency {
     ON_CHANGE,
     DAILY,
@@ -111,6 +117,19 @@ fun Context.getConfigText(): Flow<String> {
     return dataStore.data.map { preferences ->
         preferences[SettingsKeys.VIEW_MODE] ?: ""
     }
+}
+
+fun Context.getCollectionViewMode(): Flow<CollectionViewMode> = dataStore.data.map { preferences ->
+    preferences[SettingsKeys.COLLECTION_VIEW_MODE]
+        ?.let { value -> runCatching { CollectionViewMode.valueOf(value) }.getOrNull() }
+        ?: CollectionViewMode.MANGA
+}
+
+suspend fun Context.saveCollectionViewMode(mode: CollectionViewMode) {
+    dataStore.edit { preferences ->
+        preferences[SettingsKeys.COLLECTION_VIEW_MODE] = mode.name
+    }
+    BackupScheduler.enqueueAfterChange(applicationContext)
 }
 
 suspend fun Context.saveCollectionDensity(density: Int) {

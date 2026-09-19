@@ -10,6 +10,7 @@ interface LibraryRepository {
     suspend fun getAllManga(): List<Manga>
     suspend fun getMangaOnLibrary(): List<MangaWithOwned>
     suspend fun getMangaWithVolume(mangaId: String): MangaWithVolume?
+    suspend fun getLibraryMangaWithVolumes(): List<MangaWithVolume>
     suspend fun searchManga(title: String): List<Manga>
     suspend fun insertManga(manga: Manga)
     suspend fun updateManga(manga: Manga): Manga?

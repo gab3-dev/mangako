@@ -4,7 +4,9 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.model.MangaWithOwned
+import com.gabedev.mangako.data.model.Volume
 import com.gabedev.mangako.data.repository.LibraryRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -18,6 +20,11 @@ enum class MangaCollectionSortOption {
     PROGRESS_ASC
 }
 
+data class MangaVolumeGroup(
+    val manga: Manga,
+    val volumes: List<Volume>,
+)
+
 class MangaCollectionViewModel (
         private val repository: LibraryRepository,
         private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
@@ -25,6 +32,9 @@ class MangaCollectionViewModel (
     private val _mangaCollection = mutableStateOf<List<MangaWithOwned>>(emptyList())
     private val _fullMangaCollection = mutableStateOf<List<MangaWithOwned>>(emptyList())
     val mangaCollection: State<List<MangaWithOwned>> = _mangaCollection
+    private val _volumeGroups = mutableStateOf<List<MangaVolumeGroup>>(emptyList())
+    private val _fullVolumeGroups = mutableStateOf<List<MangaVolumeGroup>>(emptyList())
+    val volumeGroups: State<List<MangaVolumeGroup>> = _volumeGroups
 
     private val _isLoading = mutableStateOf(false)
     val isLoading: State<Boolean> = _isLoading
@@ -37,6 +47,8 @@ class MangaCollectionViewModel (
 
     private val _showSpecialEditionsOnly = mutableStateOf(false)
     val showSpecialEditionsOnly: State<Boolean> = _showSpecialEditionsOnly
+    private val _showUnownedVolumesOnly = mutableStateOf(false)
+    val showUnownedVolumesOnly: State<Boolean> = _showUnownedVolumesOnly
 
     private val _sortOption = mutableStateOf(MangaCollectionSortOption.TITLE_ASC)
     val sortOption: State<MangaCollectionSortOption> = _sortOption
@@ -47,6 +59,11 @@ class MangaCollectionViewModel (
     var selectedIds = mutableStateOf(setOf<String>())
         private set
     var isMultiSelectActive = mutableStateOf(false)
+
+    var selectedVolumeIds = mutableStateOf(setOf<String>())
+        private set
+    var isVolumeMultiSelectActive = mutableStateOf(false)
+        private set
 
     fun toggleSelection(id: String) {
         selectedIds.value =
@@ -82,6 +99,9 @@ class MangaCollectionViewModel (
             _fullMangaCollection.value = _fullMangaCollection.value.filter {
                 !selectedIds.value.contains(it.id)
             }
+            _fullVolumeGroups.value = _fullVolumeGroups.value.filter {
+                !selectedIds.value.contains(it.manga.id)
+            }
             applyFilters()
             finishMultiSelect()
         }
@@ -93,7 +113,16 @@ class MangaCollectionViewModel (
             val result = withContext(ioDispatcher) {
                 repository.getMangaOnLibrary()
             }
+            val volumeResult = withContext(ioDispatcher) {
+                repository.getLibraryMangaWithVolumes()
+            }
             _fullMangaCollection.value = result
+            _fullVolumeGroups.value = volumeResult.map { mangaWithVolumes ->
+                MangaVolumeGroup(
+                    manga = mangaWithVolumes.manga,
+                    volumes = mangaWithVolumes.volumes.sortedWith(volumeComparator()),
+                )
+            }
 
             // Load manga IDs with special editions
             mangaIdsWithSpecialEditions = withContext(ioDispatcher) {
@@ -123,6 +152,55 @@ class MangaCollectionViewModel (
     fun toggleSpecialEditionsFilter() {
         _showSpecialEditionsOnly.value = !_showSpecialEditionsOnly.value
         applyFilters()
+    }
+
+    fun toggleUnownedVolumesFilter() {
+        _showUnownedVolumesOnly.value = !_showUnownedVolumesOnly.value
+        applyVolumeFilters()
+    }
+
+    fun toggleVolumeOwned(volume: Volume) {
+        viewModelScope.launch {
+            val updated = volume.copy(owned = !volume.owned)
+            withContext(ioDispatcher) { repository.updateVolume(updated) }
+            updateVolumeInGroups(updated)
+        }
+    }
+
+    fun toggleVolumeSelection(id: String) {
+        selectedVolumeIds.value = if (selectedVolumeIds.value.contains(id)) {
+            selectedVolumeIds.value - id
+        } else {
+            selectedVolumeIds.value + id
+        }
+        isVolumeMultiSelectActive.value = selectedVolumeIds.value.isNotEmpty()
+    }
+
+    fun selectAllVolumes(visibleIds: Set<String>) {
+        selectedVolumeIds.value = visibleIds
+        isVolumeMultiSelectActive.value = visibleIds.isNotEmpty()
+    }
+
+    fun clearVolumeSelection() {
+        selectedVolumeIds.value = emptySet()
+    }
+
+    fun finishVolumeMultiSelect() {
+        isVolumeMultiSelectActive.value = false
+        clearVolumeSelection()
+    }
+
+    fun markSelectedVolumesAsOwned(isOwned: Boolean) {
+        val selected = selectedVolumeIds.value
+        if (selected.isEmpty()) return
+        viewModelScope.launch {
+            val updates = _fullVolumeGroups.value.flatMap { it.volumes }
+                .filter { it.id in selected }
+                .map { it.copy(owned = isOwned) }
+            withContext(ioDispatcher) { repository.updateVolumeList(updates) }
+            updates.forEach(::updateVolumeInGroups)
+            clearVolumeSelection()
+        }
     }
 
     fun setSortOption(option: MangaCollectionSortOption) {
@@ -156,7 +234,45 @@ class MangaCollectionViewModel (
         }
 
         _mangaCollection.value = filtered.sortedWith(sortComparator())
+        applyVolumeFilters()
     }
+
+    private fun applyVolumeFilters() {
+        var groups = _fullVolumeGroups.value
+        if (_searchQuery.value.isNotBlank()) {
+            groups = groups.filter { group ->
+                group.manga.title.contains(_searchQuery.value, ignoreCase = true) ||
+                    group.manga.altTitle?.contains(_searchQuery.value, ignoreCase = true) == true
+            }
+        }
+        if (_showUnownedVolumesOnly.value) {
+            groups = groups.map { group -> group.copy(volumes = group.volumes.filterNot { it.owned }) }
+                .filter { it.volumes.isNotEmpty() }
+        }
+        _volumeGroups.value = groups.sortedBy { it.manga.title.lowercase() }
+    }
+
+    private fun updateVolumeInGroups(updated: Volume) {
+        _fullVolumeGroups.value = _fullVolumeGroups.value.map { group ->
+            if (group.manga.id == updated.mangaId) {
+                group.copy(volumes = group.volumes.map { if (it.id == updated.id) updated else it })
+            } else {
+                group
+            }
+        }
+        val ownedCounts = _fullVolumeGroups.value.associate { group ->
+            group.manga.id to group.volumes.count { it.owned }
+        }
+        _fullMangaCollection.value = _fullMangaCollection.value.map { manga ->
+            manga.copy(volumeOwned = ownedCounts[manga.id] ?: manga.volumeOwned)
+        }
+        applyFilters()
+    }
+
+    private fun volumeComparator(): Comparator<Volume> = compareBy<Volume> { it.isSpecialEdition }
+        .thenBy { it.volume ?: Float.MAX_VALUE }
+        .thenBy { it.locale }
+        .thenBy { it.id }
 
     private fun sortComparator(): Comparator<MangaWithOwned> {
         val titleComparator = compareBy<MangaWithOwned> { it.title.lowercase() }

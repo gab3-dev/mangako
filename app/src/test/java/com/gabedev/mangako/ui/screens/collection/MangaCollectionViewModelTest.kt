@@ -1,7 +1,10 @@
 package com.gabedev.mangako.ui.screens.collection
 
 import androidx.lifecycle.viewModelScope
+import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.model.MangaWithOwned
+import com.gabedev.mangako.data.model.MangaWithVolume
+import com.gabedev.mangako.data.model.Volume
 import com.gabedev.mangako.data.repository.LibraryRepository
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
@@ -41,6 +44,29 @@ class MangaCollectionViewModelTest {
         authorId = null, author = null, description = "desc",
         status = null, volumeCount = volumeCount, isOnUserLibrary = true,
         volumeOwned = volumeOwned
+    )
+
+    private fun createManga(id: String, title: String) = Manga(
+        id = id,
+        title = title,
+        coverUrl = "url",
+        description = "desc",
+        isOnUserLibrary = true,
+    )
+
+    private fun createVolume(
+        id: String,
+        mangaId: String,
+        volume: Float,
+        owned: Boolean = false,
+    ) = Volume(
+        id = id,
+        mangaId = mangaId,
+        title = "Volume $volume",
+        coverUrl = "url",
+        volume = volume,
+        locale = "en",
+        owned = owned,
     )
 
     @Before
@@ -633,5 +659,58 @@ class MangaCollectionViewModelTest {
 
         viewModel!!.clearSearchQuery()
         assertEquals(3, viewModel!!.mangaCollection.value.size)
+    }
+
+    @Test
+    fun `loadLibrary groups and orders volumes by manga`() = runTest(testDispatcher) {
+        val alpha = createManga("1", "Alpha")
+        val beta = createManga("2", "Beta")
+        coEvery { repository.getLibraryMangaWithVolumes() } returns listOf(
+            MangaWithVolume(beta, listOf(createVolume("b2", "2", 2f), createVolume("b1", "2", 1f))),
+            MangaWithVolume(alpha, listOf(createVolume("a1", "1", 1f))),
+        )
+
+        viewModel = MangaCollectionViewModel(repository, testDispatcher)
+        advanceUntilIdle()
+
+        assertEquals(listOf("Alpha", "Beta"), viewModel!!.volumeGroups.value.map { it.manga.title })
+        assertEquals(listOf("b1", "b2"), viewModel!!.volumeGroups.value[1].volumes.map { it.id })
+    }
+
+    @Test
+    fun `unowned volume filter hides owned volumes and empty groups`() = runTest(testDispatcher) {
+        val alpha = createManga("1", "Alpha")
+        val beta = createManga("2", "Beta")
+        coEvery { repository.getLibraryMangaWithVolumes() } returns listOf(
+            MangaWithVolume(alpha, listOf(createVolume("a1", "1", 1f, owned = true))),
+            MangaWithVolume(beta, listOf(
+                createVolume("b1", "2", 1f, owned = true),
+                createVolume("b2", "2", 2f),
+            )),
+        )
+
+        viewModel = MangaCollectionViewModel(repository, testDispatcher)
+        advanceUntilIdle()
+        viewModel!!.toggleUnownedVolumesFilter()
+
+        assertEquals(listOf("Beta"), viewModel!!.volumeGroups.value.map { it.manga.title })
+        assertEquals(listOf("b2"), viewModel!!.volumeGroups.value.single().volumes.map { it.id })
+    }
+
+    @Test
+    fun `toggleVolumeOwned updates the collection owned count`() = runTest(testDispatcher) {
+        val manga = createMangaWithOwned("1", "Alpha")
+        val localManga = createManga("1", "Alpha")
+        val volume = createVolume("v1", "1", 1f)
+        coEvery { repository.getMangaOnLibrary() } returns listOf(manga)
+        coEvery { repository.getLibraryMangaWithVolumes() } returns listOf(MangaWithVolume(localManga, listOf(volume)))
+
+        viewModel = MangaCollectionViewModel(repository, testDispatcher)
+        advanceUntilIdle()
+        viewModel!!.toggleVolumeOwned(volume)
+        advanceUntilIdle()
+
+        coVerify { repository.updateVolume(volume.copy(owned = true)) }
+        assertEquals(1, viewModel!!.mangaCollection.value.single().volumeOwned)
     }
 }

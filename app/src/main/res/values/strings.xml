@@ -126,6 +126,8 @@
     <string name="cd_select_all">Select all volumes</string>
     <string name="cd_deselect">Deselect</string>
     <string name="cd_done_icon">Done icon</string>
+    <string name="cd_show_volume_view">Show volume view</string>
+    <string name="cd_show_manga_view">Show manga view</string>
 
     <!-- Detail Screen - Header -->
     <string name="header_author">Author: %1$s</string>

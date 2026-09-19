@@ -50,6 +50,15 @@ class LibraryRepositoryImpl(
         }
     }
 
+    override suspend fun getLibraryMangaWithVolumes(): List<MangaWithVolume> {
+        return try {
+            db.mangaDao().getLibraryMangaWithVolumes()
+        } catch (e: Exception) {
+            logger.logError(e)
+            emptyList()
+        }
+    }
+
     override suspend fun searchManga(title: String): List<Manga> {
         try {
             if (title.isBlank()) {

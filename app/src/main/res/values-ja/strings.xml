@@ -118,6 +118,8 @@
     <string name="cd_select_all">すべての巻を選択</string>
     <string name="cd_deselect">選択解除</string>
     <string name="cd_done_icon">完了アイコン</string>
+    <string name="cd_show_volume_view">巻表示に切り替え</string>
+    <string name="cd_show_manga_view">マンガ表示に切り替え</string>
 
     <!-- Detail Screen - Header -->
     <string name="header_author">作者：%1$s</string>

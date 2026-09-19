@@ -23,6 +23,10 @@ interface MangaDAO {
     @Query("SELECT * FROM Manga WHERE id = :id")
     suspend fun getMangaWithVolumeById(id: String): MangaWithVolume?
 
+    @Transaction
+    @Query("SELECT * FROM Manga WHERE on_user_library = 1 ORDER BY title")
+    suspend fun getLibraryMangaWithVolumes(): List<MangaWithVolume>
+
     // @Query("SELECT * FROM MangaWithOwned WHERE id = :id")
     // suspend fun getMangaWithOwned(id: String): MangaWithOwned?
 

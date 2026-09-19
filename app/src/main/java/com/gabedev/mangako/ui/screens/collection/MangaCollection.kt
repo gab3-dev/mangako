@@ -21,18 +21,21 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Deselect
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.outlined.Book
+import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -104,7 +107,10 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gabedev.mangako.R
 import com.gabedev.mangako.data.local.getCollectionDensity
+import com.gabedev.mangako.data.local.CollectionViewMode
+import com.gabedev.mangako.data.local.getCollectionViewMode
 import com.gabedev.mangako.data.local.saveCollectionDensity
+import com.gabedev.mangako.data.local.saveCollectionViewMode
 import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.model.toManga
 import com.gabedev.mangako.data.repository.LibraryRepository
@@ -135,11 +141,16 @@ fun MangaCollection(
     val isLoading by viewModel.isLoading
     val showIncompleteOnly by viewModel.showIncompleteOnly
     val showSpecialEditionsOnly by viewModel.showSpecialEditionsOnly
+    val showUnownedVolumesOnly by viewModel.showUnownedVolumesOnly
     val isMultiSelectActive by viewModel.isMultiSelectActive
+    val isVolumeMultiSelectActive by viewModel.isVolumeMultiSelectActive
     val sortOption by viewModel.sortOption
 
     val context = LocalContext.current
     val savedGridColumns by remember { context.getCollectionDensity() }.collectAsState(initial = 2)
+    val collectionViewMode by remember(context) { context.getCollectionViewMode() }
+        .collectAsState(initial = CollectionViewMode.MANGA)
+    val volumeGroups by viewModel.volumeGroups
     val lifecycleOwner = LocalLifecycleOwner.current
     val density = LocalDensity.current
     val focusRequester = remember { FocusRequester() }
@@ -311,6 +322,11 @@ fun MangaCollection(
         gridColumns = savedGridColumns.coerceIn(1, 5)
     }
 
+    LaunchedEffect(collectionViewMode) {
+        viewModel.finishMultiSelect()
+        viewModel.finishVolumeMultiSelect()
+    }
+
     LaunchedEffect(debouncedSearchQuery) {
         viewModel.setSearchQuery(debouncedSearchQuery)
     }
@@ -474,22 +490,24 @@ fun MangaCollection(
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = stringResource(R.string.filters),
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilterChip(
-                            selected = showIncompleteOnly,
-                            onClick = { viewModel.toggleIncompleteFilter() },
-                            label = { Text(stringResource(R.string.filter_incomplete)) }
+                if (collectionViewMode == CollectionViewMode.MANGA) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = stringResource(R.string.filters),
+                            style = MaterialTheme.typography.titleMedium
                         )
-                        FilterChip(
-                            selected = showSpecialEditionsOnly,
-                            onClick = { viewModel.toggleSpecialEditionsFilter() },
-                            label = { Text(stringResource(R.string.filter_special_editions)) }
-                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(
+                                selected = showIncompleteOnly,
+                                onClick = { viewModel.toggleIncompleteFilter() },
+                                label = { Text(stringResource(R.string.filter_incomplete)) }
+                            )
+                            FilterChip(
+                                selected = showSpecialEditionsOnly,
+                                onClick = { viewModel.toggleSpecialEditionsFilter() },
+                                label = { Text(stringResource(R.string.filter_special_editions)) }
+                            )
+                        }
                     }
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -574,6 +592,31 @@ fun MangaCollection(
                                     contentDescription = stringResource(R.string.cd_search)
                                 )
                             }
+                            IconButton(
+                                onClick = {
+                                    val mode = if (collectionViewMode == CollectionViewMode.MANGA) {
+                                        CollectionViewMode.VOLUMES
+                                    } else {
+                                        CollectionViewMode.MANGA
+                                    }
+                                    coroutineScope.launch { context.saveCollectionViewMode(mode) }
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = if (collectionViewMode == CollectionViewMode.MANGA) {
+                                        Icons.Outlined.GridView
+                                    } else {
+                                        Icons.Outlined.Book
+                                    },
+                                    contentDescription = stringResource(
+                                        if (collectionViewMode == CollectionViewMode.MANGA) {
+                                            R.string.cd_show_volume_view
+                                        } else {
+                                            R.string.cd_show_manga_view
+                                        }
+                                    ),
+                                )
+                            }
                         },
                     )
 
@@ -595,37 +638,51 @@ fun MangaCollection(
                     }
                 }
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 10.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box {
-                        TextButton(onClick = { sortMenuExpanded = true }) {
-                            Text(stringResource(R.string.sort_by, sortOptionLabel(sortOption)))
-                        }
-                        DropdownMenu(
-                            expanded = sortMenuExpanded,
-                            onDismissRequest = { sortMenuExpanded = false }
-                        ) {
-                            MangaCollectionSortOption.entries.forEach { option ->
-                                DropdownMenuItem(
-                                    text = { Text(sortOptionLabel(option)) },
-                                    onClick = {
-                                        viewModel.setSortOption(option)
-                                        sortMenuExpanded = false
-                                    }
-                                )
+                if (collectionViewMode == CollectionViewMode.VOLUMES) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                    ) {
+                        FilterChip(
+                            selected = showUnownedVolumesOnly,
+                            onClick = { viewModel.toggleUnownedVolumesFilter() },
+                            label = { Text(stringResource(R.string.label_not_owned)) },
+                        )
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box {
+                            TextButton(onClick = { sortMenuExpanded = true }) {
+                                Text(stringResource(R.string.sort_by, sortOptionLabel(sortOption)))
+                            }
+                            DropdownMenu(
+                                expanded = sortMenuExpanded,
+                                onDismissRequest = { sortMenuExpanded = false }
+                            ) {
+                                MangaCollectionSortOption.entries.forEach { option ->
+                                    DropdownMenuItem(
+                                        text = { Text(sortOptionLabel(option)) },
+                                        onClick = {
+                                            viewModel.setSortOption(option)
+                                            sortMenuExpanded = false
+                                        }
+                                    )
+                                }
                             }
                         }
-                    }
-                    IconButton(onClick = { filterSheetOpen = true }) {
-                        Icon(
-                            imageVector = Icons.Default.FilterList,
-                            contentDescription = stringResource(R.string.cd_filter_options)
-                        )
+                        IconButton(onClick = { filterSheetOpen = true }) {
+                            Icon(
+                                imageVector = Icons.Default.FilterList,
+                                contentDescription = stringResource(R.string.cd_filter_options)
+                            )
+                        }
                     }
                 }
 
@@ -634,7 +691,9 @@ fun MangaCollection(
                         CircularProgressIndicator()
                     }
                 } else {
-                    if (mangaCollection.isEmpty()) {
+                    val isVolumeView = collectionViewMode == CollectionViewMode.VOLUMES
+                    val isEmpty = if (isVolumeView) volumeGroups.isEmpty() else mangaCollection.isEmpty()
+                    if (isEmpty) {
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier
@@ -646,7 +705,10 @@ fun MangaCollection(
                                 verticalArrangement = Arrangement.Center
                             ) {
                                 Text(
-                                    text = if (searchQuery.isNotBlank() || showIncompleteOnly || showSpecialEditionsOnly) {
+                                    text = if (
+                                        searchQuery.isNotBlank() || showIncompleteOnly ||
+                                        showSpecialEditionsOnly || showUnownedVolumesOnly
+                                    ) {
                                         stringResource(R.string.no_results_found)
                                     } else {
                                         stringResource(R.string.welcome_message)
@@ -676,46 +738,150 @@ fun MangaCollection(
                         }
                     } else {
                         Box(modifier = Modifier.fillMaxSize()) {
-                            LazyVerticalGrid(
-                                columns = GridCells.Fixed(gridColumns),
-                                state = gridState,
-                                contentPadding = PaddingValues(bottom = contentBottomPadding),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .nestedScroll(searchRevealNestedScrollConnection)
-                                    .padding(horizontal = 16.dp)
-                            ) {
-                                items(mangaCollection.size) { index ->
-                                    val manga = mangaCollection[index]
-                                    MangaCard(
-                                        modifier = Modifier
-                                            .testTag(TestTags.mangaCard(manga.id))
-                                            .combinedClickable(
-                                                onClick = {
-                                                    if (!isMultiSelectActive) {
-                                                        onMangaClick(manga.toManga())
-                                                    } else {
-                                                        viewModel.toggleSelection(manga.id)
-                                                    }
-                                                },
-                                                onLongClick = {
-                                                    if (!isMultiSelectActive) {
-                                                        viewModel.toggleSelection(manga.id)
-                                                    }
-                                                }
-                                            ),
-                                        title = manga.title,
-                                        coverUrl = manga.coverUrl,
-                                        volumeTotal = manga.volumeCount,
-                                        volumesOwned = manga.volumeOwned,
-                                        selected = viewModel.selectedIds.value.contains(manga.id),
-                                    )
+                            if (isVolumeView) {
+                                LazyVerticalGrid(
+                                    columns = GridCells.Fixed(gridColumns),
+                                    state = gridState,
+                                    contentPadding = PaddingValues(bottom = contentBottomPadding),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .nestedScroll(searchRevealNestedScrollConnection)
+                                        .padding(horizontal = 16.dp)
+                                ) {
+                                    volumeGroups.forEach { group ->
+                                        item(
+                                            key = "volume-group-${group.manga.id}",
+                                            span = { GridItemSpan(maxLineSpan) },
+                                        ) {
+                                            Text(
+                                                text = group.manga.title,
+                                                style = MaterialTheme.typography.titleMedium,
+                                                modifier = Modifier.padding(top = 8.dp),
+                                            )
+                                        }
+                                        group.volumes.forEach { volume ->
+                                            item(key = volume.id) {
+                                                MangaCard(
+                                                    modifier = Modifier
+                                                        .testTag(TestTags.volumeCard(volume.id))
+                                                        .combinedClickable(
+                                                            onClick = {
+                                                                if (isVolumeMultiSelectActive) {
+                                                                    viewModel.toggleVolumeSelection(volume.id)
+                                                                } else {
+                                                                    viewModel.toggleVolumeOwned(volume)
+                                                                }
+                                                            },
+                                                            onLongClick = {
+                                                                if (!isVolumeMultiSelectActive) {
+                                                                    viewModel.toggleVolumeSelection(volume.id)
+                                                                }
+                                                            },
+                                                        ),
+                                                    title = group.manga.title,
+                                                    coverUrl = volume.coverUrl,
+                                                    owned = volume.owned,
+                                                    selected = viewModel.selectedVolumeIds.value.contains(volume.id),
+                                                    isVolumeCard = true,
+                                                    volume = volume.volume,
+                                                    volumeLocale = volume.locale,
+                                                    isSpecialEdition = volume.isSpecialEdition,
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
-                            }
 
-                            if (isMultiSelectActive) {
+                                if (isVolumeMultiSelectActive) {
+                                    HorizontalFloatingToolbar(
+                                        modifier = Modifier
+                                            .align(Alignment.BottomCenter)
+                                            .offset(y = -ScreenOffset)
+                                            .zIndex(1f),
+                                        colors = FloatingToolbarDefaults.vibrantFloatingToolbarColors(),
+                                        expanded = true,
+                                    ) {
+                                        ToolbarTooltip(label = stringResource(R.string.cd_mark_as_owned)) {
+                                            IconButton(onClick = { viewModel.markSelectedVolumesAsOwned(true) }) {
+                                                Icon(Icons.Default.Check, stringResource(R.string.cd_mark_as_owned))
+                                            }
+                                        }
+                                        ToolbarTooltip(label = stringResource(R.string.cd_unmark_as_owned)) {
+                                            IconButton(onClick = { viewModel.markSelectedVolumesAsOwned(false) }) {
+                                                Icon(Icons.Default.Close, stringResource(R.string.cd_unmark_as_owned))
+                                            }
+                                        }
+                                        ToolbarTooltip(label = stringResource(R.string.cd_stop_multi_select)) {
+                                            FilledIconButton(onClick = { viewModel.finishVolumeMultiSelect() }) {
+                                                Icon(Icons.AutoMirrored.Filled.Undo, stringResource(R.string.cd_stop_multi_select))
+                                            }
+                                        }
+                                        ToolbarTooltip(label = stringResource(R.string.cd_select_all)) {
+                                            IconButton(
+                                                onClick = {
+                                                    viewModel.selectAllVolumes(
+                                                        volumeGroups.flatMap { it.volumes }.map { it.id }.toSet(),
+                                                    )
+                                                },
+                                                enabled = viewModel.selectedVolumeIds.value.size <
+                                                    volumeGroups.sumOf { it.volumes.size },
+                                            ) {
+                                                Icon(Icons.Default.SelectAll, stringResource(R.string.cd_select_all))
+                                            }
+                                        }
+                                        ToolbarTooltip(label = stringResource(R.string.cd_deselect)) {
+                                            IconButton(
+                                                onClick = { viewModel.clearVolumeSelection() },
+                                                enabled = viewModel.selectedVolumeIds.value.isNotEmpty(),
+                                            ) {
+                                                Icon(Icons.Default.Deselect, stringResource(R.string.cd_deselect))
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                LazyVerticalGrid(
+                                    columns = GridCells.Fixed(gridColumns),
+                                    state = gridState,
+                                    contentPadding = PaddingValues(bottom = contentBottomPadding),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .nestedScroll(searchRevealNestedScrollConnection)
+                                        .padding(horizontal = 16.dp)
+                                ) {
+                                    items(mangaCollection.size) { index ->
+                                        val manga = mangaCollection[index]
+                                        MangaCard(
+                                            modifier = Modifier
+                                                .testTag(TestTags.mangaCard(manga.id))
+                                                .combinedClickable(
+                                                    onClick = {
+                                                        if (!isMultiSelectActive) {
+                                                            onMangaClick(manga.toManga())
+                                                        } else {
+                                                            viewModel.toggleSelection(manga.id)
+                                                        }
+                                                    },
+                                                    onLongClick = {
+                                                        if (!isMultiSelectActive) {
+                                                            viewModel.toggleSelection(manga.id)
+                                                        }
+                                                    }
+                                                ),
+                                            title = manga.title,
+                                            coverUrl = manga.coverUrl,
+                                            volumeTotal = manga.volumeCount,
+                                            volumesOwned = manga.volumeOwned,
+                                            selected = viewModel.selectedIds.value.contains(manga.id),
+                                        )
+                                    }
+                                }
+
+                                if (isMultiSelectActive) {
                                 HorizontalFloatingToolbar(
                                     modifier = Modifier
                                         .align(Alignment.BottomCenter)
@@ -785,6 +951,7 @@ fun MangaCollection(
                                         }
                                     }
                                 }
+                            }
                             }
                         }
                     }

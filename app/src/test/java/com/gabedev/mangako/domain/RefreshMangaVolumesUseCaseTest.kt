@@ -170,6 +170,10 @@ class RefreshMangaVolumesUseCaseTest {
 
         override suspend fun getMangaOnLibrary(): List<MangaWithOwned> = library.map { it.toMangaWithOwned() }
 
+        override suspend fun getLibraryMangaWithVolumes(): List<MangaWithVolume> = library.map { manga ->
+            MangaWithVolume(manga, localVolumes[manga.id].orEmpty())
+        }
+
         override suspend fun getMangaWithVolume(mangaId: String): MangaWithVolume? {
             val manga = library.firstOrNull { it.id == mangaId } ?: return null
             return MangaWithVolume(manga, localVolumes[mangaId].orEmpty())
