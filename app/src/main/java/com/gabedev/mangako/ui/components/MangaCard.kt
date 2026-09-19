@@ -47,6 +47,9 @@ fun MangaCard(
 ) {
     val coverTheme = LocalCoverTheme.current
     val cardContainerColor = coverTheme?.backdropColor?.let(::Color) ?: MaterialTheme.colorScheme.surface
+    val isComplete = volumesOwned >= volumeTotal
+    val badgeContainerColor = if (isComplete) Color(0xFF2E7D32) else MaterialTheme.colorScheme.tertiaryContainer
+    val badgeContentColor = if (isComplete) Color.White else MaterialTheme.colorScheme.onTertiaryContainer
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val titleFontSize = when {
@@ -102,7 +105,7 @@ fun MangaCard(
                             .align(Alignment.TopEnd)
                             .padding(contentPadding)
                             .background(
-                                color = MaterialTheme.colorScheme.tertiaryContainer,
+                                color = badgeContainerColor,
                                 shape = RoundedCornerShape(8.dp)
                             )
                             .padding(
@@ -110,17 +113,17 @@ fun MangaCard(
                                 vertical = badgePaddingVertical
                             )
                     ) {
-                        if (volumesOwned == volumeTotal) {
+                        if (isComplete) {
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = stringResource(R.string.cd_completed),
-                                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                tint = badgeContentColor,
                                 modifier = Modifier.size(checkIconSize)
                             )
                         } else {
                             Text(
                                 text = "$volumesOwned/$volumeTotal",
-                                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                color = badgeContentColor,
                                 fontSize = badgeFontSize,
                                 lineHeight = badgeFontSize
                             )
