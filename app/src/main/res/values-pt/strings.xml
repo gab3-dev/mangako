@@ -77,6 +77,9 @@
     <string name="backup_frequency_weekly_description">Cria um backup aproximadamente uma vez por semana.</string>
     <string name="backup_last_success">Último backup: %1$s</string>
     <string name="backup_last_error">Falha no último backup: %1$s</string>
+    <string name="diagnostics_export">Exportar diagnóstico</string>
+    <string name="diagnostics_export_success">Diagnóstico exportado com sucesso.</string>
+    <string name="diagnostics_export_failed">Não foi possível exportar o diagnóstico.</string>
     <string name="backup_success">Backup criado com sucesso.</string>
     <string name="backup_restore_success">Backup restaurado com sucesso.</string>
     <string name="backup_action_failed">A operação de backup falhou.</string>

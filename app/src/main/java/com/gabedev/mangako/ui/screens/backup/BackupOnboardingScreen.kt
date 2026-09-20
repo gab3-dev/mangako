@@ -82,7 +82,7 @@ fun BackupOnboardingScreen(
             }.onSuccess {
                 onComplete()
             }.onFailure {
-                errorMessage = chooseFolderError
+                errorMessage = it.message?.takeIf(String::isNotBlank) ?: chooseFolderError
             }
             busy = false
         }

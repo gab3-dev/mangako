@@ -77,6 +77,9 @@
     <string name="backup_frequency_weekly_description">およそ1週間ごとにバックアップを作成します。</string>
     <string name="backup_last_success">前回のバックアップ：%1$s</string>
     <string name="backup_last_error">前回のバックアップに失敗：%1$s</string>
+    <string name="diagnostics_export">診断情報をエクスポート</string>
+    <string name="diagnostics_export_success">診断情報をエクスポートしました。</string>
+    <string name="diagnostics_export_failed">診断情報をエクスポートできませんでした。</string>
     <string name="backup_success">バックアップを作成しました。</string>
     <string name="backup_restore_success">バックアップを復元しました。</string>
     <string name="backup_action_failed">バックアップ操作に失敗しました。</string>

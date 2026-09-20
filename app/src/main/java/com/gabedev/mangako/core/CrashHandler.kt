@@ -2,13 +2,6 @@ package com.gabedev.mangako.core
 
 import android.content.Context
 import android.util.Log
-import java.io.File
-import java.io.FileWriter
-import java.io.PrintWriter
-import java.io.StringWriter
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 // Crash handler that saves the log to a file.
 class CrashHandler(private val context: Context) : Thread.UncaughtExceptionHandler {
@@ -27,20 +20,8 @@ class CrashHandler(private val context: Context) : Thread.UncaughtExceptionHandl
     }
 
     private fun saveCrashLog(e: Throwable) {
-        val timestamp = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault()).format(Date())
-        val crashLogFile = File(context.getExternalFilesDir(null), "crash_log_$timestamp.txt")
-
         try {
-            FileWriter(crashLogFile).use { fileWriter ->
-                PrintWriter(fileWriter).use { printWriter ->
-                    val sw = StringWriter()
-                    val pw = PrintWriter(sw)
-                    e.printStackTrace(pw)
-                    val stackTrace = sw.toString()
-                    printWriter.println(stackTrace)
-                }
-            }
-            Log.d("CrashHandler", "Crash log saved to ${crashLogFile.absolutePath}")
+            FileLogger(context).logCrash(e)
         } catch (ex: Exception) {
             Log.e("CrashHandler", "Could not save crash log", ex)
         }

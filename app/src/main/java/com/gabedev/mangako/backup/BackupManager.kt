@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.datastore.preferences.core.edit
 import androidx.room.withTransaction
 import com.gabedev.mangako.BuildConfig
+import com.gabedev.mangako.core.FileLogger
 import com.gabedev.mangako.data.local.BackupFrequency
 import com.gabedev.mangako.data.local.CatalogIntegration
 import com.gabedev.mangako.data.local.LocalDatabase
@@ -86,6 +87,7 @@ class BackupManager(
                 }
                 format.decode(bytes).preview
             } catch (error: Exception) {
+                FileLogger(context).logError(error)
                 context.dataStore.edit { values ->
                     values[SettingsKeys.LAST_BACKUP_ERROR] = error.message.orEmpty().take(300)
                 }

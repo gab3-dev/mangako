@@ -33,7 +33,7 @@ class BackupStorage(private val context: Context) : BackupStore {
     override fun write(treeUri: Uri, fileName: String, bytes: ByteArray) {
         require(bytes.size <= MAX_BACKUP_BYTES) { "Backup is too large" }
         val directory = DocumentFile.fromTreeUri(context, treeUri)
-            ?.takeIf { it.isDirectory && it.canWrite() }
+            ?.takeIf { it.isDirectory }
             ?: error("Backup folder is unavailable")
         val temporaryName = "$fileName.tmp"
         directory.findFile(temporaryName)?.delete()
@@ -63,7 +63,7 @@ class BackupStorage(private val context: Context) : BackupStore {
             it.uri == treeUri && it.isReadPermission && it.isWritePermission
         }
         return hasPermission && DocumentFile.fromTreeUri(context, treeUri)
-            ?.let { it.isDirectory && it.canWrite() } == true
+            ?.isDirectory == true
     }
 
     private fun prune(directory: DocumentFile) {

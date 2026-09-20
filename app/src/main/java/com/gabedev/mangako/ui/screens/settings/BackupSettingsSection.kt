@@ -32,12 +32,15 @@ import com.gabedev.mangako.R
 import com.gabedev.mangako.backup.BackupManager
 import com.gabedev.mangako.backup.ParsedBackup
 import com.gabedev.mangako.backup.RestoreMode
+import com.gabedev.mangako.core.FileLogger
 import com.gabedev.mangako.data.local.BackupFrequency
 import com.gabedev.mangako.data.local.BackupPreferences
 import com.gabedev.mangako.data.local.getBackupPreferences
 import com.gabedev.mangako.data.local.saveBackupFrequency
 import com.gabedev.mangako.data.local.saveBackupTreeUri
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun BackupSettingsSection(
@@ -49,6 +52,8 @@ fun BackupSettingsSection(
     val backupSuccess = stringResource(R.string.backup_success)
     val restoreSuccess = stringResource(R.string.backup_restore_success)
     val actionFailed = stringResource(R.string.backup_action_failed)
+    val diagnosticsExported = stringResource(R.string.diagnostics_export_success)
+    val diagnosticsExportFailed = stringResource(R.string.diagnostics_export_failed)
     val preferences by context.getBackupPreferences().collectAsState(
         initial = BackupPreferences(
             treeUri = null,
@@ -82,6 +87,21 @@ fun BackupSettingsSection(
                 context.saveBackupTreeUri(uri.toString())
             }
             showResult(result.isSuccess, backupSuccess)
+        }
+    }
+    val diagnosticsLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/plain")
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val result = runCatching {
+                withContext(Dispatchers.IO) { FileLogger(context).exportTo(uri) }
+            }
+            Toast.makeText(
+                context,
+                if (result.isSuccess) diagnosticsExported else diagnosticsExportFailed,
+                Toast.LENGTH_LONG,
+            ).show()
         }
     }
     val fileLauncher = rememberLauncherForActivityResult(
@@ -158,6 +178,12 @@ fun BackupSettingsSection(
             modifier = Modifier.padding(top = 8.dp),
         ) {
             Text(stringResource(R.string.backup_restore))
+        }
+        OutlinedButton(
+            onClick = { diagnosticsLauncher.launch("mangako-diagnostics.txt") },
+            modifier = Modifier.padding(top = 8.dp),
+        ) {
+            Text(stringResource(R.string.diagnostics_export))
         }
         preferences.lastBackupAt?.let {
             Text(
