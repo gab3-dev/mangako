@@ -777,6 +777,9 @@ fun MangaCollection(
                                         .padding(horizontal = 16.dp)
                                 ) {
                                     volumeGroups.forEach { group ->
+                                        val selectedVolumeCount = group.volumes.count {
+                                            it.id in viewModel.selectedVolumeIds.value
+                                        }
                                         item(
                                             key = "volume-group-${group.manga.id}",
                                             span = { GridItemSpan(maxLineSpan) },
@@ -801,6 +804,22 @@ fun MangaCollection(
                                                     style = MaterialTheme.typography.titleMedium,
                                                     modifier = Modifier.weight(1f),
                                                 )
+                                                if (selectedVolumeCount > 0) {
+                                                    Surface(
+                                                        shape = RoundedCornerShape(12.dp),
+                                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                    ) {
+                                                        Text(
+                                                            text = selectedVolumeCount.toString(),
+                                                            modifier = Modifier.padding(
+                                                                horizontal = 8.dp,
+                                                                vertical = 2.dp,
+                                                            ),
+                                                            style = MaterialTheme.typography.labelMedium,
+                                                        )
+                                                    }
+                                                }
                                                 Icon(
                                                     imageVector = if (
                                                         group.manga.id in collapsedVolumeGroupIds

@@ -698,7 +698,7 @@ class MangaCollectionViewModelTest {
     }
 
     @Test
-    fun `special editions filter keeps only special volumes in volume groups`() = runTest(testDispatcher) {
+    fun `special editions are hidden until the filter is enabled`() = runTest(testDispatcher) {
         val manga = createManga("1", "Alpha")
         val regular = createVolume("v1", "1", 1f)
         val special = createVolume("v2", "1", 1.5f).copy(isSpecialEdition = true)
@@ -708,9 +708,11 @@ class MangaCollectionViewModelTest {
 
         viewModel = MangaCollectionViewModel(repository, testDispatcher)
         advanceUntilIdle()
+        assertEquals(listOf("v1"), viewModel!!.volumeGroups.value.single().volumes.map { it.id })
+
         viewModel!!.toggleSpecialEditionsFilter()
 
-        assertEquals(listOf("v2"), viewModel!!.volumeGroups.value.single().volumes.map { it.id })
+        assertEquals(listOf("v1", "v2"), viewModel!!.volumeGroups.value.single().volumes.map { it.id })
     }
 
     @Test

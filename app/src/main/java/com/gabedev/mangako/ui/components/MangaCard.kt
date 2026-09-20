@@ -1,6 +1,7 @@
 package com.gabedev.mangako.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
@@ -81,13 +82,13 @@ fun MangaCard(
         Card(
             modifier = Modifier
                 .alpha(if (owned) 0.5f else 1f)
-                .fillMaxWidth()
-                .padding(if (selected) 4.dp else 0.dp),
+                .fillMaxWidth(),
             shape = RoundedCornerShape(8.dp),
             colors = CardDefaults.cardColors(
                 containerColor = cardContainerColor,
                 contentColor = MaterialTheme.colorScheme.onSurface,
             ),
+            border = if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.tertiary) else null,
         ) {
             Box(
                 modifier = Modifier

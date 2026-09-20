@@ -249,9 +249,9 @@ class MangaCollectionViewModel (
             groups = groups.map { group -> group.copy(volumes = group.volumes.filterNot { it.owned }) }
                 .filter { it.volumes.isNotEmpty() }
         }
-        if (_showSpecialEditionsOnly.value) {
+        if (!_showSpecialEditionsOnly.value) {
             groups = groups.map { group ->
-                group.copy(volumes = group.volumes.filter { it.isSpecialEdition })
+                group.copy(volumes = group.volumes.filterNot { it.isSpecialEdition })
             }.filter { it.volumes.isNotEmpty() }
         }
         _volumeGroups.value = groups.sortedBy { it.manga.title.lowercase() }

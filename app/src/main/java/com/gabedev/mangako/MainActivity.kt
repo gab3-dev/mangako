@@ -25,8 +25,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Book
@@ -81,6 +82,7 @@ import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.repository.LibraryRepository
 import com.gabedev.mangako.data.repository.MangaDexRepository
 import com.gabedev.mangako.ui.components.AppNavigationBar
+import com.gabedev.mangako.ui.components.FloatingNavigationBarHeight
 import com.gabedev.mangako.ui.components.DynamicTopBar
 import com.gabedev.mangako.ui.screens.backup.BackupOnboardingScreen
 import com.gabedev.mangako.ui.screens.collection.MangaCollection
@@ -655,8 +657,8 @@ fun MainAppNavHost(
                             .align(Alignment.BottomEnd)
                             .navigationBarsPadding()
                             .padding(end = 80.dp, bottom = 26.dp)
-                            .size(40.dp),
-                        shape = CircleShape,
+                            .size(FloatingNavigationBarHeight),
+                        shape = RoundedCornerShape(20.dp),
                         color = MaterialTheme.colorScheme.primaryContainer,
                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                         tonalElevation = 4.dp,
