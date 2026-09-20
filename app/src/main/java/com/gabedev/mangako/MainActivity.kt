@@ -359,7 +359,7 @@ fun MainAppNavHost(
         WindowInsets.navigationBars.getBottom(this).toDp()
     }
     val floatingNavigationHorizontalOffset by animateDpAsState(
-        targetValue = if (collectionSelectedVolumeCount > 0) (-56).dp else 0.dp,
+        targetValue = if (collectionSelectedVolumeCount > 0) (-64).dp else 0.dp,
         label = "collectionVolumeActionsNavigationOffset",
     )
     val floatingNavigationBottomPadding = if (
@@ -644,6 +644,7 @@ fun MainAppNavHost(
                     currentRoute = currentRoute,
                     items = itemsNavBar,
                     onNavigate = onNavigate,
+                    compact = collectionSelectedVolumeCount > 0,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .offset(x = floatingNavigationHorizontalOffset),
@@ -656,11 +657,11 @@ fun MainAppNavHost(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
                             .navigationBarsPadding()
-                            .padding(end = 80.dp, bottom = 26.dp)
+                            .padding(end = 80.dp, bottom = 12.dp)
                             .size(FloatingNavigationBarHeight),
                         shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        color = MaterialTheme.colorScheme.tertiaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
                         tonalElevation = 4.dp,
                         shadowElevation = 6.dp,
                     ) {

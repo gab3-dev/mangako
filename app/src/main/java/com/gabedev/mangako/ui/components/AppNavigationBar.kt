@@ -47,11 +47,12 @@ fun AppNavigationBar(
     currentRoute: String?,
     items: List<Screen>,
     onNavigate: (Screen) -> Unit,
+    compact: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     when (style) {
         NavigationBarStyle.CLASSIC -> ClassicNavigationBar(currentRoute, items, onNavigate, modifier)
-        NavigationBarStyle.FLOATING -> FloatingNavigationBar(currentRoute, items, onNavigate, modifier)
+        NavigationBarStyle.FLOATING -> FloatingNavigationBar(currentRoute, items, onNavigate, compact, modifier)
     }
 }
 
@@ -81,6 +82,7 @@ private fun FloatingNavigationBar(
     currentRoute: String?,
     items: List<Screen>,
     onNavigate: (Screen) -> Unit,
+    compact: Boolean,
     modifier: Modifier,
 ) {
     Box(
@@ -107,6 +109,7 @@ private fun FloatingNavigationBar(
                         screen = screen,
                         selected = currentRoute == screen.route,
                         onClick = { onNavigate(screen) },
+                        compact = compact,
                     )
                 }
             }
@@ -119,6 +122,7 @@ private fun FloatingNavigationItem(
     screen: Screen,
     selected: Boolean,
     onClick: () -> Unit,
+    compact: Boolean,
 ) {
     val itemShape = RoundedCornerShape(28.dp)
     val itemElevation by animateDpAsState(
@@ -145,7 +149,7 @@ private fun FloatingNavigationItem(
 
     Surface(
         modifier = Modifier
-            .width(76.dp)
+            .width(if (compact) 64.dp else 76.dp)
             .clip(itemShape)
             .clickable(onClick = onClick)
             .then(screen.navigationTestTag())
