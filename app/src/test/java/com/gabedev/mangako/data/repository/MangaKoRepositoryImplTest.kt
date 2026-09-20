@@ -211,8 +211,8 @@ class MangaKoRepositoryImplTest {
             Triple(Locale.GERMAN, listOf("fr" to "French", "en" to "English"), "English"),
             Triple(Locale.GERMAN, listOf("fr" to "French"), "Romanized"),
             Triple(Locale.JAPANESE, listOf("en" to "English", "ja" to "Japanese"), "Japanese"),
-            Triple(Locale.JAPAN, listOf("en" to "English", "ja-JP" to "Regional Japanese"), "Title unavailable"),
-            Triple(Locale.JAPANESE, listOf("en" to "English", "ja" to " \n\t"), "Title unavailable"),
+            Triple(Locale.JAPAN, listOf("en" to "English", "ja-JP" to "Regional Japanese"), "English"),
+            Triple(Locale.JAPANESE, listOf("en" to "English", "ja" to " \n\t"), "English"),
         )
         for ((locale, titles, expected) in cases) {
             val repository = MangaKoRepositoryImpl(api, { "Title unavailable" }) { locale }
@@ -267,13 +267,13 @@ class MangaKoRepositoryImplTest {
             val hasJapanese = japanese.singleOrNull()?.title == "Japanese"
 
             for (manga in listOf(search, detail)) {
-                assertEquals(if (hasJapanese) "Japanese" else placeholder, manga.title)
+                assertEquals(if (hasJapanese) "Japanese" else "One Piece", manga.title)
                 assertTrue(manga.title.isNotBlank())
                 assertEquals(if (hasJapanese) "Wan Pisu" else "One Piece", manga.altTitle)
                 assertEquals(if (hasJapanese) "Description JA" else "", manga.description)
             }
         }
-        assertEquals(List(4) { locale }, receivedLocales)
+        assertTrue(receivedLocales.isEmpty())
     }
 
     @Test

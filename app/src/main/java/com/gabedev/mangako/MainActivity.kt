@@ -23,13 +23,17 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Book
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -319,7 +323,7 @@ fun MainAppNavHost(
     var exploreSearchQuery by remember { mutableStateOf("") }
     var collectionSearchOpenRequest by remember { mutableIntStateOf(0) }
     var exploreSearchFocusRequest by remember { mutableIntStateOf(0) }
-    var collectionVolumeActionsExpanded by remember { mutableStateOf(false) }
+    var collectionSelectedVolumeCount by remember { mutableIntStateOf(0) }
     val context = LocalContext.current
 
     val itemsNavBar = listOf(Screen.UserCollection, Screen.Explore, Screen.Settings)
@@ -329,7 +333,7 @@ fun MainAppNavHost(
     val currentRoute = navBackStackEntry?.destination?.route
     LaunchedEffect(currentRoute) {
         if (currentRoute != Screen.UserCollection.route) {
-            collectionVolumeActionsExpanded = false
+            collectionSelectedVolumeCount = 0
         }
     }
     val onNavigate: (Screen) -> Unit = { screen ->
@@ -353,7 +357,7 @@ fun MainAppNavHost(
         WindowInsets.navigationBars.getBottom(this).toDp()
     }
     val floatingNavigationHorizontalOffset by animateDpAsState(
-        targetValue = if (collectionVolumeActionsExpanded) (-56).dp else 0.dp,
+        targetValue = if (collectionSelectedVolumeCount > 0) (-56).dp else 0.dp,
         label = "collectionVolumeActionsNavigationOffset",
     )
     val floatingNavigationBottomPadding = if (
@@ -560,8 +564,8 @@ fun MainAppNavHost(
                         contentBottomPadding = floatingNavigationBottomPadding,
                         startupSyncRefreshVersion = startupSyncRefreshVersion,
                         openSearchRequest = collectionSearchOpenRequest,
-                        onVolumeMultiSelectActiveChange = { active ->
-                            collectionVolumeActionsExpanded = active
+                        onVolumeSelectionCountChange = { count ->
+                            collectionSelectedVolumeCount = count
                         },
                         onMangaClick = { manga ->
                             navController.navigate(
@@ -642,6 +646,27 @@ fun MainAppNavHost(
                         .align(Alignment.BottomCenter)
                         .offset(x = floatingNavigationHorizontalOffset),
                 )
+                if (
+                    currentRoute == Screen.UserCollection.route &&
+                    collectionSelectedVolumeCount > 0
+                ) {
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .navigationBarsPadding()
+                            .padding(end = 80.dp, bottom = 26.dp)
+                            .size(40.dp),
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        tonalElevation = 4.dp,
+                        shadowElevation = 6.dp,
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(collectionSelectedVolumeCount.toString())
+                        }
+                    }
+                }
             }
         }
     }

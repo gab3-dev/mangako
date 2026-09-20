@@ -228,13 +228,13 @@ class UtilsTest {
     }
 
     @Test
-    fun `missing Japanese title uses English as the subtitle`() {
+    fun `missing Japanese title falls back to English`() {
         val attrs = createAttributesDto(
             title = mapOf("en" to "English", "ja" to " "),
             altTitles = listOf(mapOf("JA_ro" to "Romanized"), mapOf("pt-br" to "Portuguese")),
             description = mapOf("ja" to "\n", "ja-ro" to "Romanized description", "en" to "English"),
         )
-        assertNull(Utils.handleMangaTitle(attrs, Locale.JAPAN))
+        assertEquals("English", Utils.handleMangaTitle(attrs, Locale.JAPAN))
         assertEquals("", Utils.handleMangaDescription(attrs, Locale.JAPAN))
         assertEquals("English", Utils.handleMangaAlternativeTitle(attrs))
     }

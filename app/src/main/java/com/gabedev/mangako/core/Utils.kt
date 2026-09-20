@@ -59,8 +59,12 @@ object Utils {
         }
         val tag = locale.toLanguageTag().lowercase(Locale.ROOT)
         val language = locale.language.lowercase(Locale.ROOT)
-        // Japanese must never match the romanized ja-ro tag or another language.
-        if (language == "ja") return available.firstOrNull { it.first == "ja" }?.second
+        // Japanese must never match the romanized ja-ro tag, but English remains a useful fallback.
+        if (language == "ja") {
+            return available.firstOrNull { it.first == "ja" }?.second
+                ?: available.firstOrNull { it.first == "en" }?.second
+                ?: available.firstOrNull { it.first.startsWith("en-") }?.second
+        }
         val localTitle = available.firstOrNull { it.first == tag }?.second
             ?: available.firstOrNull { tag != "pt-br" && it.first == language }?.second
         // pt-BR has a strict chain: pt-br -> en -> ja-ro.

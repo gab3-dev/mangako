@@ -347,8 +347,8 @@ class MangaDexRepositoryImplTest {
             Triple(Locale.GERMAN, listOf("fr" to "French", "en" to "English"), "English"),
             Triple(Locale.GERMAN, listOf("fr" to "French"), "Romanized"),
             Triple(Locale.JAPANESE, listOf("en" to "English", "ja" to "Japanese"), "Japanese"),
-            Triple(Locale.JAPAN, listOf("en" to "English", "ja-JP" to "Regional Japanese"), "Title unavailable"),
-            Triple(Locale.JAPANESE, listOf("en" to "English", "ja" to " \n\t"), "Title unavailable"),
+                Triple(Locale.JAPAN, listOf("en" to "English", "ja-JP" to "Regional Japanese"), "English"),
+                Triple(Locale.JAPANESE, listOf("en" to "English", "ja" to " \n\t"), "English"),
         )
         coEvery { api.getAuthorById("author-1") } returns createAuthorResponse()
         coEvery { api.getCoverById("cover-1") } returns createCoverResponse()
@@ -411,13 +411,13 @@ class MangaDexRepositoryImplTest {
             val expected = japanese["ja"]?.takeIf { it.isNotBlank() }
 
             for (manga in listOf(search, detail)) {
-                assertEquals(expected ?: placeholder, manga.title)
+                assertEquals(expected ?: "English", manga.title)
                 assertTrue(manga.title.isNotBlank())
                 assertEquals(if (expected == null) "English" else "Wan Pīsu", manga.altTitle)
                 assertEquals(expected.orEmpty(), manga.description)
             }
         }
-        assertEquals(List(4) { locale }, receivedLocales)
+        assertTrue(receivedLocales.isEmpty())
     }
 
     @Test

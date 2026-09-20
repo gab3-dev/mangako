@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -35,7 +36,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Deselect
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
@@ -50,9 +50,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FloatingToolbarDefaults
-import androidx.compose.material3.FloatingToolbarDefaults.ScreenOffset
-import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -126,7 +123,6 @@ import com.gabedev.mangako.data.local.saveCollectionViewMode
 import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.model.toManga
 import com.gabedev.mangako.data.repository.LibraryRepository
-import com.gabedev.mangako.ui.components.ConfirmDialog
 import com.gabedev.mangako.ui.components.MangaCard
 import com.gabedev.mangako.ui.TestTags
 import kotlinx.coroutines.Job
@@ -145,7 +141,7 @@ fun MangaCollection(
     modifier: Modifier = Modifier,
     onExploreSearch: (String) -> Unit = {},
     contentBottomPadding: Dp = 0.dp,
-    onVolumeMultiSelectActiveChange: (Boolean) -> Unit = {},
+    onVolumeSelectionCountChange: (Int) -> Unit = {},
 ) {
     val viewModel: MangaCollectionViewModel = viewModel(
         factory = MangaCollectionViewModelFactory(repository)
@@ -156,7 +152,6 @@ fun MangaCollection(
     val showIncompleteOnly by viewModel.showIncompleteOnly
     val showSpecialEditionsOnly by viewModel.showSpecialEditionsOnly
     val showUnownedVolumesOnly by viewModel.showUnownedVolumesOnly
-    val isMultiSelectActive by viewModel.isMultiSelectActive
     val isVolumeMultiSelectActive by viewModel.isVolumeMultiSelectActive
     val sortOption by viewModel.sortOption
 
@@ -171,6 +166,7 @@ fun MangaCollection(
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val imeBottomPadding = with(density) { WindowInsets.ime.getBottom(this).toDp() }
+    val navigationBarBottomPadding = with(density) { WindowInsets.navigationBars.getBottom(this).toDp() }
     val gridState = rememberLazyGridState()
     val coroutineScope = rememberCoroutineScope()
     val scrollBehavior: TopAppBarScrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -192,7 +188,6 @@ fun MangaCollection(
         label = "collectionEmptyStateImePadding",
     )
 
-    var showRemoveDialog by remember { mutableStateOf(false) }
     val searchCommitThresholdFraction = 0.55f
     val fallbackSearchHeightPx = with(density) { 76.dp.toPx() }
     val targetCollectionSearchHeightPx = collectionSearchMaxHeightPx.takeIf { it > 0f }
@@ -339,16 +334,15 @@ fun MangaCollection(
     }
 
     LaunchedEffect(collectionViewMode) {
-        viewModel.finishMultiSelect()
         viewModel.finishVolumeMultiSelect()
     }
 
-    LaunchedEffect(isVolumeMultiSelectActive) {
-        onVolumeMultiSelectActiveChange(isVolumeMultiSelectActive)
+    LaunchedEffect(viewModel.selectedVolumeIds.value.size) {
+        onVolumeSelectionCountChange(viewModel.selectedVolumeIds.value.size)
     }
 
     DisposableEffect(Unit) {
-        onDispose { onVolumeMultiSelectActiveChange(false) }
+        onDispose { onVolumeSelectionCountChange(0) }
     }
 
     LaunchedEffect(debouncedSearchQuery) {
@@ -480,23 +474,6 @@ fun MangaCollection(
         ) {
             content()
         }
-    }
-
-    if (showRemoveDialog) {
-        ConfirmDialog(
-            title = stringResource(R.string.dialog_remove_selected_title),
-            text = stringResource(
-                R.string.dialog_remove_selected_text,
-                viewModel.selectedIds.value.size
-            ),
-            onConfirm = {
-                viewModel.removeSelectedFromLibrary()
-                showRemoveDialog = false
-            },
-            onDismiss = {
-                showRemoveDialog = false
-            },
-        )
     }
 
     if (filterSheetOpen) {
@@ -870,7 +847,7 @@ fun MangaCollection(
                                 Column(
                                     modifier = Modifier
                                         .align(Alignment.BottomEnd)
-                                        .padding(end = 16.dp, bottom = contentBottomPadding + 16.dp)
+                                        .padding(end = 16.dp, bottom = navigationBarBottomPadding + 12.dp)
                                         .zIndex(1f),
                                 ) {
                                     AnimatedVisibility(
@@ -946,99 +923,16 @@ fun MangaCollection(
                                             modifier = Modifier
                                                 .testTag(TestTags.mangaCard(manga.id))
                                                 .combinedClickable(
-                                                    onClick = {
-                                                        if (!isMultiSelectActive) {
-                                                            onMangaClick(manga.toManga())
-                                                        } else {
-                                                            viewModel.toggleSelection(manga.id)
-                                                        }
-                                                    },
-                                                    onLongClick = {
-                                                        if (!isMultiSelectActive) {
-                                                            viewModel.toggleSelection(manga.id)
-                                                        }
-                                                    }
+                                                    onClick = { onMangaClick(manga.toManga()) },
                                                 ),
                                             title = manga.title,
                                             coverUrl = manga.coverUrl,
                                             volumeTotal = manga.volumeCount,
                                             volumesOwned = manga.volumeOwned,
-                                            selected = viewModel.selectedIds.value.contains(manga.id),
+                                            selected = false,
                                         )
                                     }
                                 }
-
-                                if (isMultiSelectActive) {
-                                HorizontalFloatingToolbar(
-                                    modifier = Modifier
-                                        .align(Alignment.BottomCenter)
-                                        .offset(y = -ScreenOffset)
-                                        .zIndex(1f),
-                                    colors = FloatingToolbarDefaults.vibrantFloatingToolbarColors(),
-                                    expanded = true
-                                ) {
-                                    ToolbarTooltip(
-                                        label = stringResource(R.string.cd_remove_selected),
-                                    ) {
-                                        IconButton(
-                                            onClick = {
-                                                showRemoveDialog = true
-                                            },
-                                            enabled = viewModel.selectedIds.value.isNotEmpty(),
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Delete,
-                                                contentDescription = stringResource(R.string.cd_remove_selected),
-                                            )
-                                        }
-                                    }
-                                    ToolbarTooltip(
-                                        label = stringResource(R.string.cd_stop_multi_select),
-                                    ) {
-                                        FilledIconButton(
-                                            onClick = {
-                                                viewModel.finishMultiSelect()
-                                            },
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.AutoMirrored.Filled.Undo,
-                                                contentDescription = stringResource(R.string.cd_stop_multi_select),
-                                            )
-                                        }
-                                    }
-                                    ToolbarTooltip(
-                                        label = stringResource(R.string.cd_select_all),
-                                    ) {
-                                        IconButton(
-                                            onClick = {
-                                                viewModel.selectAll(mangaCollection.map { it.id }
-                                                    .toSet())
-                                            },
-                                            enabled = viewModel.selectedIds.value.size < mangaCollection.size && isMultiSelectActive,
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.SelectAll,
-                                                contentDescription = stringResource(R.string.cd_select_all),
-                                            )
-                                        }
-                                    }
-                                    ToolbarTooltip(
-                                        label = stringResource(R.string.cd_deselect),
-                                    ) {
-                                        IconButton(
-                                            onClick = {
-                                                viewModel.clearSelection()
-                                            },
-                                            enabled = viewModel.selectedIds.value.isNotEmpty() && isMultiSelectActive,
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Deselect,
-                                                contentDescription = stringResource(R.string.cd_deselect),
-                                            )
-                                        }
-                                    }
-                                }
-                            }
                             }
                         }
                     }
