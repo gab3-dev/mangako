@@ -134,32 +134,42 @@ class MangaKoDatabase(
                     END
                     """.trimIndent()
                 )
-                db.execSQL("DROP VIEW IF EXISTS MangaWithOwned")
-                db.execSQL(
-                    """
-                    CREATE VIEW MangaWithOwned AS
-                    SELECT
-                        M.id AS id,
-                        M.title AS title,
-                        M.alt_title AS altTitle,
-                        M.type AS type,
-                        M.cover_id AS coverId,
-                        M.cover_file_name AS coverFileName,
-                        IFNULL(M.cover_url, '') AS coverUrl,
-                        M.author_id AS authorId,
-                        M.author AS author,
-                        IFNULL(M.description, '') AS description,
-                        M.status AS status,
-                        IFNULL(M.volume_count, 0) AS volumeCount,
-                        M.original_language AS originalLanguage,
-                        IFNULL(M.on_user_library, 0) AS isOnUserLibrary,
-                        COUNT(V.id) AS volumeOwned
-                    FROM Manga M
-                    LEFT JOIN Volume V ON V.manga_id = M.id AND V.owned = 1
-                    GROUP BY M.id
-                    """.trimIndent()
-                )
+                recreateMangaWithOwnedView(db)
             }
+        }
+
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                recreateMangaWithOwnedView(db)
+            }
+        }
+
+        private fun recreateMangaWithOwnedView(db: SupportSQLiteDatabase) {
+            db.execSQL("DROP VIEW IF EXISTS `MangaWithOwned`")
+            db.execSQL(
+                """
+                |CREATE VIEW `MangaWithOwned` AS SELECT${" "}
+                |            M.id AS id,
+                |            M.title AS title,
+                |            M.alt_title AS altTitle,
+                |            M.type AS type,
+                |            M.cover_id AS coverId,
+                |            M.cover_file_name AS coverFileName,
+                |            IFNULL(M.cover_url, '') AS coverUrl,
+                |            M.author_id AS authorId,
+                |            M.author AS author,
+                |            IFNULL(M.description, '') AS description,
+                |            M.status AS status,
+                |            IFNULL(M.volume_count, 0) AS volumeCount,
+                |            M.original_language AS originalLanguage,
+                |            IFNULL(M.on_user_library, 0) AS isOnUserLibrary,
+                |            COUNT(V.id) AS volumeOwned
+                |        FROM Manga M
+                |        LEFT JOIN Volume V${" "}
+                |            ON V.manga_id = M.id AND V.owned = 1
+                |        GROUP BY M.id
+                """.trimMargin()
+            )
         }
     }
 
@@ -169,7 +179,7 @@ class MangaKoDatabase(
             LocalDatabase::class.java,
             name = "mangako_database"
         )
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
             .build()
         this.db = db
     }
