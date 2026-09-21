@@ -51,7 +51,10 @@ class FileLogger(private val context: Context) {
         }.onFailure { Log.e(TAG, "Unable to save diagnostic log", it) }
     }
 
-    private fun logDirectory(): File = context.getExternalFilesDir(null) ?: context.filesDir
+    private fun logDirectory(): File = context.externalMediaDirs.firstOrNull()
+        ?.resolve(LOG_DIRECTORY)
+        ?: context.getExternalFilesDir(null)?.resolve(LOG_DIRECTORY)
+        ?: context.filesDir.resolve(LOG_DIRECTORY)
 
     private fun dateStamp(): String = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
 
@@ -59,6 +62,7 @@ class FileLogger(private val context: Context) {
 
     private companion object {
         const val TAG = "MangaKo"
+        const val LOG_DIRECTORY = "logs"
         val LOG_FILE_PREFIXES = listOf("app_log_", "error_log_", "crash_log_")
     }
 }

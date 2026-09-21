@@ -36,10 +36,10 @@ class FileLoggerTest {
     }
 
     @Test
-    fun `exportTo combines application error and crash logs`() {
+    fun `exportTo combines logs from the app media directory`() {
         val destination = mockk<Uri>()
         val output = ByteArrayOutputStream()
-        every { context.getExternalFilesDir(null) } returns temporaryFolder.root
+        every { context.externalMediaDirs } returns arrayOf(temporaryFolder.root)
         every { context.contentResolver } returns contentResolver
         every { contentResolver.openOutputStream(destination, "wt") } returns output
         val logger = FileLogger(context)
@@ -50,6 +50,7 @@ class FileLoggerTest {
         logger.exportTo(destination)
 
         val exported = output.toString()
+        assertTrue(temporaryFolder.root.resolve("logs").isDirectory)
         assertTrue(exported.contains("app_log_"))
         assertTrue(exported.contains("Search completed"))
         assertTrue(exported.contains("error_log_"))
