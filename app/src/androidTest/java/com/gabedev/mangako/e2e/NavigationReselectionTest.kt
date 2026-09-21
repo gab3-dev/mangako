@@ -1,6 +1,7 @@
 package com.gabedev.mangako.e2e
 
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -15,7 +16,7 @@ class NavigationReselectionTest {
     val composeRule = createAndroidComposeRule<MainActivity>()
 
     @Test
-    fun reselectingSearchScreensFocusesTheirSearchBars() {
+    fun selectingLibraryDoesNotFocusSearchButReselectingItDoes() {
         composeRule.onNodeWithTag(TestTags.LibraryNavigation).performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithTag(TestTags.CollectionSearch).assertIsFocused()
@@ -24,6 +25,12 @@ class NavigationReselectionTest {
         composeRule.waitUntil(5_000) {
             composeRule.onAllNodesWithTag(TestTags.ExploreSearch).fetchSemanticsNodes().isNotEmpty()
         }
+        composeRule.onNodeWithTag(TestTags.LibraryNavigation).performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(TestTags.CollectionSearch).assertIsNotFocused()
+
+        composeRule.onNodeWithTag(TestTags.ExploreNavigation).performClick()
+        composeRule.waitForIdle()
         composeRule.onNodeWithTag(TestTags.ExploreNavigation).performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithTag(TestTags.ExploreSearch).assertIsFocused()

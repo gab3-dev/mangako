@@ -138,6 +138,7 @@ fun MangaCollection(
     onMangaClick: (Manga) -> Unit,
     startupSyncRefreshVersion: Int = 0,
     openSearchRequest: Int = 0,
+    onOpenSearchRequestHandled: () -> Unit = {},
     modifier: Modifier = Modifier,
     onExploreSearch: (String) -> Unit = {},
     contentBottomPadding: Dp = 0.dp,
@@ -156,9 +157,11 @@ fun MangaCollection(
     val sortOption by viewModel.sortOption
 
     val context = LocalContext.current
-    val savedGridColumns by remember { context.getCollectionDensity() }.collectAsState(initial = 2)
     val collectionViewMode by remember(context) { context.getCollectionViewMode() }
         .collectAsState(initial = CollectionViewMode.MANGA)
+    val savedGridColumns by remember(collectionViewMode) {
+        context.getCollectionDensity(collectionViewMode)
+    }.collectAsState(initial = 2)
     val volumeGroups by viewModel.volumeGroups
     val lifecycleOwner = LocalLifecycleOwner.current
     val density = LocalDensity.current
@@ -241,7 +244,10 @@ fun MangaCollection(
     }
 
     LaunchedEffect(openSearchRequest) {
-        if (openSearchRequest > 0) openCollectionSearch()
+        if (openSearchRequest > 0) {
+            openCollectionSearch()
+            onOpenSearchRequestHandled()
+        }
     }
 
     suspend fun snapCollectionSearchAfterPull() {
@@ -527,7 +533,7 @@ fun MangaCollection(
                             val newDensity = value.roundToInt().coerceIn(1, 5)
                             gridColumns = newDensity
                             coroutineScope.launch {
-                                context.saveCollectionDensity(newDensity)
+                                context.saveCollectionDensity(collectionViewMode, newDensity)
                             }
                         },
                         valueRange = 1f..5f,
@@ -663,6 +669,8 @@ fun MangaCollection(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 10.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         FilterChip(
                             selected = showUnownedVolumesOnly,

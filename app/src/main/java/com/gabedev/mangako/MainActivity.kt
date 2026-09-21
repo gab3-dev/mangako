@@ -566,6 +566,7 @@ fun MainAppNavHost(
                         contentBottomPadding = floatingNavigationBottomPadding,
                         startupSyncRefreshVersion = startupSyncRefreshVersion,
                         openSearchRequest = collectionSearchOpenRequest,
+                        onOpenSearchRequestHandled = { collectionSearchOpenRequest = 0 },
                         onVolumeSelectionCountChange = { count ->
                             collectionSelectedVolumeCount = count
                         },

@@ -30,6 +30,8 @@ object SettingsKeys {
     val VIEW_MODE = stringPreferencesKey("view_mode")
     val COLLECTION_VIEW_MODE = stringPreferencesKey("collection_view_mode")
     val COLLECTION_DENSITY = intPreferencesKey("collection_density")
+    val MANGA_COLLECTION_DENSITY = intPreferencesKey("manga_collection_density")
+    val VOLUME_COLLECTION_DENSITY = intPreferencesKey("volume_collection_density")
     val CATALOG_INTEGRATION = stringPreferencesKey("catalog_integration")
     val CATALOG_INTEGRATION_MIGRATED_TO_MANGAKO = booleanPreferencesKey(
         "catalog_integration_migrated_to_mangako"
@@ -132,16 +134,31 @@ suspend fun Context.saveCollectionViewMode(mode: CollectionViewMode) {
     BackupScheduler.enqueueAfterChange(applicationContext)
 }
 
-suspend fun Context.saveCollectionDensity(density: Int) {
+suspend fun Context.saveCollectionDensity(mode: CollectionViewMode, density: Int) {
     dataStore.edit { preferences ->
-        preferences[SettingsKeys.COLLECTION_DENSITY] = density.coerceIn(1, 5)
+        val normalizedDensity = density.coerceIn(1, 5)
+        when (mode) {
+            CollectionViewMode.MANGA -> {
+                preferences[SettingsKeys.MANGA_COLLECTION_DENSITY] = normalizedDensity
+                preferences[SettingsKeys.COLLECTION_DENSITY] = normalizedDensity
+            }
+            CollectionViewMode.VOLUMES -> {
+                preferences[SettingsKeys.VOLUME_COLLECTION_DENSITY] = normalizedDensity
+            }
+        }
     }
     BackupScheduler.enqueueAfterChange(applicationContext)
 }
 
-fun Context.getCollectionDensity(): Flow<Int> {
+fun Context.getCollectionDensity(mode: CollectionViewMode): Flow<Int> {
     return dataStore.data.map { preferences ->
-        preferences[SettingsKeys.COLLECTION_DENSITY]?.coerceIn(1, 5) ?: 2
+        val key = when (mode) {
+            CollectionViewMode.MANGA -> SettingsKeys.MANGA_COLLECTION_DENSITY
+            CollectionViewMode.VOLUMES -> SettingsKeys.VOLUME_COLLECTION_DENSITY
+        }
+        preferences[key]?.coerceIn(1, 5)
+            ?: preferences[SettingsKeys.COLLECTION_DENSITY]?.coerceIn(1, 5)
+            ?: 2
     }
 }
 
