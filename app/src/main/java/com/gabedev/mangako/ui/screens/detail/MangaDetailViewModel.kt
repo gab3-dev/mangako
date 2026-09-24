@@ -184,6 +184,21 @@ class MangaDetailViewModel(
         }
     }
 
+    fun setCoverLanguageOverride(language: CoverLanguage?, globalLanguage: CoverLanguage) {
+        if (mangaState.value.coverLanguage == language?.name) return
+        val updated = mangaState.value.copy(coverLanguage = language?.name)
+        manga = updated
+        mangaState.value = updated
+        viewModelScope.launch {
+            try {
+                localRepository.updateMangaCoverLanguage(idManga, language?.name)
+                setCoverLanguage(language ?: globalLanguage)
+            } catch (e: Exception) {
+                localRepository.log(e)
+            }
+        }
+    }
+
     fun removeMangaFromLibrary() {
         viewModelScope.launch {
             try {

@@ -300,6 +300,25 @@ class MangaKoRepositoryImplTest {
     }
 
     @Test
+    fun `manga cover language override takes precedence over the app preference`() = runTest {
+        val repository = MangaKoRepositoryImpl(
+            api, { "Unavailable" }, coverLanguageProvider = { CoverLanguage.JAPANESE },
+        )
+        val manga = Manga(
+            id = "manga",
+            title = "Manga",
+            coverUrl = "cover",
+            description = "description",
+            coverLanguage = CoverLanguage.PORTUGUESE.name,
+        )
+        coEvery { api.getVolumes("manga", 50, 0, false, "pt-BR") } returns emptyList()
+
+        repository.getCoverListByManga(manga)
+
+        coVerify(exactly = 1) { api.getVolumes("manga", 50, 0, false, "pt-BR") }
+    }
+
+    @Test
     fun `search uses defaults and normalizes blank queries`() = runTest {
         coEvery { api.searchMangas("one", 10, 3) } returns listOf(mangaDto())
         coEvery { api.searchMangas(null, 5, 0) } returns emptyList()

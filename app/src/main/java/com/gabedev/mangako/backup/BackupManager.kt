@@ -110,7 +110,6 @@ class BackupManager(
 
     suspend fun restore(parsed: ParsedBackup, mode: RestoreMode) = withContext(Dispatchers.IO) {
         mutex.withLock {
-            format.validate(parsed.document)
             val payload = parsed.document.payload
 
             database.withTransaction {
@@ -169,6 +168,7 @@ class BackupManager(
         status = status,
         volumeCount = volumeCount,
         originalLanguage = originalLanguage,
+        coverLanguage = coverLanguage,
         volumes = volumes,
     )
 
@@ -200,6 +200,7 @@ class BackupManager(
             status = status,
             volumeCount = volumeCount,
             originalLanguage = originalLanguage,
+            coverLanguage = coverLanguage,
             isOnUserLibrary = true,
         )
     }

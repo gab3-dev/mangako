@@ -51,11 +51,22 @@ class MangaKoRepositoryImpl(
             limit = limit,
             offset = offset ?: 0,
             refresh = refresh,
-            locale = coverLanguageProvider().apiLocale,
+            locale = requestedCoverLanguage(manga),
         ).map { it.toVolume(manga) }
     }
 
     override fun log(message: Exception) = Unit
+
+    private suspend fun requestedCoverLanguage(manga: Manga): String? {
+        val language = manga.coverLanguage
+            ?.let(CoverLanguage::fromStored)
+            ?: coverLanguageProvider()
+        return if (manga.coverLanguage != null && language == CoverLanguage.ORIGINAL) {
+            manga.originalLanguage
+        } else {
+            language.apiLocale
+        }
+    }
 
     private fun MangaKoMangaDto.toManga(): Manga {
         val locale = localeProvider()

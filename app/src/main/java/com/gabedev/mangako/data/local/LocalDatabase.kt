@@ -13,7 +13,7 @@ import com.gabedev.mangako.data.model.Volume
     views = [
         MangaWithOwned::class
     ],
-    version = 5,
+    version = 6,
 )
 abstract class LocalDatabase : RoomDatabase() {
     abstract fun mangaDao(): MangaDAO

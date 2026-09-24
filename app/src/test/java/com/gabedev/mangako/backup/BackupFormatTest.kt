@@ -9,7 +9,7 @@ class BackupFormatTest {
     private val format = BackupFormat()
 
     @Test
-    fun `version 2 round trip preserves volume ownership and preview counts`() {
+    fun `version 3 round trip preserves volume ownership and preview counts`() {
         val payload = payload(
             volumes = listOf(
                 volume(id = "v1", number = 1f, owned = true),
@@ -26,6 +26,31 @@ class BackupFormatTest {
         assertEquals(1, parsed.preview.mangaCount)
         assertEquals(2, parsed.preview.volumeCount)
         assertEquals(1, parsed.preview.ownedVolumeCount)
+    }
+
+    @Test
+    fun `version 3 uses nested settings and normalized volume numbers`() {
+        val encoded = format.encode(
+            payload(volumes = listOf(volume(number = 1.5f))),
+            createdAt = CREATED_AT,
+            appVersionCode = 7,
+        ).decodeToString()
+
+        assertTrue(encoded.contains("\"shared\""))
+        assertTrue(encoded.contains("\"android\""))
+        assertTrue(encoded.contains("\"desktop\":{}"))
+        assertTrue(encoded.contains("\"number\":\"1.5\""))
+    }
+
+    @Test
+    fun `version 3 canonicalizes collection ordering before checksumming`() {
+        val first = payload(volumes = listOf(volume(id = "v2", number = 2f), volume(id = "v1", number = 1f)))
+        val second = payload(volumes = first.collection.single().volumes.reversed())
+
+        assertEquals(
+            format.encode(first, CREATED_AT, 7).decodeToString(),
+            format.encode(second, CREATED_AT, 7).decodeToString(),
+        )
     }
 
     @Test
@@ -69,7 +94,7 @@ class BackupFormatTest {
     fun `unsupported format version is rejected`() {
         val encoded = format.encode(payload(), CREATED_AT, 1)
             .decodeToString()
-            .replace("\"formatVersion\":2", "\"formatVersion\":3")
+            .replace("\"formatVersion\":3", "\"formatVersion\":4")
 
         val error = assertFailsWith<IllegalArgumentException> {
             format.decode(encoded.encodeToByteArray())

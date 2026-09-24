@@ -1,6 +1,7 @@
 package com.gabedev.mangako.ui.screens.detail
 
 import com.gabedev.mangako.data.model.Manga
+import com.gabedev.mangako.data.local.CoverLanguage
 import com.gabedev.mangako.data.model.Volume
 import com.gabedev.mangako.data.repository.LibraryRepository
 import com.gabedev.mangako.data.repository.MangaDexRepository
@@ -172,6 +173,17 @@ class MangaDetailViewModelTest {
     }
 
     // --- addMangaToLibrary tests ---
+
+    @Test
+    fun `setCoverLanguageOverride stores the selected language on the manga`() = runTest {
+        val vm = createViewModel(autoLoad = false)
+
+        vm.setCoverLanguageOverride(CoverLanguage.PORTUGUESE, CoverLanguage.JAPANESE)
+        advanceUntilIdle()
+
+        assertEquals(CoverLanguage.PORTUGUESE.name, vm.mangaState.value.coverLanguage)
+        coVerify { localRepository.updateMangaCoverLanguage("manga-1", CoverLanguage.PORTUGUESE.name) }
+    }
 
     @Test
     fun `addMangaToLibrary sets isMangaInLibrary to true on success`() = runTest {

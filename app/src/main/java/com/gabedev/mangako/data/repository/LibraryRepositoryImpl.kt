@@ -93,6 +93,11 @@ class LibraryRepositoryImpl(
         return updatedManga
     }
 
+    override suspend fun updateMangaCoverLanguage(mangaId: String, coverLanguage: String?) {
+        db.mangaDao().updateCoverLanguage(mangaId, coverLanguage)
+        onBackupRelevantChange()
+    }
+
     override suspend fun addMangaToLibrary(manga: Manga) {
         val updatedManga = manga.copy(isOnUserLibrary = true)
         db.mangaDao().updateMangaLibraryStatus(updatedManga)

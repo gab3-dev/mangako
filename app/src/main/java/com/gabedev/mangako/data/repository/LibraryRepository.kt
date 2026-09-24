@@ -14,6 +14,7 @@ interface LibraryRepository {
     suspend fun searchManga(title: String): List<Manga>
     suspend fun insertManga(manga: Manga)
     suspend fun updateManga(manga: Manga): Manga?
+    suspend fun updateMangaCoverLanguage(mangaId: String, coverLanguage: String?) = Unit
     suspend fun addMangaToLibrary(manga: Manga)
     suspend fun removeMangaFromLibrary(mangaId: String)
     suspend fun removeMangaFromLibrary(manga: Manga)

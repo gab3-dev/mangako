@@ -51,6 +51,9 @@ interface MangaDAO {
         manga: Manga
     ): Int
 
+    @Query("UPDATE Manga SET cover_language = :coverLanguage WHERE id = :id")
+    suspend fun updateCoverLanguage(id: String, coverLanguage: String?): Int
+
     @Query("DELETE FROM Manga WHERE id = :id")
     suspend fun deleteMangaById(id: String): Int
 

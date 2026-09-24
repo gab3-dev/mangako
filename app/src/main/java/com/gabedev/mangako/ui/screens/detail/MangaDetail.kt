@@ -1,6 +1,7 @@
 package com.gabedev.mangako.ui.screens.detail
 
 import androidx.compose.foundation.BorderStroke
+import com.gabedev.mangako.data.local.CoverLanguage
 import com.gabedev.mangako.data.local.getCoverLanguage
 import androidx.compose.foundation.combinedClickable
 import com.gabedev.mangako.ui.theme.LocalAppDarkTheme
@@ -33,6 +34,8 @@ import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
@@ -72,6 +75,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -103,6 +107,7 @@ import com.gabedev.mangako.ui.screens.detail.covertheme.generateCoverTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 internal fun filterVolumes(
     volumes: List<Volume>,
@@ -137,12 +142,16 @@ fun MangaDetail(
     )
     val mangaState by viewModel.mangaState.collectAsState()
     val volumeList by viewModel.volumeList.collectAsState()
-    val filteredVolumeList = remember(specialCoverFilter, notOwnedFilter, volumeList, coverLanguage, mangaState.originalLanguage) {
-        val localizedVolumes = coverLanguage?.filterVolumes(volumeList, mangaState.originalLanguage).orEmpty()
+    val globalCoverLanguage = coverLanguage ?: CoverLanguage.JAPANESE
+    val selectedCoverLanguage = mangaState.coverLanguage
+        ?.let(CoverLanguage::fromStored)
+        ?: globalCoverLanguage
+    val filteredVolumeList = remember(specialCoverFilter, notOwnedFilter, volumeList, selectedCoverLanguage, mangaState.originalLanguage) {
+        val localizedVolumes = selectedCoverLanguage.filterVolumes(volumeList, mangaState.originalLanguage)
         filterVolumes(localizedVolumes, specialCoverFilter, notOwnedFilter)
     }
-    LaunchedEffect(coverLanguage) {
-        coverLanguage?.let(viewModel::setCoverLanguage)
+    LaunchedEffect(selectedCoverLanguage) {
+        viewModel.setCoverLanguage(selectedCoverLanguage)
     }
     val isCoverLoading by viewModel.isVolumeLoading.collectAsState()
     val canLoadMore by viewModel.noMoreVolume.collectAsState()
@@ -160,6 +169,7 @@ fun MangaDetail(
     val screenBackgroundColor = MaterialTheme.colorScheme.background.toArgb()
     val toolbarBaseColor = MaterialTheme.colorScheme.surfaceVariant.toArgb()
     var coverTheme by remember { mutableStateOf<CoverTheme?>(null) }
+    var coverLanguageMenuExpanded by remember { mutableStateOf(false) }
     val themedAccentColor = coverTheme?.accentColor?.let(::Color)
     val themedOnAccentColor = coverTheme?.onAccentColor?.let(::Color)
     val detailColorScheme = coverTheme?.let { theme ->
@@ -494,6 +504,51 @@ fun MangaDetail(
                                         text = stringResource(R.string.button_add_to_collection),
                                         fontSize = 18.sp,
                                     )
+                                }
+                            }
+                        }
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            Box {
+                                OutlinedButton(
+                                    onClick = { coverLanguageMenuExpanded = true },
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    val label = if (mangaState.coverLanguage == null) {
+                                        stringResource(R.string.cover_language_app_default)
+                                    } else if (selectedCoverLanguage == CoverLanguage.ORIGINAL) {
+                                        stringResource(R.string.cover_language_original)
+                                    } else {
+                                        Locale.forLanguageTag(selectedCoverLanguage.tag)
+                                            .getDisplayName(LocalConfiguration.current.locales[0])
+                                    }
+                                    Text(stringResource(R.string.cover_language_manga_format, label))
+                                }
+                                DropdownMenu(
+                                    expanded = coverLanguageMenuExpanded,
+                                    onDismissRequest = { coverLanguageMenuExpanded = false },
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.cover_language_app_default)) },
+                                        onClick = {
+                                            coverLanguageMenuExpanded = false
+                                            viewModel.setCoverLanguageOverride(null, globalCoverLanguage)
+                                        },
+                                    )
+                                    CoverLanguage.entries.forEach { language ->
+                                        val label = if (language == CoverLanguage.ORIGINAL) {
+                                            stringResource(R.string.cover_language_original)
+                                        } else {
+                                            Locale.forLanguageTag(language.tag)
+                                                .getDisplayName(LocalConfiguration.current.locales[0])
+                                        }
+                                        DropdownMenuItem(
+                                            text = { Text(label) },
+                                            onClick = {
+                                                coverLanguageMenuExpanded = false
+                                                viewModel.setCoverLanguageOverride(language, globalCoverLanguage)
+                                            },
+                                        )
+                                    }
                                 }
                             }
                         }

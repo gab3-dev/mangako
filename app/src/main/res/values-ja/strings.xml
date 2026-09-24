@@ -2,6 +2,8 @@
     <string name="cover_language_title">巻の表紙の言語</string>
     <string name="cover_language_description">アプリの言語とは別に、通常版の巻の言語を選択します。特別版は言語に関係なく特別版フィルターで表示できます。既定は日本語で、日本語の通常版がない場合は原語を使用します。</string>
     <string name="cover_language_original">原語</string>
+    <string name="cover_language_app_default">アプリの既定</string>
+    <string name="cover_language_manga_format">表紙の言語：%1$s</string>
     <string name="language_settings_title">アプリの言語</string>
     <string name="language_settings_description">画面の表示言語と漫画のタイトル・あらすじの言語を変更します。保存済みの漫画は更新すると反映されます。巻の言語は変更されません。</string>
     <string name="language_follow_system">端末の言語に従う</string>
