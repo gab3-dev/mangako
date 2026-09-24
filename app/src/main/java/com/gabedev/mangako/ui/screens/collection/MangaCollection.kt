@@ -115,8 +115,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gabedev.mangako.R
+import com.gabedev.mangako.data.local.CoverLanguage
 import com.gabedev.mangako.data.local.getCollectionDensity
 import com.gabedev.mangako.data.local.CollectionViewMode
+import com.gabedev.mangako.data.local.getCoverLanguage
 import com.gabedev.mangako.data.local.getCollectionViewMode
 import com.gabedev.mangako.data.local.saveCollectionDensity
 import com.gabedev.mangako.data.local.saveCollectionViewMode
@@ -157,12 +159,17 @@ fun MangaCollection(
     val sortOption by viewModel.sortOption
 
     val context = LocalContext.current
+    val coverLanguage by remember(context) { context.getCoverLanguage() }
+        .collectAsState(initial = CoverLanguage.JAPANESE)
     val collectionViewMode by remember(context) { context.getCollectionViewMode() }
         .collectAsState(initial = CollectionViewMode.MANGA)
     val savedGridColumns by remember(collectionViewMode) {
         context.getCollectionDensity(collectionViewMode)
     }.collectAsState(initial = 2)
     val volumeGroups by viewModel.volumeGroups
+    val localizedVolumeGroups = remember(volumeGroups, coverLanguage) {
+        localizeVolumeGroups(volumeGroups, coverLanguage)
+    }
     val lifecycleOwner = LocalLifecycleOwner.current
     val density = LocalDensity.current
     val focusRequester = remember { FocusRequester() }
@@ -726,7 +733,7 @@ fun MangaCollection(
                     }
                 } else {
                     val isVolumeView = collectionViewMode == CollectionViewMode.VOLUMES
-                    val isEmpty = if (isVolumeView) volumeGroups.isEmpty() else mangaCollection.isEmpty()
+                    val isEmpty = if (isVolumeView) localizedVolumeGroups.isEmpty() else mangaCollection.isEmpty()
                     if (isEmpty) {
                         Box(
                             contentAlignment = Alignment.Center,
@@ -784,7 +791,7 @@ fun MangaCollection(
                                         .nestedScroll(searchRevealNestedScrollConnection)
                                         .padding(horizontal = 16.dp)
                                 ) {
-                                    volumeGroups.forEach { group ->
+                                    localizedVolumeGroups.forEach { group ->
                                         val selectedVolumeCount = group.volumes.count {
                                             it.id in viewModel.selectedVolumeIds.value
                                         }
@@ -906,11 +913,11 @@ fun MangaCollection(
                                                 IconButton(
                                                     onClick = {
                                                         viewModel.selectAllVolumes(
-                                                            volumeGroups.flatMap { it.volumes }.map { it.id }.toSet(),
+                                                            localizedVolumeGroups.flatMap { it.volumes }.map { it.id }.toSet(),
                                                         )
                                                     },
                                                     enabled = viewModel.selectedVolumeIds.value.size <
-                                                        volumeGroups.sumOf { it.volumes.size },
+                                                        localizedVolumeGroups.sumOf { it.volumes.size },
                                                 ) {
                                                     Icon(Icons.Default.SelectAll, stringResource(R.string.cd_select_all))
                                                 }

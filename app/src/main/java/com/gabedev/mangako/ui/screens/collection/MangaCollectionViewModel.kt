@@ -4,6 +4,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gabedev.mangako.data.local.CoverLanguage
 import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.model.MangaWithOwned
 import com.gabedev.mangako.data.model.Volume
@@ -24,6 +25,17 @@ data class MangaVolumeGroup(
     val manga: Manga,
     val volumes: List<Volume>,
 )
+
+internal fun localizeVolumeGroups(
+    groups: List<MangaVolumeGroup>,
+    globalLanguage: CoverLanguage,
+): List<MangaVolumeGroup> = groups.mapNotNull { group ->
+    val language = group.manga.coverLanguage
+        ?.let(CoverLanguage::fromStored)
+        ?: globalLanguage
+    group.copy(volumes = language.filterVolumes(group.volumes, group.manga.originalLanguage))
+        .takeIf { it.volumes.isNotEmpty() }
+}
 
 class MangaCollectionViewModel (
         private val repository: LibraryRepository,

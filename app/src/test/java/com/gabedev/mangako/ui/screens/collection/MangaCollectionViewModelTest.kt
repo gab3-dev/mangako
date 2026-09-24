@@ -1,6 +1,7 @@
 package com.gabedev.mangako.ui.screens.collection
 
 import androidx.lifecycle.viewModelScope
+import com.gabedev.mangako.data.local.CoverLanguage
 import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.model.MangaWithOwned
 import com.gabedev.mangako.data.model.MangaWithVolume
@@ -675,6 +676,29 @@ class MangaCollectionViewModelTest {
 
         assertEquals(listOf("Alpha", "Beta"), viewModel!!.volumeGroups.value.map { it.manga.title })
         assertEquals(listOf("b1", "b2"), viewModel!!.volumeGroups.value[1].volumes.map { it.id })
+    }
+
+    @Test
+    fun `volume groups use the global cover language unless a manga has an override`() {
+        val manga = createManga("1", "Alpha").copy(originalLanguage = "ja")
+        val groups = listOf(
+            MangaVolumeGroup(
+                manga = manga,
+                volumes = listOf(
+                    createVolume("ja", manga.id, 1f).copy(locale = "ja"),
+                    createVolume("pt", manga.id, 1f).copy(locale = "pt-BR"),
+                ),
+            ),
+        )
+
+        assertEquals(listOf("ja"), localizeVolumeGroups(groups, CoverLanguage.JAPANESE).single().volumes.map { it.id })
+        assertEquals(
+            listOf("pt"),
+            localizeVolumeGroups(
+                groups.map { it.copy(manga = it.manga.copy(coverLanguage = CoverLanguage.PORTUGUESE.name)) },
+                CoverLanguage.JAPANESE,
+            ).single().volumes.map { it.id },
+        )
     }
 
     @Test
