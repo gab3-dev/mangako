@@ -41,6 +41,18 @@ class MangaKoRepositoryImplTest {
     }
 
     @Test
+    fun `search prefers the API-hosted primary cover`() = runTest {
+        val dto = mangaDto().copy(
+            covers = mangaDto().covers.map { it.copy(imageUrl = "https://mangako-api.kostudio.io/media/covers/v1/local.jpg") },
+        )
+        coEvery { api.searchMangas("one piece", 6, 0) } returns listOf(dto)
+
+        val manga = repository.searchMangaPage("one piece", 0, 6).single()
+
+        assertEquals("https://mangako-api.kostudio.io/media/covers/v1/local.jpg", manga.coverUrl)
+    }
+
+    @Test
     fun `search uses placeholder instead of arbitrary primary title or localization`() = runTest {
         val dto = mangaDto().copy(
             primaryTitle = "Berserk",
@@ -172,7 +184,7 @@ class MangaKoRepositoryImplTest {
     }
 
     @Test
-    fun `volumes prefer MangaDex cover ID and source update timestamp`() = runTest {
+    fun `volumes prefer API-hosted covers while preserving MangaDex IDs and timestamps`() = runTest {
         coEvery { api.searchMangas("one piece", 6, 0) } returns listOf(mangaDto())
         val manga = repository.searchMangaPage("one piece", 0, 6).single()
         coEvery { api.getVolumes("mangadex-manga", 50, 0, false) } returns listOf(
@@ -180,6 +192,7 @@ class MangaKoRepositoryImplTest {
                 id = "internal-cover",
                 mangaDexCoverId = "mangadex-cover",
                 sourceUrl = "https://example.com/volume.jpg",
+                imageUrl = "https://mangako-api.kostudio.io/media/covers/v1/local.jpg",
                 volume = "1.5",
                 locale = "ja",
                 isSpecialEdition = true,
@@ -193,6 +206,7 @@ class MangaKoRepositoryImplTest {
 
         assertEquals("mangadex-cover", volume.id)
         assertEquals("mangadex-manga", volume.mangaId)
+        assertEquals("https://mangako-api.kostudio.io/media/covers/v1/local.jpg", volume.coverUrl)
         assertEquals(1.5f, volume.volume)
         assertEquals("2025-01-02T00:00:00Z", volume.updatedAt)
     }

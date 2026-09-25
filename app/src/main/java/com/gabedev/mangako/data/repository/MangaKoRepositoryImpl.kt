@@ -78,7 +78,8 @@ class MangaKoRepositoryImpl(
             altTitle = Utils.alternativeTitle(titles),
             coverId = covers.firstOrNull { it.isPrimary }?.mangaDexCoverId
                 ?: covers.firstOrNull { it.isPrimary }?.id,
-            coverUrl = covers.firstOrNull { it.isPrimary }?.sourceUrl.orEmpty(),
+            coverUrl = covers.firstOrNull { it.isPrimary }?.imageUrl
+                ?: covers.firstOrNull { it.isPrimary }?.sourceUrl.orEmpty(),
             author = authors.firstOrNull()?.name,
             description = Utils.localizedDescription(
                 localizations.sortedByDescending { it.isPrimary }.map { it.language to it.description },
@@ -95,7 +96,7 @@ class MangaKoRepositoryImpl(
             id = mangaDexCoverId ?: id,
             mangaId = manga.id,
             title = manga.title,
-            coverUrl = sourceUrl,
+            coverUrl = imageUrl ?: sourceUrl.orEmpty(),
             volume = volume?.toFloatOrNull(),
             locale = locale,
             isSpecialEdition = isSpecialEdition,

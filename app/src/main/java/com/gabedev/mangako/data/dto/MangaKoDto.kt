@@ -32,6 +32,7 @@ data class MangaKoCoverDto(
     @SerializedName("mangadexCoverId") val mangaDexCoverId: String?,
     @SerializedName("isPrimary") val isPrimary: Boolean,
     @SerializedName("sourceUrl") val sourceUrl: String?,
+    @SerializedName("imageUrl") val imageUrl: String? = null,
 )
 
 data class MangaKoCreatorDto(
@@ -42,7 +43,8 @@ data class MangaKoCreatorDto(
 data class MangaKoVolumeDto(
     val id: String,
     @SerializedName("mangadexCoverId") val mangaDexCoverId: String?,
-    @SerializedName("sourceUrl") val sourceUrl: String,
+    @SerializedName("sourceUrl") val sourceUrl: String?,
+    @SerializedName("imageUrl") val imageUrl: String? = null,
     val volume: String?,
     val locale: String,
     @SerializedName("isSpecialEdition") val isSpecialEdition: Boolean,
