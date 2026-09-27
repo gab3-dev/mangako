@@ -22,6 +22,7 @@ class MangaSearchListViewModel(
     val isLoadingMoreManga = MutableStateFlow(false)
     val mangaList = MutableStateFlow<List<Manga>>(emptyList())
     val noMoreManga = MutableStateFlow(false)
+    val hasSearchError = MutableStateFlow(false)
     private var loadMangaJob: Job? = null
     private val enrichmentJobs = mutableSetOf<Job>()
     private var activeQuery: String? = null
@@ -41,6 +42,7 @@ class MangaSearchListViewModel(
         currentOffset = 0
         mangaList.value = emptyList()
         noMoreManga.value = false
+        hasSearchError.value = false
         MangaSearchCache.invalidate(query)
 
         loadMangaList()
@@ -109,11 +111,19 @@ class MangaSearchListViewModel(
                 apiRepository.log(Exception("Carregamento cancelado."))
                 return@launch
             } catch (e: Exception) {
+                if (!isSearchCurrent(currentQuery, generation) || !isActive) return@launch
                 apiRepository.log(e)
+                hasSearchError.value = true
                 isMangaLoading.value = false
                 isLoadingMoreManga.value = false
             }
         }
+    }
+
+    fun retryMangaList() {
+        hasSearchError.value = false
+        noMoreManga.value = false
+        loadMangaList()
     }
 
     fun setQueryString(newQuery: String, localeTag: String = Locale.getDefault().toLanguageTag(), coverLanguageTag: String = "ja") {
@@ -130,6 +140,7 @@ class MangaSearchListViewModel(
         mangaList.value = emptyList()
         currentOffset = 0
         noMoreManga.value = false
+        hasSearchError.value = false
         loadMangaList()
     }
 

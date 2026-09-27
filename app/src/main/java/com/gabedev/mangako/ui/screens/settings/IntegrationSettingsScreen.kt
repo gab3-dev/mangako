@@ -105,6 +105,7 @@ fun IntegrationSettingsScreen(
             selected = navigationBarStyle == NavigationBarStyle.FLOATING,
             onClick = { scope.launch { context.saveNavigationBarStyle(NavigationBarStyle.FLOATING) } },
         )
+        CreditsSettingsSection(modifier = Modifier.padding(top = 32.dp))
     }
 }
 

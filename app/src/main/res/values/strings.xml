@@ -4,6 +4,20 @@
     <string name="cover_language_original">Original language</string>
     <string name="cover_language_app_default">App default</string>
     <string name="cover_language_manga_format">Cover language: %1$s</string>
+    <string name="credits_title">Credits</string>
+    <string name="credits_description">MangaKō is made possible by the people, communities, and open-source projects listed below. Tap an item to learn more.</string>
+    <string name="credits_development_title">MangaKō development</string>
+    <string name="credits_development_description">Created and maintained by Gabe.</string>
+    <string name="credits_design_title">Design</string>
+    <string name="credits_design_description">Designed by Hevertton Oliveira.</string>
+    <string name="credits_mangadex_title">MangaDex</string>
+    <string name="credits_mangadex_description">Catalog metadata and cover source data are provided by MangaDex.</string>
+    <string name="credits_android_title">Kotlin, AndroidX, Jetpack Compose and Material Design</string>
+    <string name="credits_android_description">Core application platform and UI libraries, licensed under Apache License 2.0.</string>
+    <string name="credits_coil_title">Coil</string>
+    <string name="credits_coil_description">Image loading for Android, licensed under Apache License 2.0.</string>
+    <string name="credits_square_title">Retrofit, OkHttp and Gson</string>
+    <string name="credits_square_description">Network and JSON libraries from Square and Google, licensed under Apache License 2.0.</string>
     <string name="language_settings_title">App language</string>
     <string name="language_settings_description">Changes the interface and manga titles and descriptions. Refresh saved manga to update their texts. Volume languages are not affected.</string>
     <string name="language_follow_system">Follow device language</string>
@@ -12,6 +26,8 @@
     <string name="language_japanese" translatable="false">日本語</string>
     <string name="volumes_loading_paused">Volume loading paused. The list may be incomplete. Retry, or refresh if the page limit was reached.</string>
     <string name="button_retry_volumes">Try again</string>
+    <string name="search_load_error">Could not load manga. Check your connection and try again.</string>
+    <string name="button_retry_search">Try again</string>
     <string name="manga_title_unavailable">Title unavailable</string>
     <string name="manga_description_unavailable">No description available</string>
     <string name="app_name" translatable="false">MangaKō</string>

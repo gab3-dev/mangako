@@ -7,6 +7,7 @@ import com.gabedev.mangako.data.dto.MangaDto
 import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.model.Volume
 import com.gabedev.mangako.data.remote.api.MangaDexAPI
+import kotlinx.coroutines.CancellationException
 import java.util.Locale
 
 class MangaDexRepositoryImpl(
@@ -49,8 +50,9 @@ class MangaDexRepositoryImpl(
                 }
             }.distinctBy { it.id }
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             logger.logError(Throwable(message = "Error while searching manga: $e"))
-            emptyList()
+            throw e
         }
     }
 

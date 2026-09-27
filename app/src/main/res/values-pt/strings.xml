@@ -4,11 +4,27 @@
     <string name="cover_language_original">Idioma original</string>
     <string name="cover_language_app_default">Padrão do app</string>
     <string name="cover_language_manga_format">Idioma das capas: %1$s</string>
+    <string name="credits_title">Créditos</string>
+    <string name="credits_description">O MangaKō é possível graças às pessoas, comunidades e projetos de código aberto abaixo. Toque em um item para saber mais.</string>
+    <string name="credits_development_title">Desenvolvimento do MangaKō</string>
+    <string name="credits_development_description">Criado e mantido por Gabe.</string>
+    <string name="credits_design_title">Design</string>
+    <string name="credits_design_description">Design por Hevertton Oliveira.</string>
+    <string name="credits_mangadex_title">MangaDex</string>
+    <string name="credits_mangadex_description">Os metadados do catálogo e as fontes das capas são fornecidos pelo MangaDex.</string>
+    <string name="credits_android_title">Kotlin, AndroidX, Jetpack Compose e Material Design</string>
+    <string name="credits_android_description">Plataforma e bibliotecas centrais do app, licenciadas sob a Apache License 2.0.</string>
+    <string name="credits_coil_title">Coil</string>
+    <string name="credits_coil_description">Carregamento de imagens para Android, licenciado sob a Apache License 2.0.</string>
+    <string name="credits_square_title">Retrofit, OkHttp e Gson</string>
+    <string name="credits_square_description">Bibliotecas de rede e JSON da Square e Google, licenciadas sob a Apache License 2.0.</string>
     <string name="language_settings_title">Idioma do app</string>
     <string name="language_settings_description">Altera a interface e os títulos e descrições dos mangás. Atualize os mangás salvos para renovar seus textos. Os idiomas dos volumes não são afetados.</string>
     <string name="language_follow_system">Seguir o idioma do celular</string>
     <string name="volumes_loading_paused">Carregamento de volumes pausado. A lista pode estar incompleta. Tente novamente ou atualize se o limite de páginas foi atingido.</string>
     <string name="button_retry_volumes">Tentar novamente</string>
+    <string name="search_load_error">Não foi possível carregar os mangás. Verifique sua conexão e tente novamente.</string>
+    <string name="button_retry_search">Tentar novamente</string>
     <string name="manga_title_unavailable">Título indisponível</string>
     <string name="manga_description_unavailable">Nenhuma descrição disponível</string>
     <!-- Navigation -->

@@ -4,11 +4,27 @@
     <string name="cover_language_original">原語</string>
     <string name="cover_language_app_default">アプリの既定</string>
     <string name="cover_language_manga_format">表紙の言語：%1$s</string>
+    <string name="credits_title">クレジット</string>
+    <string name="credits_description">MangaKōは、以下の人々、コミュニティ、オープンソースプロジェクトによって支えられています。項目をタップすると詳細を確認できます。</string>
+    <string name="credits_development_title">MangaKōの開発</string>
+    <string name="credits_development_description">Gabeが開発・保守しています。</string>
+    <string name="credits_design_title">デザイン</string>
+    <string name="credits_design_description">Hevertton Oliveiraによるデザインです。</string>
+    <string name="credits_mangadex_title">MangaDex</string>
+    <string name="credits_mangadex_description">カタログのメタデータと表紙の提供元はMangaDexです。</string>
+    <string name="credits_android_title">Kotlin、AndroidX、Jetpack Compose、Material Design</string>
+    <string name="credits_android_description">アプリの基盤とUIライブラリです。Apache License 2.0で提供されています。</string>
+    <string name="credits_coil_title">Coil</string>
+    <string name="credits_coil_description">Android向けの画像読み込みライブラリです。Apache License 2.0で提供されています。</string>
+    <string name="credits_square_title">Retrofit、OkHttp、Gson</string>
+    <string name="credits_square_description">SquareとGoogleによるネットワーク・JSONライブラリです。Apache License 2.0で提供されています。</string>
     <string name="language_settings_title">アプリの言語</string>
     <string name="language_settings_description">画面の表示言語と漫画のタイトル・あらすじの言語を変更します。保存済みの漫画は更新すると反映されます。巻の言語は変更されません。</string>
     <string name="language_follow_system">端末の言語に従う</string>
     <string name="volumes_loading_paused">巻一覧の読み込みを一時停止しました。一部の巻が未取得の可能性があります。再試行するか、ページ上限に達した場合は更新してください。</string>
     <string name="button_retry_volumes">再試行</string>
+    <string name="search_load_error">漫画を読み込めませんでした。接続を確認して再試行してください。</string>
+    <string name="button_retry_search">再試行</string>
     <string name="manga_title_unavailable">タイトル情報なし</string>
     <string name="manga_description_unavailable">あらすじはありません</string>
     <!-- Navigation -->

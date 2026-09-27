@@ -32,6 +32,7 @@ import org.junit.Before
 import org.junit.Test
 import java.util.Locale
 import com.gabedev.mangako.data.local.CoverLanguage
+import kotlin.test.assertFailsWith
 
 class MangaDexRepositoryImplTest {
 
@@ -187,12 +188,14 @@ class MangaDexRepositoryImplTest {
     }
 
     @Test
-    fun `searchManga returns empty list on API exception`() = runTest {
+    fun `searchManga propagates API exception`() = runTest {
         coEvery { api.searchMangas(title = any(), offset = any(), limit = any(), orderRelevance = any(), orderFollowedCount = any()) } throws RuntimeException("Network error")
 
-        val result = repository.searchManga("test")
+        val error = assertFailsWith<RuntimeException> {
+            repository.searchManga("test")
+        }
 
-        assertTrue(result.isEmpty())
+        assertEquals("Network error", error.message)
     }
 
     @Test

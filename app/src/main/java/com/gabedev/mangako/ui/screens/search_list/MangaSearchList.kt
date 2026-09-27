@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.Button
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -25,10 +27,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import com.gabedev.mangako.data.local.getCoverLanguage
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.gabedev.mangako.R
 import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.repository.MangaDexRepository
 import com.gabedev.mangako.ui.components.CustomLoadingIndicator
@@ -51,6 +55,7 @@ fun MangaSearchScreen(
     val isLoading by viewModel.isMangaLoading.collectAsState()
     val isLoadingMore by viewModel.isLoadingMoreManga.collectAsState()
     val noMoreManga by viewModel.noMoreManga.collectAsState()
+    val hasSearchError by viewModel.hasSearchError.collectAsState()
     val listState = rememberLazyListState()
 
     val localeTag = LocalConfiguration.current.locales[0].toLanguageTag()
@@ -63,14 +68,14 @@ fun MangaSearchScreen(
     }
 
     // Infinite scroll: preload before the user reaches the end.
-    LaunchedEffect(listState, noMoreManga) {
+    LaunchedEffect(listState, noMoreManga, hasSearchError) {
         snapshotFlow {
             val info = listState.layoutInfo
             val lastVisible = info.visibleItemsInfo.lastOrNull()?.index ?: -1
             val totalItems = info.totalItemsCount
             lastVisible to totalItems
         }.collect { (lastVisible, totalItems) ->
-            if (!noMoreManga && totalItems > 0 && lastVisible >= totalItems - 3) {
+            if (!noMoreManga && !hasSearchError && totalItems > 0 && lastVisible >= totalItems - 3) {
                 viewModel.loadMangaList()
             }
         }
@@ -84,6 +89,11 @@ fun MangaSearchScreen(
         Column {
             if (isLoading && mangaList.isEmpty()) {
                 SkeletonSearchList()
+            } else if (hasSearchError && mangaList.isEmpty()) {
+                SearchError(
+                    onRetry = viewModel::retryMangaList,
+                    modifier = Modifier.fillMaxSize(),
+                )
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -120,8 +130,32 @@ fun MangaSearchScreen(
                             }
                         }
                     }
+                    if (hasSearchError) {
+                        item {
+                            SearchError(
+                                onRetry = viewModel::retryMangaList,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 16.dp),
+                            )
+                        }
+                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun SearchError(onRetry: () -> Unit, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
+    ) {
+        Text(stringResource(R.string.search_load_error))
+        Button(onClick = onRetry) {
+            Text(stringResource(R.string.button_retry_search))
         }
     }
 }

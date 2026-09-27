@@ -236,6 +236,27 @@ class MangaSearchListViewModelTest {
     }
 
     @Test
+    fun `failed search exposes an error and retry reloads the same page`() = runTest {
+        coEvery { apiRepository.searchMangaPage("one piece", 0, any()) } throws RuntimeException("network unavailable")
+        val vm = MangaSearchListViewModel(apiRepository, testDispatcher)
+
+        vm.setQueryString("one piece")
+        advanceUntilIdle()
+
+        assertTrue(vm.hasSearchError.value)
+        assertFalse(vm.noMoreManga.value)
+        assertEquals(null, MangaSearchCache.get("one piece", 0))
+
+        coEvery { apiRepository.searchMangaPage("one piece", 0, any()) } returns listOf(createManga("m1", "One Piece"))
+        vm.retryMangaList()
+        advanceUntilIdle()
+
+        assertFalse(vm.hasSearchError.value)
+        assertEquals(listOf("m1"), vm.mangaList.value.map { it.id })
+        coVerify(exactly = 2) { apiRepository.searchMangaPage("one piece", 0, any()) }
+    }
+
+    @Test
     fun `refreshMangaList resets and reloads`() = runTest {
         val mangaList = listOf(createManga("m1", "Test"))
         coEvery { apiRepository.searchMangaPage(any(), any(), any()) } returns mangaList
