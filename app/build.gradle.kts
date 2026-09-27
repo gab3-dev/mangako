@@ -96,8 +96,8 @@ android {
         applicationId = "com.gabedev.mangako"
         minSdk = 25
         targetSdk = 36
-        versionCode = 11
-        versionName = "0.1.5"
+        versionCode = 12
+        versionName = "0.1.6"
 
         testInstrumentationRunner = "com.gabedev.mangako.MangaKoE2ETestRunner"
         buildConfigField(
