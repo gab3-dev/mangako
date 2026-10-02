@@ -19,6 +19,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,6 +55,28 @@ fun AppNavigationBar(
     when (style) {
         NavigationBarStyle.CLASSIC -> ClassicNavigationBar(currentRoute, items, onNavigate, modifier)
         NavigationBarStyle.FLOATING -> FloatingNavigationBar(currentRoute, items, onNavigate, compact, modifier)
+    }
+}
+
+@Composable
+fun AppNavigationRail(
+    currentRoute: String?,
+    items: List<Screen>,
+    onNavigate: (Screen) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    NavigationRail(modifier = modifier) {
+        items.forEach { screen ->
+            val selected = currentRoute == screen.route
+            NavigationRailItem(
+                modifier = screen.navigationTestTag(),
+                selected = selected,
+                onClick = { onNavigate(screen) },
+                icon = { NavigationIcon(screen, selected) },
+                label = { Text(stringResource(screen.titleRes)) },
+                alwaysShowLabel = true,
+            )
+        }
     }
 }
 

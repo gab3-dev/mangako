@@ -98,6 +98,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -191,6 +192,9 @@ fun MangaCollection(
     var sortMenuExpanded by remember { mutableStateOf(false) }
     var filterSheetOpen by remember { mutableStateOf(false) }
     var gridColumns by remember { mutableIntStateOf(2) }
+    val screenWidthDp = LocalConfiguration.current.screenWidthDp
+    val tabletGridMinSize = ((screenWidthDp.dp - 100.dp) / gridColumns.coerceAtLeast(1).toFloat())
+        .coerceIn(120.dp, 1200.dp)
     var collapsedVolumeGroupIds by rememberSaveable { mutableStateOf(emptySet<String>()) }
     var tabsDragDistance by remember { mutableFloatStateOf(0f) }
     val animatedImeBottomPadding by animateDpAsState(
@@ -781,7 +785,11 @@ fun MangaCollection(
                         Box(modifier = Modifier.fillMaxSize()) {
                             if (isVolumeView) {
                                 LazyVerticalGrid(
-                                    columns = GridCells.Fixed(gridColumns),
+                                    columns = if (screenWidthDp >= 600) {
+                                        GridCells.Adaptive(tabletGridMinSize)
+                                    } else {
+                                        GridCells.Fixed(gridColumns)
+                                    },
                                     state = gridState,
                                     contentPadding = PaddingValues(bottom = contentBottomPadding),
                                     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -941,7 +949,11 @@ fun MangaCollection(
                                 }
                             } else {
                                 LazyVerticalGrid(
-                                    columns = GridCells.Fixed(gridColumns),
+                                    columns = if (screenWidthDp >= 600) {
+                                        GridCells.Adaptive(tabletGridMinSize)
+                                    } else {
+                                        GridCells.Fixed(gridColumns)
+                                    },
                                     state = gridState,
                                     contentPadding = PaddingValues(bottom = contentBottomPadding),
                                     verticalArrangement = Arrangement.spacedBy(8.dp),

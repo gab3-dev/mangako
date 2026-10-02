@@ -104,6 +104,50 @@ class BackupFormatTest {
     }
 
     @Test
+    fun `missing format version is rejected`() {
+        val error = assertFailsWith<IllegalArgumentException> {
+            format.decode("{}".encodeToByteArray())
+        }
+
+        assertEquals("Backup version is missing", error.message)
+    }
+
+    @Test
+    fun `version 3 requires a backup date`() {
+        val encoded = format.encode(payload(), CREATED_AT, 1)
+            .decodeToString()
+            .replace(CREATED_AT, "")
+
+        val error = assertFailsWith<IllegalArgumentException> {
+            format.decode(encoded.encodeToByteArray())
+        }
+
+        assertEquals("Backup date is missing", error.message)
+    }
+
+    @Test
+    fun `version 3 rejects noncanonical volume numbers`() {
+        val encoded = format.encode(payload(), CREATED_AT, 1)
+            .decodeToString()
+            .replace("\"number\":\"1\"", "\"number\":\"1.0\"")
+
+        val error = assertFailsWith<IllegalArgumentException> {
+            format.decode(encoded.encodeToByteArray())
+        }
+
+        assertEquals("Invalid volume number", error.message)
+    }
+
+    @Test
+    fun `version 3 preserves an unnumbered volume`() {
+        val parsed = format.decode(
+            format.encode(payload(volumes = listOf(volume(number = null))), CREATED_AT, 1)
+        )
+
+        assertEquals(null, parsed.document.payload.collection.single().volumes.single().number)
+    }
+
+    @Test
     fun `volume referencing another manga is rejected`() {
         val invalid = payload(volumes = listOf(volume().copy(mangaId = "other")))
 
@@ -131,6 +175,34 @@ class BackupFormatTest {
     }
 
     @Test
+    fun `duplicate volume ids are rejected even with distinct numbers`() {
+        val invalid = payload(
+            volumes = listOf(
+                volume(id = "v1", number = 1f),
+                volume(id = "v1", number = 2f),
+            )
+        )
+
+        val error = assertFailsWith<IllegalArgumentException> {
+            format.decode(format.encode(invalid, CREATED_AT, 1))
+        }
+
+        assertEquals("Duplicate volume ID", error.message)
+    }
+
+    @Test
+    fun `duplicate manga ids are rejected`() {
+        val original = payload()
+        val invalid = original.copy(collection = listOf(original.collection.single(), original.collection.single()))
+
+        val error = assertFailsWith<IllegalArgumentException> {
+            format.decode(format.encode(invalid, CREATED_AT, 1))
+        }
+
+        assertEquals("Duplicate manga ID", error.message)
+    }
+
+    @Test
     fun `invalid settings enum is rejected`() {
         val invalid = payload().copy(
             settings = settings().copy(backupFrequency = "HOURLY")
@@ -141,6 +213,45 @@ class BackupFormatTest {
         }
 
         assertEquals("Invalid backup frequency", error.message)
+    }
+
+    @Test
+    fun `invalid catalog setting is rejected`() {
+        val invalid = payload().copy(settings = settings().copy(catalogIntegration = "UNKNOWN"))
+
+        val error = assertFailsWith<IllegalArgumentException> {
+            format.decode(format.encode(invalid, CREATED_AT, 1))
+        }
+
+        assertEquals("Invalid catalog setting", error.message)
+    }
+
+    @Test
+    fun `invalid navigation setting is rejected`() {
+        val invalid = payload().copy(settings = settings().copy(navigationBarStyle = "UNKNOWN"))
+
+        val error = assertFailsWith<IllegalArgumentException> {
+            format.decode(format.encode(invalid, CREATED_AT, 1))
+        }
+
+        assertEquals("Invalid navigation setting", error.message)
+    }
+
+    @Test
+    fun `legacy version two validates its checksum independently of version one`() {
+        val error = assertFailsWith<IllegalArgumentException> {
+            format.validate(
+                BackupDocument(
+                    formatVersion = 2,
+                    createdAt = CREATED_AT,
+                    appVersionCode = 1,
+                    payload = payload(),
+                    checksumSha256 = "invalid",
+                )
+            )
+        }
+
+        assertEquals("Backup checksum is invalid", error.message)
     }
 
     private fun payload(
@@ -158,7 +269,7 @@ class BackupFormatTest {
 
     private fun volume(
         id: String = "v1",
-        number: Float = 1f,
+        number: Float? = 1f,
         owned: Boolean = true,
     ) = BackupVolume(
         id = id,

@@ -12,10 +12,12 @@ import io.mockk.coVerify
 import io.mockk.just
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -609,6 +611,31 @@ class MangaDetailViewModelTest {
         advanceUntilIdle()
 
         assertEquals(27, vm.mangaState.value.volumeCount)
+    }
+
+    @Test
+    fun `refreshManga exposes refreshing state only for a manual refresh`() = runTest {
+        val manga = createManga()
+        val vm = createViewModel(manga)
+        advanceUntilIdle()
+        val refreshStarted = CompletableDeferred<Unit>()
+        val finishRefresh = CompletableDeferred<Unit>()
+        coEvery { apiRepository.getManga(any(), refresh = true) } coAnswers {
+            refreshStarted.complete(Unit)
+            finishRefresh.await()
+            manga
+        }
+
+        vm.refreshManga()
+        runCurrent()
+
+        assertTrue(refreshStarted.isCompleted)
+        assertTrue(vm.isRefreshing.value)
+
+        finishRefresh.complete(Unit)
+        advanceUntilIdle()
+
+        assertFalse(vm.isRefreshing.value)
     }
 
     @Test

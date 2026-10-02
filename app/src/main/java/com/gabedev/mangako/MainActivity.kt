@@ -18,6 +18,8 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -52,6 +54,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -82,6 +85,7 @@ import com.gabedev.mangako.data.model.Manga
 import com.gabedev.mangako.data.repository.LibraryRepository
 import com.gabedev.mangako.data.repository.MangaDexRepository
 import com.gabedev.mangako.ui.components.AppNavigationBar
+import com.gabedev.mangako.ui.components.AppNavigationRail
 import com.gabedev.mangako.ui.components.FloatingNavigationBarHeight
 import com.gabedev.mangako.ui.components.DynamicTopBar
 import com.gabedev.mangako.ui.screens.backup.BackupOnboardingScreen
@@ -327,6 +331,7 @@ fun MainAppNavHost(
     var exploreSearchFocusRequest by remember { mutableIntStateOf(0) }
     var collectionSelectedVolumeCount by remember { mutableIntStateOf(0) }
     val context = LocalContext.current
+    val useWideLayout = LocalConfiguration.current.screenWidthDp >= 600
 
     val itemsNavBar = listOf(Screen.UserCollection, Screen.Explore, Screen.Settings)
     val navigationBarStyle by context.getNavigationBarStyle()
@@ -363,7 +368,7 @@ fun MainAppNavHost(
         label = "collectionVolumeActionsNavigationOffset",
     )
     val floatingNavigationBottomPadding = if (
-        navigationBarStyle == NavigationBarStyle.FLOATING &&
+        navigationBarStyle == NavigationBarStyle.FLOATING && !useWideLayout &&
         currentRoute != Screen.MangaDetail.route
     ) {
         96.dp + navigationBarBottomInset
@@ -428,7 +433,7 @@ fun MainAppNavHost(
         },
         bottomBar = {
             if (
-                navigationBarStyle != NavigationBarStyle.CLASSIC ||
+                useWideLayout || navigationBarStyle != NavigationBarStyle.CLASSIC ||
                 currentRoute == Screen.MangaDetail.route
             ) {
                 return@Scaffold
@@ -441,11 +446,19 @@ fun MainAppNavHost(
             )
         }
     ) { innerPadding ->
-        Box(
+        Row(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
         ) {
+            if (useWideLayout && currentRoute != Screen.MangaDetail.route) {
+                AppNavigationRail(
+                    currentRoute = currentRoute,
+                    items = itemsNavBar,
+                    onNavigate = onNavigate,
+                )
+            }
+            Box(Modifier.weight(1f).fillMaxHeight()) {
             NavHost(
                 navController = navController,
                 startDestination = Screen.UserCollection.route,
@@ -637,7 +650,7 @@ fun MainAppNavHost(
             }
 
             if (
-                navigationBarStyle == NavigationBarStyle.FLOATING &&
+                navigationBarStyle == NavigationBarStyle.FLOATING && !useWideLayout &&
                 currentRoute != Screen.MangaDetail.route
             ) {
                 AppNavigationBar(
@@ -671,6 +684,7 @@ fun MainAppNavHost(
                         }
                     }
                 }
+            }
             }
         }
     }

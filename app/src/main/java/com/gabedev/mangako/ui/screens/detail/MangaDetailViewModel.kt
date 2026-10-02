@@ -30,6 +30,7 @@ class MangaDetailViewModel(
     var selectedIds = mutableStateOf(setOf<String>())
         private set
     val isVolumeLoading = MutableStateFlow(false)
+    val isRefreshing = MutableStateFlow(false)
     val addResult: StateFlow<Result<Unit>?> = _addResult
     val removeResult: StateFlow<Result<Unit>?> = _removeResult
     val isMangaInLibrary = MutableStateFlow(false)
@@ -228,6 +229,7 @@ class MangaDetailViewModel(
         if (refresh) previousJob?.cancel()
         // Set before launching so simultaneous scroll events cannot queue duplicate requests.
         isVolumeLoading.value = true
+        if (refresh) isRefreshing.value = true
         volumeLoadJob = viewModelScope.launch {
             try {
                 if (refresh) {
@@ -276,8 +278,11 @@ class MangaDetailViewModel(
                 paginationPaused.value = true
                 localRepository.log(e)
             } finally {
-                // A cancelled request must not clear the loading flag of its replacement.
-                if (currentCoroutineContext().isActive) isVolumeLoading.value = false
+                // A cancelled request must not clear the loading state of its replacement.
+                if (volumeLoadJob === currentCoroutineContext()[Job]) {
+                    isVolumeLoading.value = false
+                    isRefreshing.value = false
+                }
             }
         }
     }

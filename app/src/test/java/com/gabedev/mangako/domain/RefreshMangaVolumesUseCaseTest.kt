@@ -7,6 +7,8 @@ import com.gabedev.mangako.data.model.MangaWithVolume
 import com.gabedev.mangako.data.model.Volume
 import com.gabedev.mangako.data.repository.LibraryRepository
 import com.gabedev.mangako.data.repository.MangaDexRepository
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.test.assertFailsWith
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -124,11 +126,87 @@ class RefreshMangaVolumesUseCaseTest {
         assertEquals(volumes, local.persistedVolumes.single())
     }
 
+    @Test
+    fun `refreshLibrary fetches every page of volume results`() = runTest {
+        val manga = createManga("manga-1", "One Piece")
+        val volumes = (1..51).map { number ->
+            createVolume("cover-$number", manga.id, number.toFloat())
+        }
+        val api = FakeMangaRepository(
+            mangaResults = mapOf(manga.id to manga),
+            volumeResults = mapOf(manga.id to volumes),
+        )
+        val local = FakeLibraryRepository(listOf(manga), mapOf(manga.id to emptyList()))
+
+        RefreshMangaVolumesUseCase(api, local).refreshLibrary()
+
+        assertEquals(listOf(0, 50), api.volumeOffsets)
+        assertEquals(volumes, local.persistedVolumes.single())
+    }
+
+    @Test
+    fun `refreshLibrary retains only the newest duplicate numbered volume`() = runTest {
+        val manga = createManga("manga-1", "One Piece")
+        val older = createVolume("cover-old", manga.id, 1f).copy(updatedAt = "2025-01-01T00:00:00Z")
+        val newer = createVolume("cover-new", manga.id, 1f).copy(updatedAt = "2026-01-01T00:00:00Z")
+        val api = FakeMangaRepository(
+            mangaResults = mapOf(manga.id to manga),
+            volumeResults = mapOf(manga.id to listOf(older, newer)),
+        )
+        val local = FakeLibraryRepository(listOf(manga), mapOf(manga.id to emptyList()))
+
+        val result = RefreshMangaVolumesUseCase(api, local).refreshLibrary()
+
+        assertEquals(listOf(newer), local.persistedVolumes.single())
+        assertEquals(listOf(newer), result.newVolumesByManga.single().volumes)
+        assertEquals(1, result.updatedCount)
+    }
+
+    @Test
+    fun `refreshLibrary reports the original manga when updating it returns null`() = runTest {
+        val original = createManga("manga-1", "Original")
+        val remote = original.copy(title = "Updated")
+        val volume = createVolume("cover-1", original.id, 1f)
+        val api = FakeMangaRepository(
+            mangaResults = mapOf(original.id to remote),
+            volumeResults = mapOf(original.id to listOf(volume)),
+        )
+        val local = FakeLibraryRepository(
+            library = listOf(original),
+            localVolumes = mapOf(original.id to emptyList()),
+            returnNullOnUpdate = true,
+        )
+
+        val result = RefreshMangaVolumesUseCase(api, local).refreshLibrary()
+
+        assertEquals(original, result.newVolumesByManga.single().manga)
+    }
+
+    @Test
+    fun `refreshLibrary propagates cancellation without logging it as a failed sync`() = runTest {
+        val manga = createManga("manga-1", "One Piece")
+        val cancellation = CancellationException("cancelled")
+        val api = FakeMangaRepository(
+            mangaResults = emptyMap(),
+            volumeResults = emptyMap(),
+            exceptionsByMangaId = mapOf(manga.id to cancellation),
+        )
+        val local = FakeLibraryRepository(listOf(manga), emptyMap())
+
+        assertFailsWith<CancellationException> {
+            RefreshMangaVolumesUseCase(api, local).refreshLibrary()
+        }
+        assertTrue(local.loggedExceptions.isEmpty())
+    }
+
     private class FakeMangaRepository(
         private val mangaResults: Map<String, Manga>,
         private val volumeResults: Map<String, List<Volume>>,
         private val failedMangaIds: Set<String> = emptySet(),
+        private val exceptionsByMangaId: Map<String, Exception> = emptyMap(),
     ) : MangaDexRepository {
+        val volumeOffsets = mutableListOf<Int>()
+
         override suspend fun searchManga(title: String, offset: Int?): List<Manga> = emptyList()
 
         override suspend fun searchMangaPage(title: String, offset: Int?, limit: Int): List<Manga> = emptyList()
@@ -136,6 +214,7 @@ class RefreshMangaVolumesUseCaseTest {
         override suspend fun enrichManga(manga: Manga): Manga = manga
 
         override suspend fun getManga(id: String, refresh: Boolean): Manga {
+            exceptionsByMangaId[id]?.let { throw it }
             if (id in failedMangaIds) error("Could not refresh manga $id")
             return mangaResults.getValue(id)
         }
@@ -150,7 +229,9 @@ class RefreshMangaVolumesUseCaseTest {
             limit: Int,
             refresh: Boolean,
         ): List<Volume> {
-            return if ((offset ?: 0) == 0) volumeResults[manga.id].orEmpty() else emptyList()
+            val pageOffset = offset ?: 0
+            volumeOffsets += pageOffset
+            return volumeResults[manga.id].orEmpty().drop(pageOffset).take(limit)
         }
 
         override fun log(message: Exception) = Unit
@@ -159,6 +240,7 @@ class RefreshMangaVolumesUseCaseTest {
     private class FakeLibraryRepository(
         private val library: List<Manga>,
         private val localVolumes: Map<String, List<Volume>>,
+        private val returnNullOnUpdate: Boolean = false,
     ) : LibraryRepository {
         val persistedVolumes = mutableListOf<List<Volume>>()
         val persistedManga = mutableListOf<Manga>()
@@ -183,9 +265,9 @@ class RefreshMangaVolumesUseCaseTest {
 
         override suspend fun insertManga(manga: Manga) = Unit
 
-        override suspend fun updateManga(manga: Manga): Manga {
+        override suspend fun updateManga(manga: Manga): Manga? {
             persistedManga += manga
-            return manga
+            return manga.takeUnless { returnNullOnUpdate }
         }
 
         override suspend fun addMangaToLibrary(manga: Manga) = Unit

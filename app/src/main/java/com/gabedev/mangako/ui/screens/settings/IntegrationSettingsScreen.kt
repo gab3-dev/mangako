@@ -1,8 +1,11 @@
 package com.gabedev.mangako.ui.screens.settings
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -13,6 +16,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -40,12 +44,17 @@ fun IntegrationSettingsScreen(
         .collectAsState(initial = NavigationBarStyle.CLASSIC)
     val scope = rememberCoroutineScope()
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.TopCenter,
+    ) {
+      Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .widthIn(max = 1000.dp)
             .verticalScroll(rememberScrollState())
             .padding(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 24.dp + contentBottomPadding),
-    ) {
+      ) {
         BackupSettingsSection(
             backupManager = backupManager,
             modifier = Modifier.padding(bottom = 32.dp),
@@ -106,6 +115,7 @@ fun IntegrationSettingsScreen(
             onClick = { scope.launch { context.saveNavigationBarStyle(NavigationBarStyle.FLOATING) } },
         )
         CreditsSettingsSection(modifier = Modifier.padding(top = 32.dp))
+      }
     }
 }
 

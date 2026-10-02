@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -154,6 +155,7 @@ fun MangaDetail(
         viewModel.setCoverLanguage(selectedCoverLanguage)
     }
     val isCoverLoading by viewModel.isVolumeLoading.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
     val canLoadMore by viewModel.noMoreVolume.collectAsState()
     val paginationPaused by viewModel.paginationPaused.collectAsState()
     val nextVolumeOffset by viewModel.nextVolumeOffset.collectAsState()
@@ -321,14 +323,14 @@ fun MangaDetail(
             ) { contentPadding ->
 
                 PullToRefreshBox(
-                    isRefreshing = isCoverLoading,
+                    isRefreshing = isRefreshing,
                     onRefresh = {
                         viewModel.refreshManga()
                     },
                     state = state,
                     indicator = {
                         PullToRefreshDefaults.LoadingIndicator(
-                            isRefreshing = isCoverLoading,
+                            isRefreshing = isRefreshing,
                             containerColor = MaterialTheme.colorScheme.primaryContainer,
                             color = MaterialTheme.colorScheme.primary,
                             state = state,
@@ -430,9 +432,19 @@ fun MangaDetail(
                     LazyVerticalGrid(
                         modifier = modifier
                             .fillMaxWidth()
+                            .widthIn(max = 1200.dp)
+                            .align(Alignment.TopCenter)
                             .padding(horizontal = 16.dp),
                         state = listState,
-                        columns = GridCells.Fixed(if (viewMode == "grid") 3 else 1),
+                        columns = if (viewMode == "grid") {
+                            if (LocalConfiguration.current.screenWidthDp >= 600) {
+                                GridCells.Adaptive(160.dp)
+                            } else {
+                                GridCells.Fixed(3)
+                            }
+                        } else {
+                            GridCells.Fixed(1)
+                        },
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {

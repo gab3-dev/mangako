@@ -96,8 +96,8 @@ android {
         applicationId = "com.gabedev.mangako"
         minSdk = 25
         targetSdk = 36
-        versionCode = 12
-        versionName = "0.1.6"
+        versionCode = 13
+        versionName = "0.1.7"
 
         testInstrumentationRunner = "com.gabedev.mangako.MangaKoE2ETestRunner"
         buildConfigField(
@@ -145,6 +145,9 @@ android {
         compose = true
         buildConfig = true
     }
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 kover {
@@ -168,6 +171,7 @@ kover {
                     "com.gabedev.mangako.ui.screens.collection.MangaCollectionKt*",
                     "com.gabedev.mangako.ui.screens.detail.MangaDetailKt*",
                     "com.gabedev.mangako.ui.screens.search_list.MangaSearchListKt*",
+                    "com.gabedev.mangako.ui.screens.backup.BackupOnboardingScreenKt*",
                     "com.gabedev.mangako.ui.screens.settings.*",
                 )
                 packages(
@@ -202,6 +206,9 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
     testImplementation(libs.androidx.core.testing)
+    testImplementation(libs.androidx.room.testing)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.work.testing)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.room.testing)

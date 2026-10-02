@@ -22,6 +22,7 @@ import com.gabedev.mangako.data.repository.MangaKoRepositoryImpl
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
 
 data class AppContainer(
     val database: LocalDatabase,
@@ -45,10 +46,12 @@ data class AppContainer(
                 coverLanguageProvider = { context.getCoverLanguage().first() },
                 localeProvider = context::appTextLocale,
             )
-            val mangaKoRepository = BuildConfig.MANGAKO_API_TOKEN
+            val mangaKoApi = BuildConfig.MANGAKO_API_TOKEN
                 .takeIf { it.isNotBlank() }
                 ?.let { token ->
                     val client = OkHttpClient.Builder()
+                        // Let the catalog fall back to MangaDex promptly when the optional backend is unavailable.
+                        .callTimeout(7, TimeUnit.SECONDS)
                         .addInterceptor { chain ->
                             chain.proceed(
                                 chain.request().newBuilder()
@@ -57,18 +60,20 @@ data class AppContainer(
                             )
                         }
                         .build()
-                    val mangaKoApi = Retrofit.Builder()
+                    Retrofit.Builder()
                         .baseUrl(BuildConfig.MANGAKO_API_BASE_URL)
                         .client(client)
                         .addConverterFactory(GsonConverterFactory.create())
                         .build()
                         .create(MangaKoAPI::class.java)
-                    MangaKoRepositoryImpl(
-                        mangaKoApi, context::unavailableMangaTitle,
-                        coverLanguageProvider = { context.getCoverLanguage().first() },
-                        localeProvider = context::appTextLocale,
-                    )
                 }
+            val mangaKoRepository = mangaKoApi?.let { api ->
+                MangaKoRepositoryImpl(
+                    api, context::unavailableMangaTitle,
+                    coverLanguageProvider = { context.getCoverLanguage().first() },
+                    localeProvider = context::appTextLocale,
+                )
+            }
 
             return AppContainer(
                 database = database,
